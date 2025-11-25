@@ -6,6 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,12 +17,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,46 +38,47 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import com.example.cleantrack.ui.theme.Black
-import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
-import com.example.cleantrack.ui.theme.Red
+import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 
 
-class LoginActivity : ComponentActivity() {
+class ContactSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LoginBody()
+            ContactSupportBody()
         }
     }
 }
 
 
 @Composable
-fun LoginBody() {
+fun ContactSupportBody() {
+    var fullname by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordvisibility by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedOptionText by remember { mutableStateOf("Select Option") }
+    val options = listOf("Option 1", "Option 2", "Others")
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
 
     Scaffold { padding ->
@@ -78,12 +86,14 @@ fun LoginBody() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(White)
+                .background(White),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
         ) {
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(50.dp))
 
             Text(
-                "Log Into CleanTrack",
+                "Contact Support",
                 style = TextStyle(
                     textAlign = TextAlign.Center,
                     color = Black,
@@ -93,7 +103,7 @@ fun LoginBody() {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.size(50.dp))
+            Spacer(modifier = Modifier.size(15.dp))
 
             Column(
                 modifier = Modifier
@@ -102,13 +112,13 @@ fun LoginBody() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
                 Image(
-                    painter = painterResource(R.drawable.user_logo),
+                    painter = painterResource(R.drawable.contact_support_logo),
                     contentDescription = null,
                     modifier = Modifier.size(150.dp)
                 )
                 Spacer(modifier = Modifier.size(15.dp))
                 Text(
-                    text = "Your journey to smarter,\ncooler recycling starts now",
+                    text = "Thank you for reaching out. If you need any help or have any questions, our support team is here for you.",
                     style = TextStyle(
                         fontSize = 16.sp,
                         color = Color.DarkGray,
@@ -118,9 +128,31 @@ fun LoginBody() {
                 )
             }
 
-            Spacer(modifier = Modifier.size(50.dp))
+            Spacer(modifier = Modifier.size(24.dp))
 
 
+            OutlinedTextField(
+                value = fullname,
+                onValueChange = { data ->
+                    fullname = data
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 15.dp),
+                shape = RoundedCornerShape(15.dp),
+                placeholder = {
+                    Text("Enter your full name")
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = TextBoxColor,
+                    unfocusedContainerColor = TextBoxColor,
+                    focusedIndicatorColor = Green,
+                    unfocusedIndicatorColor = Color.Transparent
+                )
+
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
             OutlinedTextField(
                 value = email,
                 onValueChange = { data ->
@@ -145,36 +177,67 @@ fun LoginBody() {
 
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)) {
+                    OutlinedTextField(
+                        value = selectedOptionText,
+                        onValueChange = {},
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { coordinates ->
+                                // capture the size of the TextField
+                                textFieldSize = coordinates.size.toSize()
+                            }
+                            .clickable { expanded = true },
+                        placeholder = { Text("Select Issue") },
+                        enabled = false, // prevent manual typing
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
+                        }
+                    )
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier
+                            .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                    ) {
+                        options.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    selectedOptionText = option
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+
+            }
 
             OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
+                value = fullname,
+                onValueChange = { data ->
+                    fullname = data
                 },
-                trailingIcon = {
-                    IconButton(onClick = {
-                        passwordvisibility = !passwordvisibility
-                    }) {
-                        Icon(
-                            painter = if (passwordvisibility)
-                                painterResource(R.drawable.baseline_visibility_off_24)
-                            else
-                                painterResource(R.drawable.baseline_visibility_24),
-                            contentDescription = null
-                        )
-                    }
-                },
-                visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 15.dp),
                 shape = RoundedCornerShape(15.dp),
                 placeholder = {
-                    Text("Enter your password")
+                    Text("Enter your message")
                 },
-
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = TextBoxColor,
                     unfocusedContainerColor = TextBoxColor,
@@ -186,18 +249,31 @@ fun LoginBody() {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                "Forgot Password?",
-                style = TextStyle(
-                    color = Red,
-                    textAlign = TextAlign.End
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Button(
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp)
+                        .height(60.dp)
+                        .background(
+                            color = Green,
+                            shape = RoundedCornerShape(15.dp)
+                        ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 15.dp
+                    ),
+                ) {
+                    Text("Add Attachment", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
+
 
 
             Row(
@@ -218,20 +294,11 @@ fun LoginBody() {
                         defaultElevation = 15.dp
                     ),
                 ) {
-                    Text("Login", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text("Submit", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
 
             }
-            Text(buildAnnotatedString {
 
-                withStyle(SpanStyle(color = Blue)){
-                    append("Haven't made an account yet? ")
-                }
-
-                withStyle(SpanStyle(color = Green)) {
-                    append("Sign Up")
-                }
-            }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
         }
 
     }
@@ -239,6 +306,6 @@ fun LoginBody() {
 
 @Preview
 @Composable
-fun LoginPreview(){
-    LoginBody()
+fun ContactSupportPreview(){
+    ContactSupportBody()
 }

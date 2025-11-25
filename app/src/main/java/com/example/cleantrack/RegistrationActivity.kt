@@ -51,8 +51,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
+import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
-import com.example.cleantrack.ui.theme.PurpleGrey80
+import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 
 
@@ -77,7 +78,6 @@ fun RegisterBody() {
     var passwordvisibility by remember { mutableStateOf(false) }
     var confirmpasswordvisibility by remember { mutableStateOf(false) }
     var terms by remember { mutableStateOf(false) }
-    val gradientColors = listOf(Color(0xFF58A9E6), Color(0xFF61C947))
 
 
 
@@ -106,7 +106,7 @@ fun RegisterBody() {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.size(15.dp))
 
             Column(
                 modifier = Modifier
@@ -115,10 +115,11 @@ fun RegisterBody() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
                 Image(
-                    painter = painterResource(R.drawable.image),
+                    painter = painterResource(R.drawable.user_logo),
                     contentDescription = null,
                     modifier = Modifier.size(150.dp)
                 )
+                Spacer(modifier = Modifier.size(15.dp))
                 Text(
                     text = "Your journey to smarter,\ncooler recycling starts now",
                     style = TextStyle(
@@ -146,8 +147,8 @@ fun RegisterBody() {
                     Text("Enter your full name")
                 },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = PurpleGrey80,
-                    unfocusedContainerColor = PurpleGrey80,
+                    focusedContainerColor = TextBoxColor,
+                    unfocusedContainerColor = TextBoxColor,
                     focusedIndicatorColor = Green,
                     unfocusedIndicatorColor = Color.Transparent
                 )
@@ -171,8 +172,8 @@ fun RegisterBody() {
                     keyboardType = KeyboardType.Email
                 ),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = PurpleGrey80,
-                    unfocusedContainerColor = PurpleGrey80,
+                    focusedContainerColor = TextBoxColor,
+                    unfocusedContainerColor = TextBoxColor,
                     focusedIndicatorColor = Green,
                     unfocusedIndicatorColor = Color.Transparent
                 )
@@ -197,8 +198,8 @@ fun RegisterBody() {
                     keyboardType = KeyboardType.Number
                 ),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = PurpleGrey80,
-                    unfocusedContainerColor = PurpleGrey80,
+                    focusedContainerColor = TextBoxColor,
+                    unfocusedContainerColor = TextBoxColor,
                     focusedIndicatorColor = Green,
                     unfocusedIndicatorColor = Color.Transparent
                 )
@@ -235,8 +236,8 @@ fun RegisterBody() {
                 },
 
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = PurpleGrey80,
-                    unfocusedContainerColor = PurpleGrey80,
+                    focusedContainerColor = TextBoxColor,
+                    unfocusedContainerColor = TextBoxColor,
                     focusedIndicatorColor = Green,
                     unfocusedIndicatorColor = Color.Transparent
                 )
@@ -273,8 +274,8 @@ fun RegisterBody() {
                 },
 
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = PurpleGrey80,
-                    unfocusedContainerColor = PurpleGrey80,
+                    focusedContainerColor = TextBoxColor,
+                    unfocusedContainerColor = TextBoxColor,
                     focusedIndicatorColor = Green,
                     unfocusedIndicatorColor = Color.Transparent
                 )
@@ -311,7 +312,7 @@ fun RegisterBody() {
                         .padding(horizontal = 15.dp)
                         .height(60.dp)
                         .background(
-                            brush = Brush.horizontalGradient(colors = gradientColors),
+                            brush = Brush.horizontalGradient(colors = ButtonColor),
                             shape = RoundedCornerShape(15.dp)
                         ),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),

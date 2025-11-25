@@ -32,7 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.cleantrack.ui.theme.CleanTrackTheme
+import com.example.cleantrack.ui.theme.ButtonColor
 
 class StartActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +46,6 @@ class StartActivity : ComponentActivity() {
 
 @Composable
 fun StartBody() {
-    val gradientColors = listOf(Color(0xFF58A9E6), Color(0xFF61C947))
 
     Scaffold { padding ->
         Column(
@@ -58,7 +57,6 @@ fun StartBody() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            Spacer(modifier = Modifier.weight(1f))
 
             Text(
                 text = "Welcome to \nCleanTrack!",
@@ -72,7 +70,7 @@ fun StartBody() {
             )
 
             Image(
-                painter = painterResource(R.drawable.image),
+                painter = painterResource(R.drawable.app_logo),
                 contentDescription = null
             )
 
@@ -94,7 +92,7 @@ fun StartBody() {
                     .fillMaxWidth(0.8f)
                     .height(60.dp)
                     .background(
-                        brush = Brush.horizontalGradient(colors = gradientColors),
+                        brush = Brush.horizontalGradient(colors = ButtonColor),
                         shape = RoundedCornerShape(15.dp)
                     ),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
