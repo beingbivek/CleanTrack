@@ -12,6 +12,39 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
+            android:name=".StartActivity"
+            android:exported="true"
+            android:label="@string/title_activity_start"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true"
+            android:label="@string/title_activity_login"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".RegistrationActivity"
+            android:exported="true"
+            android:label="@string/title_activity_registration"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
