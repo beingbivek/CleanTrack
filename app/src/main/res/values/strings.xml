@@ -5,4 +5,9 @@
     <string name="title_activity_start">StartActivity</string>
     <string name="title_activity_contact_support">ContactSupportActivity</string>
     <string name="title_activity_splash">SplashActivity</string>
+    <string name="title_activity_privacy_policy">PrivacyPolicyActivity</string>
+    <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
+    <string name="title_activity_user_dashboard">UserDashboardActivity</string>
+    <string name="title_activity_driver_dashboard">DriverDashboardActivity</string>
+    <string name="title_activity_settings">SettingsActivity</string>
 </resources>
