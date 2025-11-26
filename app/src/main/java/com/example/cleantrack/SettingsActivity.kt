@@ -15,6 +15,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.CleanTrackTheme
+import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.White
 
 class SettingsActivity : ComponentActivity() {
@@ -81,12 +87,117 @@ fun SettingsBody() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(start = 30.dp, end = 30.dp)
                         .background(Color(0xFFe4e6e5)),
                 ){
-                    Row {
+                    Row(modifier = Modifier
+                        .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(50.dp)
+                                .padding(start = 10.dp)
+                        )
+                        Text("Account",
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start=10.dp)
+                        )
+
 
                     }
+
+                    Card(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
+                            .height(160.dp).fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = White
+                        )
+                    ) {
+
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 15.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+
+                        }
+
+                    }
+
 
 
 
