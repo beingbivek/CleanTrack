@@ -15,4 +15,3 @@ val Green = Color(0xFF63BB5A)
 val Red = Color(0xFFFF0000)
 val ButtonColor = listOf(Color(0xFF58A9E6), Color(0xFF61C947))
 val TextBoxColor = Color(0xFFDAEEDF)
-
