@@ -199,6 +199,283 @@ fun SettingsBody() {
                     }
 
 
+                    Row(modifier = Modifier
+                        .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(50.dp)
+                                .padding(start = 10.dp)
+                        )
+                        Text("Household",
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start=10.dp)
+                        )
+
+
+                    }
+
+                    Card(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
+                            .height(110.dp).fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = White
+                        )
+                    ) {
+
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 15.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Row(modifier = Modifier
+                        .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(50.dp)
+                                .padding(start = 10.dp)
+                        )
+                        Text("Account",
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start=10.dp)
+                        )
+
+
+                    }
+
+                    Card(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
+                            .height(300.dp).fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = White
+                        )
+                    ) {
+
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 15.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Settings",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+
+                        }
+
+                    }
+
+
 
 
                 }
