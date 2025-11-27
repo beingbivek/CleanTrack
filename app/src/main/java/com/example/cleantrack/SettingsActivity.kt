@@ -22,9 +22,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,6 +59,9 @@ class SettingsActivity : ComponentActivity() {
 
 @Composable
 fun SettingsBody() {
+    var checked by remember { mutableStateOf(true) }
+
+
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -98,6 +108,7 @@ fun SettingsBody() {
                         Icon(
                             painter = painterResource(R.drawable.baseline_account_circle_24),
                             contentDescription = null,
+                            tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
                                 .padding(start = 10.dp)
                         )
@@ -121,7 +132,7 @@ fun SettingsBody() {
                         Column {
                             Row(
                                 modifier = Modifier.fillMaxWidth()
-                                    .padding(start = 20.dp, top = 15.dp)
+                                    .padding(start = 20.dp, top = 15.dp),
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.baseline_visibility_24),
@@ -206,9 +217,10 @@ fun SettingsBody() {
                         .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            painter = painterResource(R.drawable.home_icon),
                             contentDescription = null,
-                            modifier = Modifier.size(50.dp)
+                            tint = Color.Gray,
+                            modifier = Modifier.size(40.dp)
                                 .padding(start = 10.dp)
                         )
                         Text("Household",
@@ -245,6 +257,8 @@ fun SettingsBody() {
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
+
+
                             }
                             Row(
                                 modifier = Modifier
@@ -285,6 +299,7 @@ fun SettingsBody() {
                         Icon(
                             painter = painterResource(R.drawable.baseline_account_circle_24),
                             contentDescription = null,
+                            tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
                                 .padding(start = 10.dp)
                         )
@@ -322,6 +337,19 @@ fun SettingsBody() {
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
+
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=130.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
+                                )
                             }
                             Row(
                                 modifier = Modifier
@@ -351,6 +379,18 @@ fun SettingsBody() {
                                     "Pickup Reminder",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
+                                )
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=135.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
                                 )
                             }
                             Row(
@@ -382,6 +422,18 @@ fun SettingsBody() {
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=150.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
+                                )
                             }
                             Row(
                                 modifier = Modifier
@@ -411,6 +463,18 @@ fun SettingsBody() {
                                     "Waste Rating Notifications",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
+                                )
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=50.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
                                 )
                             }
                             Row(
@@ -442,6 +506,18 @@ fun SettingsBody() {
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=20.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
+                                )
                             }
                             Row(
                                 modifier = Modifier
@@ -472,6 +548,18 @@ fun SettingsBody() {
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=80.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
+                                )
                             }
 
                         }
@@ -484,6 +572,7 @@ fun SettingsBody() {
                         Icon(
                             painter = painterResource(R.drawable.baseline_account_circle_24),
                             contentDescription = null,
+                            tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
                                 .padding(start = 10.dp)
                         )
@@ -561,6 +650,7 @@ fun SettingsBody() {
                         Icon(
                             painter = painterResource(R.drawable.baseline_account_circle_24),
                             contentDescription = null,
+                            tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
                                 .padding(start = 10.dp)
                         )
@@ -639,6 +729,7 @@ fun SettingsBody() {
                         Icon(
                             painter = painterResource(R.drawable.baseline_account_circle_24),
                             contentDescription = null,
+                            tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
                                 .padding(start = 10.dp)
                         )
