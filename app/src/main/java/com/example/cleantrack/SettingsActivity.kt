@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -87,7 +89,8 @@ fun SettingsBody() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color(0xFFe4e6e5)),
+                        .background(Color(0xFFe4e6e5))
+                        .verticalScroll(rememberScrollState()),
                 ){
                     Row(modifier = Modifier
                         .fillMaxWidth(),
@@ -128,7 +131,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Edit Profile",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -158,7 +161,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Change Password",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -188,7 +191,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Delete Account",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -238,7 +241,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Home Location",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -268,7 +271,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Municipality & Ward",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -285,7 +288,7 @@ fun SettingsBody() {
                             modifier = Modifier.size(50.dp)
                                 .padding(start = 10.dp)
                         )
-                        Text("Account",
+                        Text("Notifications",
                             fontSize = 25.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(start=10.dp)
@@ -296,7 +299,7 @@ fun SettingsBody() {
 
                     Card(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-                            .height(300.dp).fillMaxWidth(),
+                            .height(310.dp).fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = White
                         )
@@ -315,7 +318,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Truck Near Alerts",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -345,7 +348,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Pickup Reminder",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -375,7 +378,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Payment Alerts",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -405,7 +408,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Waste Rating Notifications",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -435,7 +438,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Municipality Announcements",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -465,7 +468,7 @@ fun SettingsBody() {
                                 )
 
                                 Text(
-                                    "Settings",
+                                    "Toggle All Notifications",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -474,6 +477,240 @@ fun SettingsBody() {
                         }
 
                     }
+
+                    Row(modifier = Modifier
+                        .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(50.dp)
+                                .padding(start = 10.dp)
+                        )
+                        Text("Privacy",
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start=10.dp)
+                        )
+
+
+                    }
+
+                    Card(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
+                            .height(110.dp).fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = White
+                        )
+                    ) {
+
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 15.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Privacy Policy",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Terms & Conditions",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Row(modifier = Modifier
+                        .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(50.dp)
+                                .padding(start = 10.dp)
+                        )
+                        Text("Help",
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start=10.dp)
+                        )
+
+
+                    }
+
+                    Card(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
+                            .height(110.dp).fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = White
+                        )
+                    ) {
+
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 15.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "Contact Support",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "FAQs",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                        }
+                    }
+
+
+                    Row(modifier = Modifier
+                        .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(50.dp)
+                                .padding(start = 10.dp)
+                        )
+                        Text("About",
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start=10.dp)
+                        )
+
+
+                    }
+
+                    Card(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
+                            .height(110.dp).fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = White
+                        )
+                    ) {
+
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 15.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "App Version",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_visibility_24),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(25.dp),
+                                    tint = Color.LightGray
+                                )
+
+                                Text(
+                                    "About CleanTrack",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
 
 
 
