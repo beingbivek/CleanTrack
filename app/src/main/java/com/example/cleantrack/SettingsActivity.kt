@@ -123,7 +123,7 @@ fun SettingsBody() {
 
                     Card(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-                            .height(160.dp).fillMaxWidth(),
+                            .height(150.dp).fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = White
                         )
@@ -134,12 +134,7 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 15.dp),
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
+
 
                                 Text(
                                     "Edit Profile",
@@ -164,12 +159,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 5.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Change Password",
@@ -194,12 +183,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 5.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Delete Account",
@@ -234,7 +217,7 @@ fun SettingsBody() {
 
                     Card(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-                            .height(110.dp).fillMaxWidth(),
+                            .height(105.dp).fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = White
                         )
@@ -245,12 +228,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 15.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Home Location",
@@ -277,12 +254,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 5.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Municipality & Ward",
@@ -297,7 +268,7 @@ fun SettingsBody() {
                         .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            painter = painterResource(R.drawable.baseline_notifications_24),
                             contentDescription = null,
                             tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
@@ -325,12 +296,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 15.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Truck Near Alerts",
@@ -338,90 +303,6 @@ fun SettingsBody() {
                                     modifier = Modifier.padding(start=10.dp)
                                 )
 
-                                Switch(
-                                    checked = checked,
-                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
-                                        .padding(start=130.dp),
-                                    onCheckedChange = {
-                                        checked = it
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = White,
-                                        checkedTrackColor = Green,
-                                    )
-                                )
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding( vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                HorizontalDivider(
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-
-                        }
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .padding(start = 20.dp, top = 5.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
-
-                                Text(
-                                    "Pickup Reminder",
-                                    fontSize = 20.sp,
-                                    modifier = Modifier.padding(start=10.dp)
-                                )
-                                Switch(
-                                    checked = checked,
-                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
-                                        .padding(start=135.dp),
-                                    onCheckedChange = {
-                                        checked = it
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = White,
-                                        checkedTrackColor = Green,
-                                    )
-                                )
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding( vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                HorizontalDivider(
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-
-                        }
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .padding(start = 20.dp, top = 5.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
-
-                                Text(
-                                    "Payment Alerts",
-                                    fontSize = 20.sp,
-                                    modifier = Modifier.padding(start=10.dp)
-                                )
                                 Switch(
                                     checked = checked,
                                     modifier = Modifier.size(width = 40.dp, height = 24.dp)
@@ -452,15 +333,117 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 5.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
+
+                                Text(
+                                    "Pickup Reminder",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
                                 )
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=155.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+
+                                Text(
+                                    "Payment Alerts",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=170.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
 
                                 Text(
                                     "Waste Rating Notifications",
+                                    fontSize = 20.sp,
+                                    modifier = Modifier.padding(start=10.dp)
+                                )
+                                Switch(
+                                    checked = checked,
+                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
+                                        .padding(start=70.dp),
+                                    onCheckedChange = {
+                                        checked = it
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = White,
+                                        checkedTrackColor = Green,
+                                    )
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding( vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        }
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(start = 20.dp, top = 5.dp)
+                            ) {
+
+                                Text(
+                                    "Municipality Announcements",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(start=10.dp)
                                 )
@@ -494,54 +477,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 5.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
-
-                                Text(
-                                    "Municipality Announcements",
-                                    fontSize = 20.sp,
-                                    modifier = Modifier.padding(start=10.dp)
-                                )
-                                Switch(
-                                    checked = checked,
-                                    modifier = Modifier.size(width = 40.dp, height = 24.dp)
-                                        .padding(start=20.dp),
-                                    onCheckedChange = {
-                                        checked = it
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = White,
-                                        checkedTrackColor = Green,
-                                    )
-                                )
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding( vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                HorizontalDivider(
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-
-                        }
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .padding(start = 20.dp, top = 5.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Toggle All Notifications",
@@ -551,7 +486,7 @@ fun SettingsBody() {
                                 Switch(
                                     checked = checked,
                                     modifier = Modifier.size(width = 40.dp, height = 24.dp)
-                                        .padding(start=80.dp),
+                                        .padding(start=100.dp),
                                     onCheckedChange = {
                                         checked = it
                                     },
@@ -570,7 +505,7 @@ fun SettingsBody() {
                         .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            painter = painterResource(R.drawable.baseline_lock_24),
                             contentDescription = null,
                             tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
@@ -587,7 +522,7 @@ fun SettingsBody() {
 
                     Card(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-                            .height(110.dp).fillMaxWidth(),
+                            .height(105.dp).fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = White
                         )
@@ -598,12 +533,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 15.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Privacy Policy",
@@ -628,12 +557,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 5.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Terms & Conditions",
@@ -648,7 +571,7 @@ fun SettingsBody() {
                         .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            painter = painterResource(R.drawable.baseline_help_24),
                             contentDescription = null,
                             tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
@@ -665,7 +588,7 @@ fun SettingsBody() {
 
                     Card(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-                            .height(110.dp).fillMaxWidth(),
+                            .height(105.dp).fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = White
                         )
@@ -676,12 +599,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 15.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "Contact Support",
@@ -706,12 +623,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 5.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "FAQs",
@@ -727,7 +638,7 @@ fun SettingsBody() {
                         .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_account_circle_24),
+                            painter = painterResource(R.drawable.baseline_info_24),
                             contentDescription = null,
                             tint = Color.Gray,
                             modifier = Modifier.size(50.dp)
@@ -744,7 +655,7 @@ fun SettingsBody() {
 
                     Card(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-                            .height(110.dp).fillMaxWidth(),
+                            .height(105.dp).fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = White
                         )
@@ -755,12 +666,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 15.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "App Version",
@@ -785,12 +690,6 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth()
                                     .padding(start = 20.dp, top = 5.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.baseline_visibility_24),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(25.dp),
-                                    tint = Color.LightGray
-                                )
 
                                 Text(
                                     "About CleanTrack",
