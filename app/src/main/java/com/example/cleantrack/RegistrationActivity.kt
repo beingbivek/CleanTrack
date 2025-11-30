@@ -322,9 +322,7 @@ fun RegisterBody(authViewModel: AuthViewModel = viewModel() ) {
                             }
 
                             else ->{
-                                authViewModel
-
-                                    .signup(
+                                authViewModel.signup(
                                         email,
                                         fullname,
                                         number,
