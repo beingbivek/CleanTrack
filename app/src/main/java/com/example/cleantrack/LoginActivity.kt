@@ -4,8 +4,11 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -62,6 +65,10 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.common.api.ApiException
 
 
 class LoginActivity : ComponentActivity() {
@@ -85,6 +92,64 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
 
     val activity = context as Activity
 
+    // 1. Configure Google Sign-In Options
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+
+        // IMPORTANT: Request the ID token for Firebase authentication i.e. sign wiht google
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+    }
+
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso ) }
+
+    // 2. Activity Result Launcher for google sign-in intent
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        result ->
+        if (result.resultCode == Activity.RESULT_OK){
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account.idToken
+                if (idToken != null){
+
+                    authViewModel.signInWithGoogle(idToken ){
+                        Success, errorMessage, role ->
+                        if (Success){
+                            val destinationActivity = when (role) {
+                                "ADMIN" -> AdminDashboardActivity::class.java
+                                "DRIVER" -> UserDashboardActivity::class.java // Use DriverDashboardActivity
+                                "USER" -> UserDashboardActivity::class.java
+                                else -> UserDashboardActivity::class.java
+                            }
+                            val intent = Intent(context, destinationActivity)
+                            context.startActivity(intent)
+                            activity.finish()
+
+                        }else{
+                            AppUtil.showToast(context, errorMessage ?: "Google Sign-In failed.")
+
+                        }
+                    }
+
+                }else{
+                    AppUtil.showToast(context  ,"Google Sign-In token missing.")
+                }
+
+            } catch (e: ApiException){
+                // Handle exceptions (e.g., user cancelled sign-in)
+                AppUtil.showToast(context , "Google Sign-In failed: ${e.statusCode}")
+            }
+
+        }else{
+            // Sign-in intent failed/cancelled
+            AppUtil.showToast(context, "Google Sign-In cancelled.")
+        }
+    }
 
     Scaffold { padding ->
         Column(
@@ -295,7 +360,10 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                        val signIntent = googleSignInClient.signInIntent
+                        googleSignInLauncher.launch(signIntent)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
