@@ -202,6 +202,14 @@ fun SettingsBody() {
                 SettingsSectionHeader(R.drawable.baseline_notifications_24, "Notifications")
                 SettingsCard(
                     items = listOf(
+
+                        {
+                            SettingListItem("Toggle All Notifications", trailingContent = {
+                                // Toggle All state is derived, and its action updates all other states
+                                NotificationSwitch(allNotificationsChecked, onToggleAll)
+                            })
+                        },
+                        
                         {
                             SettingListItem("Truck Near Alerts", trailingContent = {
                                 NotificationSwitch(truckNearAlerts) { truckNearAlerts = it }
@@ -223,14 +231,8 @@ fun SettingsBody() {
                             })
                         },
                         {
-                            SettingListItem("Municipality Announcements", trailingContent = {
+                            SettingListItem("Municipality Announcements", showDivider = false, trailingContent = {
                                 NotificationSwitch(municipalityAnnouncements) { municipalityAnnouncements = it }
-                            })
-                        },
-                        {
-                            SettingListItem("Toggle All Notifications", showDivider = false, trailingContent = {
-                                // Toggle All state is derived, and its action updates all other states
-                                NotificationSwitch(allNotificationsChecked, onToggleAll)
                             })
                         }
                     )
