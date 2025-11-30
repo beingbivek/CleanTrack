@@ -336,7 +336,13 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                     append("Sign Up")
                 }
             }
-                , modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+                , modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp)
+                    .clickable{
+                        val intent = Intent(context, RegistrationActivity::class.java)
+
+                        context.startActivity(intent)
+
+                    })
 
 
             Row(
