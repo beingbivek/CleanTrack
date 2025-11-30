@@ -1,11 +1,14 @@
 package com.example.cleantrack
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -46,6 +50,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.ui.theme.ButtonColor
@@ -53,6 +58,7 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.viewmodel.AuthViewModel
 
 
 class LoginActivity : ComponentActivity() {
@@ -67,10 +73,14 @@ class LoginActivity : ComponentActivity() {
 
 
 @Composable
-fun LoginBody() {
+fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordvisibility by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    val activity = context as Activity
 
 
     Scaffold { padding ->
@@ -204,7 +214,32 @@ fun LoginBody() {
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                       authViewModel.login(email, password){
+                           Success, errorMessage, role->
+                           if (Success){
+
+                               val destinationActivity = when (role){
+                                   "ADMIN"-> AdminDashboardActivity::class.java
+                                   "DRIVER"-> DriverDashboardActivity::class.java
+                                   "USER"-> UserDashboardActivity::class.java
+                                   else -> UserDashboardActivity::class.java
+
+                               }
+
+                               val intent = Intent(context, destinationActivity)
+
+                               context.startActivity(intent)
+                               activity.finish()
+
+
+
+                           }else    {
+                               AppUtil.showToast(context, errorMessage?:"Login failed. Please check your credentials.")
+                           }
+
+                       }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
@@ -224,14 +259,21 @@ fun LoginBody() {
             }
             Text(buildAnnotatedString {
 
-                withStyle(SpanStyle(color = Blue)){
+                withStyle(SpanStyle(color = Blue)
+                ){
                     append("Haven't made an account yet? ")
                 }
 
                 withStyle(SpanStyle(color = Green)) {
                     append("Sign Up")
                 }
-            }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+            }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp)
+                .clickable{
+                    val intent = Intent(context, RegistrationActivity::class.java)
+
+                    context.startActivity(intent)
+                    activity.finish()
+                })
         }
 
     }
