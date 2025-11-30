@@ -83,7 +83,7 @@ fun LoginBody() {
                 .padding(padding)
                 .background(White)
         ) {
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(80.dp))
 
             Text(
                 "Log Into CleanTrack",
@@ -237,6 +237,60 @@ fun LoginBody() {
             }
                 , modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
 
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 15.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f)
+                )
+                Text("OR", modifier = Modifier.padding(horizontal = 15.dp))
+
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Button(
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp)
+                        .height(60.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(5.dp),
+                    border = BorderStroke(0.5.dp, Color.Gray),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Image(
+                            painter = painterResource(id = R.drawable.google),
+                            contentDescription = "Google Logo",
+                            modifier = Modifier.size(28.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Text(
+                            "Log in with Google",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Black
+                        )
+                    }
+                }
+            }
 
         }
 
