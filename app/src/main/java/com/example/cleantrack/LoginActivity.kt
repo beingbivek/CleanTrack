@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -14,10 +15,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -80,7 +83,7 @@ fun LoginBody() {
                 .padding(padding)
                 .background(White)
         ) {
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(80.dp))
 
             Text(
                 "Log Into CleanTrack",
@@ -231,7 +234,64 @@ fun LoginBody() {
                 withStyle(SpanStyle(color = Green)) {
                     append("Sign Up")
                 }
-            }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+            }
+                , modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 15.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f)
+                )
+                Text("OR", modifier = Modifier.padding(horizontal = 15.dp))
+
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Button(
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp)
+                        .height(60.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(5.dp),
+                    border = BorderStroke(0.5.dp, Color.Gray),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Image(
+                            painter = painterResource(id = R.drawable.google),
+                            contentDescription = "Google Logo",
+                            modifier = Modifier.size(28.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Text(
+                            "Log in with Google",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Black
+                        )
+                    }
+                }
+            }
+
         }
 
     }
