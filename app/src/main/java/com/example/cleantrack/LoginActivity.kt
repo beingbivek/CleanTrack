@@ -1,11 +1,18 @@
 package com.example.cleantrack
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,10 +21,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -33,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -46,6 +56,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.ui.theme.ButtonColor
@@ -53,6 +64,11 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.common.api.ApiException
 
 
 class LoginActivity : ComponentActivity() {
@@ -67,11 +83,73 @@ class LoginActivity : ComponentActivity() {
 
 
 @Composable
-fun LoginBody() {
+fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordvisibility by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+
+    val activity = context as Activity
+
+    // 1. Configure Google Sign-In Options
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+
+        // IMPORTANT: Request the ID token for Firebase authentication i.e. sign wiht google
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+    }
+
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso ) }
+
+    // 2. Activity Result Launcher for google sign-in intent
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        result ->
+        if (result.resultCode == Activity.RESULT_OK){
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account.idToken
+                if (idToken != null){
+
+                    authViewModel.signInWithGoogle(idToken ){
+                        Success, errorMessage, role ->
+                        if (Success){
+                            val destinationActivity = when (role) {
+                                "ADMIN" -> AdminDashboardActivity::class.java
+                                "DRIVER" -> UserDashboardActivity::class.java // Use DriverDashboardActivity
+                                "USER" -> UserDashboardActivity::class.java
+                                else -> UserDashboardActivity::class.java
+                            }
+                            val intent = Intent(context, destinationActivity)
+                            context.startActivity(intent)
+                            activity.finish()
+
+                        }else{
+                            AppUtil.showToast(context, errorMessage ?: "Google Sign-In failed.")
+
+                        }
+                    }
+
+                }else{
+                    AppUtil.showToast(context  ,"Google Sign-In token missing.")
+                }
+
+            } catch (e: ApiException){
+                // Handle exceptions (e.g., user cancelled sign-in)
+                AppUtil.showToast(context , "Google Sign-In failed: ${e.statusCode}")
+            }
+
+        }else{
+            // Sign-in intent failed/cancelled
+            AppUtil.showToast(context, "Google Sign-In cancelled.")
+        }
+    }
 
     Scaffold { padding ->
         Column(
@@ -80,7 +158,7 @@ fun LoginBody() {
                 .padding(padding)
                 .background(White)
         ) {
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(80.dp))
 
             Text(
                 "Log Into CleanTrack",
@@ -204,7 +282,32 @@ fun LoginBody() {
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                       authViewModel.login(email, password){
+                           Success, errorMessage, role->
+                           if (Success){
+
+                               val destinationActivity = when (role){
+                                   "ADMIN"-> AdminDashboardActivity::class.java
+                                   "DRIVER"-> DriverDashboardActivity::class.java
+                                   "USER"-> UserDashboardActivity::class.java
+                                   else -> UserDashboardActivity::class.java
+
+                               }
+
+                               val intent = Intent(context, destinationActivity)
+
+                               context.startActivity(intent)
+                               activity.finish()
+
+
+
+                           }else    {
+                               AppUtil.showToast(context, errorMessage?:"Login failed. Please check your credentials.")
+                           }
+
+                       }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
@@ -224,14 +327,81 @@ fun LoginBody() {
             }
             Text(buildAnnotatedString {
 
-                withStyle(SpanStyle(color = Blue)){
+                withStyle(SpanStyle(color = Blue)
+                ){
                     append("Haven't made an account yet? ")
                 }
 
                 withStyle(SpanStyle(color = Green)) {
                     append("Sign Up")
                 }
-            }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+            }
+                , modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp)
+                    .clickable{
+                        val intent = Intent(context, RegistrationActivity::class.java)
+
+                        context.startActivity(intent)
+
+                    })
+
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 15.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f)
+                )
+                Text("OR", modifier = Modifier.padding(horizontal = 15.dp))
+
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Button(
+                    onClick = {
+                        val signIntent = googleSignInClient.signInIntent
+                        googleSignInLauncher.launch(signIntent)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp)
+                        .height(60.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(5.dp),
+                    border = BorderStroke(0.5.dp, Color.Gray),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Image(
+                            painter = painterResource(id = R.drawable.google),
+                            contentDescription = "Google Logo",
+                            modifier = Modifier.size(28.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Text(
+                            "Log in with Google",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Black
+                        )
+                    }
+                }
+            }
+
         }
 
     }
