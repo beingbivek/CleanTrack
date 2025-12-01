@@ -55,9 +55,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,10 +68,8 @@ dependencies {
     // Import the Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
 
-    implementation("com.google.firebase:firebase-auth-ktx")
-
-    // Firebase Firestore
-    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
 
     // REQUIRED: Google Sign-In Client
     implementation("com.google.android.gms:play-services-auth:21.0.0") // Use the latest stable version

@@ -4,6 +4,8 @@ import android.R
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.UserModel
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.GoogleAuthCredential
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
@@ -143,6 +145,34 @@ class AuthViewModel : ViewModel() {
 
                 }else{
                     onResult(false, authTask.exception?.localizedMessage, null)
+                }
+            }
+    }
+
+    fun forgotPassword(email : String, onResult: (Boolean,  String?) -> Unit){
+        if (email.isBlank()){
+            onResult(false,"Please enter your email address.")
+            return
+        }
+
+        auth.sendPasswordResetEmail(email   )
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful){
+                    onResult(true, null)
+                }else   {
+                    // --- MODIFIED ERROR HANDLING ---
+                    val errorMessage = when (task.exception) {
+                        is FirebaseAuthInvalidUserException ->
+                            "The email address is not registered."
+                        is FirebaseAuthInvalidCredentialsException ->
+                            "The email address format is invalid."
+                        else ->
+                            // Log the full exception for debugging in Logcat
+                            // Log.e("AuthViewModel", "Reset Failed", task.exception)
+                            task.exception?.localizedMessage ?: "Failed to send reset email (Generic Error)."
+                    }
+                    onResult(false, errorMessage)
+                    // --- END MODIFIED ERROR HANDLING ---
                 }
             }
     }

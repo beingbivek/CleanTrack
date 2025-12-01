@@ -92,11 +92,14 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
 
     val activity = context as Activity
 
+    var showForgotPasswordDialog by remember { mutableStateOf(false ) }
+    var forgotPasswordEmail by remember { mutableStateOf("") }
+
     // 1. Configure Google Sign-In Options
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
 
-        // IMPORTANT: Request the ID token for Firebase authentication i.e. sign wiht google
+        // IMPORTANT: Request the ID token for Firebase authentication i.e. sign with google
             .requestIdToken(context.getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
@@ -273,6 +276,11 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 15.dp)
+                    .clickable{
+
+                        forgotPasswordEmail = email
+                        showForgotPasswordDialog = true
+                    }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -404,7 +412,81 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
 
         }
 
+        if (showForgotPasswordDialog){
+            ForgotPasswordDialog(
+                initialEmail = forgotPasswordEmail,
+                onDimiss = { showForgotPasswordDialog = false},
+                onSendReset = { enteredEmail ->
+                    forgotPasswordEmail = enteredEmail
+                    showForgotPasswordDialog = false
+
+                    authViewModel.forgotPassword(enteredEmail){
+                        Success, errorMessage ->
+                        if (Success) {
+                            AppUtil.showToast(
+                                context,
+                                "Password reset email sent to $enteredEmail. Check your inbox"
+                            )
+                        } else  {
+                            AppUtil.showToast(
+                                context,
+                                errorMessage ?: "Failed to send password reset email."
+                            )
+                        }
+                    }
+                }
+            )
+
+        }
+
     }
+}
+
+@Composable
+fun ForgotPasswordDialog(
+    initialEmail: String,
+    onDimiss: () -> Unit,
+    onSendReset: (String) -> Unit
+){
+    var emailInput by remember { mutableStateOf(initialEmail) }
+    val context = LocalContext.current
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDimiss,
+        title = {Text("Reset Password")},
+        text = {
+            Column() {
+                Text("Enter the email address associated with your account to receive a password reset link.")
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = emailInput,
+                    onValueChange = { emailInput = it},
+                    label = { Text("Email")},
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (emailInput.isNotBlank()){
+                        onSendReset(emailInput)
+                    }else{
+                        AppUtil.showToast(context , "Email fiels cannot be empty.")
+                    }
+                }
+            ){
+                Text("Send Reset Link")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDimiss) {
+                Text("Cancel")
+            }
+        }
+    )
+
 }
 
 @Preview
