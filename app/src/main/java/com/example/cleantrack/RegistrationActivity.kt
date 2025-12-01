@@ -307,7 +307,25 @@ fun RegisterBody(authViewModel: AuthViewModel = viewModel() ) {
                         checkmarkColor = White
                     )
                 )
-                Text("I agree to terms & conditions")
+                Text(buildAnnotatedString {
+
+                    withStyle(SpanStyle(color = Black)){
+                        append("By checking this box, you agree to our")
+                    }
+
+                    withStyle(SpanStyle(color = Blue)) {
+                        append(" Terms and Condition")
+                    }
+
+                    withStyle(SpanStyle(color = Black)) {
+                        append(" and")
+                    }
+
+                    withStyle(SpanStyle(color = Blue)) {
+                        append(" Privacy Policy")
+                    }
+
+                }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
             }
 
             Row(
