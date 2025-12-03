@@ -2,6 +2,7 @@ package com.example.cleantrack.viewmodel
 
 import android.R
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.cleantrack.model.UserModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -9,13 +10,110 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.GoogleAuthCredential
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
 
     private val auth = Firebase.auth
 
     private val firestore = Firebase.firestore
+
+    // State flows for Compose to observe
+    private val _users = MutableStateFlow<List<UserModel>>(emptyList())
+    val users: StateFlow<List<UserModel>> = _users.asStateFlow()
+
+    private val _totalUsers = MutableStateFlow(0)
+    val totalUsers: StateFlow<Int> = _totalUsers.asStateFlow()
+
+    private var usersListener: ListenerRegistration? = null
+
+    /**
+     * Start listening to users collection in real-time.
+     * Calling multiple times is idempotent.
+     */
+    fun startUsersListener() {
+        if (usersListener != null) return
+
+        usersListener = firestore.collection("users")
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    // You can log error here
+                    return@addSnapshotListener
+                }
+
+                if (snapshots != null) {
+                    val list = snapshots.documents.mapNotNull { doc ->
+                        val uid = doc.id
+                        val email = doc.getString("email") ?: ""
+                        val fullname = doc.getString("fullname") ?: ""
+                        val number = doc.getString("number") ?: ""
+                        val role = doc.getString("role") ?: "USER"
+                        UserModel(email = email, fullname = fullname, number = number, role = role, userId = uid)
+                    }
+                    viewModelScope.launch {
+                        _users.emit(list)
+                        _totalUsers.emit(list.size)
+                    }
+                } else {
+                    viewModelScope.launch {
+                        _users.emit(emptyList())
+                        _totalUsers.emit(0)
+                    }
+                }
+            }
+    }
+
+    /**
+     * Stop listening (cleanup)
+     */
+    override fun onCleared() {
+        super.onCleared()
+        usersListener?.remove()
+        usersListener = null
+    }
+
+    /**
+     * Update a user document in Firestore.
+     * Uses full set (overwrites) — keep fields in UserModel up-to-date or change to merge if preferred.
+     */
+    fun updateUser(user: UserModel, onResult: (Boolean, String?) -> Unit) {
+        if (user.userId.isBlank()) {
+            onResult(false, "Invalid user id")
+            return
+        }
+
+        firestore.collection("users").document(user.userId)
+            .set(user)
+            .addOnSuccessListener {
+                onResult(true, null)
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.localizedMessage)
+            }
+    }
+
+    /**
+     * Delete a user document from Firestore.
+     */
+    fun deleteUser(userId: String, onResult: (Boolean, String?) -> Unit) {
+        if (userId.isBlank()) {
+            onResult(false, "Invalid user id")
+            return
+        }
+        firestore.collection("users").document(userId)
+            .delete()
+            .addOnSuccessListener {
+                onResult(true, null)
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.localizedMessage)
+            }
+    }
 
     private fun isValidPhone(number: String) = number.length == 10 && number.all { it.isDigit() }
 
@@ -176,5 +274,8 @@ class AuthViewModel : ViewModel() {
                 }
             }
     }
+
+
+
 }
 

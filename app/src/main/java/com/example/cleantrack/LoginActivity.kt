@@ -125,7 +125,7 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                         if (Success){
                             val destinationActivity = when (role) {
                                 "ADMIN" -> AdminDashboardActivity::class.java
-                                "DRIVER" -> UserDashboardActivity::class.java // Use DriverDashboardActivity
+                                "DRIVER" -> DriverDashboardActivity::class.java // Use DriverDashboardActivity
                                 "USER" -> UserDashboardActivity::class.java
                                 else -> UserDashboardActivity::class.java
                             }
