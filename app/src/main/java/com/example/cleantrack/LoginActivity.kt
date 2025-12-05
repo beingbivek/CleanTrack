@@ -2,6 +2,7 @@ package com.example.cleantrack
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -58,6 +59,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
@@ -77,12 +79,23 @@ import com.google.firebase.messaging.FirebaseMessaging
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestNotificationPermission()
         enableEdgeToEdge()
         setContent {
             LoginBody()
         }
     }
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                101
+            )
+        }
+    }
 }
+
 
 
 @Composable
@@ -446,9 +459,20 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
     }
 }
 
-fun getFCMToken(){
-    Log.i("my token",FirebaseMessaging.getInstance().token.result)
-//    FirebaseMessaging.getInstance().token.result
+fun getFCMToken() {
+    FirebaseMessaging.getInstance().token
+        .addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("FCM_TOKEN", "Fetching FCM registration token failed", task.exception)
+                return@addOnCompleteListener
+            }
+
+            // Get new FCM registration token
+            val token = task.result
+
+            // Log it (or send to your server)
+            Log.d("FCM_TOKEN", "Token: $token")
+        }
 }
 
 @Composable
