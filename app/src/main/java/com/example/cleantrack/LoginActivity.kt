@@ -3,6 +3,8 @@ package com.example.cleantrack
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -69,6 +71,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.messaging.FirebaseMessaging
 
 
 class LoginActivity : ComponentActivity() {
@@ -123,6 +126,7 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                     authViewModel.signInWithGoogle(idToken ){
                         Success, errorMessage, role ->
                         if (Success){
+                            getFCMToken()
                             val destinationActivity = when (role) {
                                 "ADMIN" -> AdminDashboardActivity::class.java
                                 "DRIVER" -> DriverDashboardActivity::class.java // Use DriverDashboardActivity
@@ -294,7 +298,7 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                        authViewModel.login(email, password){
                            Success, errorMessage, role->
                            if (Success){
-
+                               getFCMToken()
                                val destinationActivity = when (role){
                                    "ADMIN"-> AdminDashboardActivity::class.java
                                    "DRIVER"-> DriverDashboardActivity::class.java
@@ -440,6 +444,11 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
         }
 
     }
+}
+
+fun getFCMToken(){
+    Log.i("my token",FirebaseMessaging.getInstance().token.result)
+//    FirebaseMessaging.getInstance().token.result
 }
 
 @Composable

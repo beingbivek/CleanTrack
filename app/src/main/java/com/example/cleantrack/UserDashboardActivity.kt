@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
@@ -26,6 +29,9 @@ import androidx.compose.ui.unit.sp
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.CleanTrackTheme
 import com.example.cleantrack.ui.theme.White
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.firestore
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,8 +43,12 @@ class UserDashboardActivity : ComponentActivity() {
     }
 }
 
+
 @Composable
 fun UserDashboardBody() {
+
+//    val privacyText = getLatestPrivacyPolicyDesc()
+
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -60,9 +70,40 @@ fun UserDashboardBody() {
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(50.dp))
+
+//            Text(text = privacyText)
         }
     }
 }
+
+
+//@Composable
+//fun getLatestPrivacyPolicyDesc(): String {
+//    val firestore = Firebase.firestore
+//    val description = remember { mutableStateOf("Loading...") }
+//
+//    LaunchedEffect(Unit) {
+//        firestore.collection("privacy_policy")
+//            .orderBy("date", Query.Direction.DESCENDING)
+//            .limit(1)  // Get only the latest document
+//            .get()
+//            .addOnSuccessListener { result ->
+//                if (!result.isEmpty) {
+//                    val doc = result.documents[0]
+//                    description.value = doc.getString("description") ?: "No description found"
+//                } else {
+//                    description.value = "No documents found"
+//                }
+//            }
+//            .addOnFailureListener {
+//                description.value = "Failed to load data"
+//            }
+//    }
+
+//    return description.value
+//}
 
 @Preview
 @Composable
