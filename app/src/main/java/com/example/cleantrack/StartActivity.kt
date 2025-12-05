@@ -1,5 +1,7 @@
 package com.example.cleantrack
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +49,8 @@ class StartActivity : ComponentActivity() {
 
 @Composable
 fun StartBody() {
+    val context = LocalContext.current
+    val activity = context as Activity
 
     Scaffold { padding ->
         Column(
@@ -87,7 +92,11 @@ fun StartBody() {
 
 
             Button(
-                onClick = { /* TODO: Implement 'Sign Up' action */ },
+                onClick = {
+                    val intent = Intent(context, RegistrationActivity::class.java)
+                    context.startActivity(intent)
+                    activity.finish()
+                },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .height(60.dp)
@@ -103,7 +112,11 @@ fun StartBody() {
             Spacer(modifier = Modifier.size(24.dp))
 
             TextButton(
-                onClick = { /* TODO: Implement 'Log In' action */ }
+                onClick = {
+                    val intent = Intent(context, LoginActivity::class.java)
+                    context.startActivity(intent)
+                    activity.finish()
+                }
             ) {
                 Text(
                     text = "Login",
