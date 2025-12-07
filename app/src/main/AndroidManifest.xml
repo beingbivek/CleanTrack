@@ -12,6 +12,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
+            android:name=".PrivacyPolicyActivity"
+            android:exported="true"
+            android:label="@string/title_activity_privacy_policy"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".viewmodel.PrivacyPolicyActivity"
+            android:exported="false"
+            android:label="@string/title_activity_privacy_policy"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
             android:name=".SettingsActivity"
             android:exported="true"
             android:label="@string/title_activity_settings"
@@ -48,17 +64,6 @@
             android:name=".AdminDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_dashboard"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".PrivacyPolicyActivity"
-            android:exported="true"
-            android:label="@string/title_activity_privacy_policy"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
