@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.util
 
 import android.content.Context
 import android.widget.Toast
