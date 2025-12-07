@@ -16,6 +16,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // JitPack repository for MapLibre dependencies
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
