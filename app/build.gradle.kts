@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("kotlin-parcelize") //parcelize for data models
 }
 
 android {
@@ -73,6 +74,26 @@ dependencies {
 
     // REQUIRED: Google Sign-In Client
     implementation("com.google.android.gms:play-services-auth:21.0.0") // Use the latest stable version
+
+
+
+
+
+    //Map Section
+    // Retrofit for REST API calls
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // OkHttp logging interceptor for network debugging
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    // MapLibre for map rendering
+    implementation("org.maplibre.gl:android-sdk:11.12.1")
+
+    // Location service for Live Location/GPS
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    //Map Section End
 
 
 }
