@@ -73,4 +73,6 @@ dependencies {
 
     // REQUIRED: Google Sign-In Client
     implementation("com.google.android.gms:play-services-auth:21.0.0") // Use the latest stable version
+
+
 }
