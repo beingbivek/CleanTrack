@@ -75,6 +75,7 @@ class ContactSupportActivity : ComponentActivity() {
 fun ContactSupportBody() {
     var fullname by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionText by remember { mutableStateOf("Select Option") }
     val options = listOf("Option 1", "Option 2", "Others")
@@ -227,9 +228,9 @@ fun ContactSupportBody() {
             }
 
             OutlinedTextField(
-                value = fullname,
+                value = message,
                 onValueChange = { data ->
-                    fullname = data
+                    message = data
                 },
                 modifier = Modifier
                     .fillMaxWidth()
