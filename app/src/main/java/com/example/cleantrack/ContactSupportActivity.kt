@@ -77,7 +77,7 @@ fun ContactSupportBody() {
     var email by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    var selectedOptionText by remember { mutableStateOf("Select Option") }
+    var selectedOptionText by remember { mutableStateOf("Select Issues") }
     val options = listOf("Option 1", "Option 2", "Others")
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
