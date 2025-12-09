@@ -73,12 +73,9 @@ class UserAddressActivtiy : ComponentActivity() {
 
 @Composable
 fun UserAddressBody() {
-    var fullname by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    var selectedOptionText by remember { mutableStateOf("Select Option") }
-    val options = listOf("Option 1", "Option 2", "Others")
+    var selectedProvince by remember { mutableStateOf("Select Province") }
+    val province = listOf("Option 1", "Option 2", "Others")
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
 
@@ -140,7 +137,7 @@ fun UserAddressBody() {
                         .fillMaxWidth()
                         .padding(16.dp)) {
                     OutlinedTextField(
-                        value = selectedOptionText,
+                        value = selectedProvince,
                         onValueChange = {},
                         modifier = Modifier
                             .fillMaxWidth()
@@ -149,7 +146,7 @@ fun UserAddressBody() {
                                 textFieldSize = coordinates.size.toSize()
                             }
                             .clickable { expanded = true },
-                        placeholder = { Text("Select Issue") },
+                        placeholder = { Text("Select Province") },
                         enabled = false, // prevent manual typing
                         trailingIcon = {
                             Icon(
@@ -165,11 +162,11 @@ fun UserAddressBody() {
                         modifier = Modifier
                             .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
                     ) {
-                        options.forEach { option ->
+                        province.forEach { province ->
                             DropdownMenuItem(
-                                text = { Text(option) },
+                                text = { Text(province) },
                                 onClick = {
-                                    selectedOptionText = option
+                                    selectedProvince = province
                                     expanded = false
                                 }
                             )
