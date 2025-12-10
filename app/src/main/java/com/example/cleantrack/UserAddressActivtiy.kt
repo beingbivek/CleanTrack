@@ -36,7 +36,6 @@ import com.example.cleantrack.viewmodel.UserAddressViewModel
 
 class UserAddressActivtiy : ComponentActivity() {
 
-    // Using viewModels() delegate (Activity-scoped)
     private val vm: UserAddressViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +50,6 @@ class UserAddressActivtiy : ComponentActivity() {
 @Preview
 @Composable
 fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
-    // local UI states for dropdown expanded flags
     val provinces = vm.provinces
     val districts = vm.districts
     val municipalities = vm.municipalities
@@ -62,7 +60,6 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
     var municipalityFieldSize = remember { Size.Zero }
     var wardFieldSize = remember { Size.Zero }
 
-    // expanded flags
     var expandedProvince = remember { androidx.compose.runtime.mutableStateOf(false) }
     var expandedDistrict = remember { androidx.compose.runtime.mutableStateOf(false) }
     var expandedMunicipality = remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -89,8 +86,6 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
@@ -98,12 +93,11 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
                     .padding(horizontal = 30.dp)
             ) {
                 Image(
-                    painter = painterResource(R.drawable.contact_support_logo),
+                    painter = painterResource(R.drawable.home_logo),
                     contentDescription = null,
-                    modifier = Modifier.size(120.dp)
+                    modifier = Modifier.size(200.dp)
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
                     text = "Select your exact location from the dropdown below to continue",
@@ -111,7 +105,7 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             // Province dropdown
             DropdownField(
@@ -130,7 +124,9 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
                 onSizeChange = { provinceFieldSize = it }
             )
 
-            // District dropdown (disabled until provinces loaded / selected)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // District dropdown
             DropdownField(
                 label = vm.selectedDistrictName,
                 placeholder = "Select District",
@@ -145,6 +141,8 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
                 fieldSize = districtFieldSize,
                 onSizeChange = { districtFieldSize = it }
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Municipality dropdown
             DropdownField(
@@ -162,7 +160,9 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
                 onSizeChange = { municipalityFieldSize = it }
             )
 
-            // Ward dropdown (generated from ward_count)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Ward dropdown
             DropdownField(
                 label = vm.selectedWardName,
                 placeholder = "Select Ward",
@@ -178,13 +178,11 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
                 onSizeChange = { wardFieldSize = it }
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             Button(
                 onClick = {
-                    // implement submission — using vm.currentSelection()
                     val selection = vm.currentSelection()
-                    // for now you can log or handle it
                 },
                 modifier = Modifier
                     .fillMaxWidth()
