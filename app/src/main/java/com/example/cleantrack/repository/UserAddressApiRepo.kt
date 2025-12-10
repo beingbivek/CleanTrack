@@ -12,7 +12,7 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
 
-interface ApiService {
+interface UserAddressApiRepo {
     @GET("provinces")
     suspend fun getProvinces(): List<ProvinceModel>
 
@@ -29,7 +29,7 @@ interface ApiService {
     companion object {
         private const val BASE_URL = "https://nepal-location-api.onrender.com/"
 
-        fun create(): ApiService {
+        fun create(): UserAddressApiRepo {
             val logging = HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BASIC
             }
@@ -45,7 +45,7 @@ interface ApiService {
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
-                .create(ApiService::class.java)
+                .create(UserAddressApiRepo::class.java)
         }
     }
 }
