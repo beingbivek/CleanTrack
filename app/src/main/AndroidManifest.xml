@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -14,9 +12,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
-            android:name=".SettingsActivity"
+            android:name=".DriverLocationMapActivity"
             android:exported="true"
-            android:label="@string/title_activity_settings"
+            android:label="@string/title_activity_driver_location_map"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".UserLocationMapActivity"
+            android:exported="true"
+            android:label="@string/title_activity_map"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -50,6 +59,17 @@
             android:name=".AdminDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_dashboard"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".TermsAndConditionActivity"
+            android:exported="true"
+            android:label="@string/title_activity_privacy_policy"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
