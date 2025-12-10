@@ -1,4 +1,4 @@
-package com.example.cleantrack.utils
+package com.example.cleantrack.util
 
 import com.google.firebase.messaging.FirebaseMessagingService
 
