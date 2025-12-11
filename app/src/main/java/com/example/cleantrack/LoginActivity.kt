@@ -427,7 +427,7 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                     forgotPasswordEmail = enteredEmail
                     showForgotPasswordDialog = false
 
-                    authViewModel.forgotPassword(enteredEmail){
+                    userViewModel.forgotPassword(enteredEmail){
                         Success, errorMessage ->
                         if (Success) {
                             AppUtil.showToast(
