@@ -125,6 +125,8 @@ class AuthViewModel : ViewModel() {
 
         if (!isValidPhone(number)) { onResult(false, "Please enter a valid phone number"); return }
 
+
+
         auth.createUserWithEmailAndPassword(email,password)
             .addOnCompleteListener {
                 if (it.isSuccessful){
