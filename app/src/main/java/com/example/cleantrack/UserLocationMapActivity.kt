@@ -46,7 +46,7 @@ import org.maplibre.android.maps.MapView
 
 private var mapViewState: MapView? = null
 
-class MapActivity : ComponentActivity() {
+class UserLocationMapActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
