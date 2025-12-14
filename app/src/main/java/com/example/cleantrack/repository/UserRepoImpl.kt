@@ -1,5 +1,6 @@
 package com.example.cleantrack.repository
 
+import android.util.Log
 import com.example.cleantrack.model.UserModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -76,7 +77,7 @@ class UserRepoImpl : UserRepo{
 
                         val roleRefr = ref.child(userId).child("role")
 
-                            roleRefr
+                        roleRefr
                             .get()
                             .addOnSuccessListener { documentSnapshot ->
                                 if(documentSnapshot.exists()){
@@ -208,10 +209,17 @@ class UserRepoImpl : UserRepo{
 
                     callback(true, "Allusers fetched", allUsers)
                 }
+                else {
+                    // No users node or empty — return empty list instead of doing nothing
+                    callback(true, "No users found", emptyList())
+                }
 
             }
 
             override fun onCancelled(error: DatabaseError) {
+
+                // Log the error message to the console
+                Log.e("UserRepo", "Firebase Read Cancelled! Code: ${error.code}. Message: ${error.message}", error.toException())
                 callback(false, "${error.message}", emptyList())
             }
         })

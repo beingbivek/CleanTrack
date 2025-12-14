@@ -1,8 +1,11 @@
 package com.example.cleantrack.viewmodel
 
+import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.UserRepo
+import com.google.firebase.firestore.auth.User
 
 class UserViewModel(val repo : UserRepo) : ViewModel() {
 
@@ -28,15 +31,55 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
     }
 
-    fun getUserById(userId: String, callback: (Boolean, String, UserModel?) -> Unit){
+//    Initializing getter and setter
 
-        repo.getUserById(userId, callback)
+    private val _user = MutableLiveData<UserModel?>()
+    val user : MutableLiveData<UserModel?>
+        get() = _user
+
+    private val _allUsers = MutableLiveData<List<UserModel>?>()
+    val allUsers : MutableLiveData<List<UserModel>?>
+        get() = _allUsers
+
+    private val _loading = MutableLiveData<Boolean>()
+    val loading : MutableLiveData<Boolean>
+        get() = _loading
+
+    fun getUserById(userId: String){
+
+        _loading.postValue(true)
+
+        repo.getUserById(userId){
+            success, message, data->
+            if (success){
+                _user.postValue(data)
+                _loading.postValue(false)
+
+            }
+            _loading.postValue(false)
+        }
 
     }
 
-    fun getAllUsers(callback: (Boolean, String, List<UserModel>) -> Unit){
+    fun getAllUsers(){
 
-        repo.getAllUsers(callback)
+        _loading.postValue(true)
+
+        repo.getAllUsers{
+            success, message, data ->
+                Log.d("checkpoint",success.toString())
+            if (success){
+                _allUsers.postValue(data)
+                _loading.postValue(false)
+
+            }else {
+                // Log the error message to debug connection issues
+                println("Error fetching users: $message")
+                _allUsers.postValue(emptyList()) // Post empty list on failure
+                _loading.postValue(false)
+            }
+
+        }
 
     }
 

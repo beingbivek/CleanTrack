@@ -79,7 +79,7 @@ class RegistrationActivity : ComponentActivity() {
 
 
 @Composable
-fun RegisterBody(authViewModel: AuthViewModel = viewModel() ) {
+fun RegisterBody( ) {
 
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }

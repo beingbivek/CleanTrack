@@ -86,7 +86,7 @@ class LoginActivity : ComponentActivity() {
 
 
 @Composable
-fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
+fun LoginBody() {
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
 
