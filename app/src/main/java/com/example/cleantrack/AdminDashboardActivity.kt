@@ -58,7 +58,6 @@ import com.example.cleantrack.ui.theme.AccentRed
 import com.example.cleantrack.ui.theme.BackgroundLightGray
 import com.example.cleantrack.ui.theme.CleanTrackTheme
 import com.example.cleantrack.ui.theme.PrimaryGreen
-import com.example.cleantrack.viewmodel.AuthViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import androidx.compose.runtime.livedata.observeAsState
 

@@ -63,7 +63,6 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.viewmodel.AuthViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 
 
