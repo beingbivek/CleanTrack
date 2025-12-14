@@ -57,6 +57,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.ui.theme.ButtonColor
@@ -65,7 +66,7 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.viewmodel.AuthViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -84,7 +85,11 @@ class LoginActivity : ComponentActivity() {
 
 
 @Composable
-fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
+fun LoginBody() {
+
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordvisibility by remember { mutableStateOf(false) }
@@ -121,7 +126,7 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                 val idToken = account.idToken
                 if (idToken != null){
 
-                    authViewModel.signInWithGoogle(idToken ){
+                    userViewModel.signInWithGoogle(idToken ){
                         Success, errorMessage, role ->
                         if (Success){
                             val destinationActivity = when (role) {
@@ -292,7 +297,7 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
             ) {
                 Button(
                     onClick = {
-                       authViewModel.login(email, password){
+                       userViewModel.login(email, password){
                            Success, errorMessage, role->
                            if (Success){
 
@@ -421,7 +426,7 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                     forgotPasswordEmail = enteredEmail
                     showForgotPasswordDialog = false
 
-                    authViewModel.forgotPassword(enteredEmail){
+                    userViewModel.forgotPassword(enteredEmail){
                         Success, errorMessage ->
                         if (Success) {
                             AppUtil.showToast(

@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.database)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -99,6 +100,8 @@ dependencies {
     // Kotlin coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    implementation("androidx.compose.runtime:runtime-livedata:<compose_version>")
 
 
 }
