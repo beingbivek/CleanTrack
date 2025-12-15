@@ -10,5 +10,5 @@ data class RouteModel(
     val name: String = "",
     val points: List<LatLngPoint> = emptyList(),
     val isActive: Boolean = true,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = 0L
 )

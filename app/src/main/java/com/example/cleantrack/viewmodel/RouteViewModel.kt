@@ -9,15 +9,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class RouteViewModel(
-    private val repo: RouteRepo
-) : ViewModel() {
+class RouteViewModel(private val repo: RouteRepo) : ViewModel() {
 
     private val _routes = MutableStateFlow<List<RouteModel>>(emptyList())
     val routes: StateFlow<List<RouteModel>> = _routes
-
-    private val _saving = MutableStateFlow(false)
-    val saving: StateFlow<Boolean> = _saving
 
     fun startRoutesListener() {
         viewModelScope.launch {
@@ -27,9 +22,7 @@ class RouteViewModel(
 
     fun saveNewRoute(route: RouteModel, onDone: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
-            _saving.value = true
             val res = repo.createRoute(route)
-            _saving.value = false
             onDone(res.isSuccess, res.exceptionOrNull()?.message)
         }
     }

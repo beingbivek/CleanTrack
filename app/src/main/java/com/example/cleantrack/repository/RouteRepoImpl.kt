@@ -2,64 +2,86 @@ package com.example.cleantrack.repository
 
 import com.example.cleantrack.model.RouteAssignmentModel
 import com.example.cleantrack.model.RouteModel
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.toObject
+import com.google.firebase.database.*
+import com.google.firebase.database.ktx.getValue
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class RouteRepoImpl(
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val db: FirebaseDatabase = FirebaseDatabase.getInstance()
 ) : RouteRepo {
 
-    private val routesCol = db.collection("routes")
-    private val assignCol = db.collection("routeAssignments")
+    // Recommended structure:
+    // routes/{routeId}
+    // routeAssignments/{assignmentId}
+
+    private val routesRef = db.getReference("routes")
+    private val assignmentsRef = db.getReference("routeAssignments")
 
     override suspend fun createRoute(route: RouteModel): Result<String> = runCatching {
-        val doc = routesCol.document()
-        val finalRoute = route.copy(routeId = doc.id)
-        doc.set(finalRoute).await()
-        doc.id
+        val id = routesRef.push().key ?: throw IllegalStateException("Failed to create key")
+        val final = route.copy(
+            routeId = id,
+            createdAt = System.currentTimeMillis()
+        )
+        routesRef.child(id).setValue(final).await()
+        id
     }
 
-    override suspend fun updateRoute(route: RouteModel): Result<Unit> = runCatching {
-        routesCol.document(route.routeId).set(route).await()
+    override suspend fun updateRoute(route: RouteModel): Result<Unit> {
+        TODO("Not yet implemented")
     }
 
-    override suspend fun deleteRoute(routeId: String): Result<Unit> = runCatching {
-        routesCol.document(routeId).delete().await()
+    override suspend fun deleteRoute(routeId: String): Result<Unit> {
+        TODO("Not yet implemented")
     }
 
     override fun observeRoutes(): Flow<List<RouteModel>> = callbackFlow {
-        val reg = routesCol
-            .whereEqualTo("isActive", true)
-            .addSnapshotListener { snap, err ->
-                if (err != null) {
-                    close(err); return@addSnapshotListener
-                }
-                val list = snap?.documents?.mapNotNull { it.toObject<RouteModel>() } ?: emptyList()
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = snapshot.children.mapNotNull { it.getValue<RouteModel>() }
+                    .filter { it.isActive }
                 trySend(list)
             }
-        awaitClose { reg.remove() }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        routesRef.addValueEventListener(listener)
+        awaitClose { routesRef.removeEventListener(listener) }
     }
 
     override suspend fun createAssignment(a: RouteAssignmentModel): Result<String> = runCatching {
-        val doc = assignCol.document()
-        val final = a.copy(assignmentId = doc.id)
-        doc.set(final).await()
-        doc.id
+        val id = assignmentsRef.push().key ?: throw IllegalStateException("Failed to create key")
+        val final = a.copy(
+            assignmentId = id,
+            createdAt = System.currentTimeMillis()
+        )
+        assignmentsRef.child(id).setValue(final).await()
+        id
     }
 
     override fun observeAssignmentsForDriver(driverId: String): Flow<List<RouteAssignmentModel>> = callbackFlow {
-        val reg = assignCol
-            .whereEqualTo("driverId", driverId)
-            .whereEqualTo("isActive", true)
-            .addSnapshotListener { snap, err ->
-                if (err != null) { close(err); return@addSnapshotListener }
-                val list = snap?.documents?.mapNotNull { it.toObject<RouteAssignmentModel>() } ?: emptyList()
+        // Query: routeAssignments where driverId == driverId
+        val query = assignmentsRef.orderByChild("driverId").equalTo(driverId)
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = snapshot.children.mapNotNull { it.getValue<RouteAssignmentModel>() }
+                    .filter { it.isActive }
                 trySend(list)
             }
-        awaitClose { reg.remove() }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+
+        query.addValueEventListener(listener)
+        awaitClose { query.removeEventListener(listener) }
     }
 }
