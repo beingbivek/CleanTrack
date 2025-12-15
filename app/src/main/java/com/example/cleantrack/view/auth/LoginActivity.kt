@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.auth
 
 import android.app.Activity
 import android.content.Intent
@@ -7,7 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -24,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -56,7 +56,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cleantrack.R
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
@@ -66,10 +66,12 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.view.admin.AdminDashboardActivity
+import com.example.cleantrack.view.driver.DriverDashboardActivity
+import com.example.cleantrack.view.user.UserDashboardActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.common.api.ApiException
 
 
@@ -457,7 +459,7 @@ fun ForgotPasswordDialog(
     var emailInput by remember { mutableStateOf(initialEmail) }
     val context = LocalContext.current
 
-    androidx.compose.material3.AlertDialog(
+    AlertDialog(
         onDismissRequest = onDimiss,
         title = {Text("Reset Password")},
         text = {

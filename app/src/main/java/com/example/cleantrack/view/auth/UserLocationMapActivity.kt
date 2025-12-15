@@ -1,5 +1,6 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.auth
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
@@ -40,6 +41,7 @@ import org.maplibre.android.MapLibre
 import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
@@ -67,8 +69,8 @@ class UserLocationMapActivity : ComponentActivity() {
 
 // Helper: Check fine OR coarse
 fun hasLocationPermission(context: Context): Boolean {
-    return ActivityCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            ActivityCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 }
 
 @SuppressLint("MissingPermission")
@@ -105,7 +107,7 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
                 if (!hasCenteredOnGPS && mapInstance != null) {
                     hasCenteredOnGPS = true
                     mapInstance?.animateCamera(
-                        org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(pos, 15.0)
+                        CameraUpdateFactory.newLatLngZoom(pos, 15.0)
                     )
 
                     // Update selected location to your GPS on start
@@ -124,8 +126,8 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { perms ->
-        if (perms[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            perms[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (perms[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            perms[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
         } else {
@@ -136,7 +138,7 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
     LaunchedEffect(Unit) {
         if (!hasLocationPermission(context)) {
             locationPermissionLauncher.launch(
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
             )
         } else {
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
@@ -216,7 +218,7 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
                 withContext(Dispatchers.Main) {
                     // Move existing marker
                     markerInstance?.position = pos
-                    mapInstance?.animateCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(pos, 14.0))
+                    mapInstance?.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 14.0))
                     currentLat = lat
                     currentLon = lon
                     inputLatText = lat.toString()
@@ -302,7 +304,7 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
                                     val lat = inputLatText.toDouble()
                                     val lon = inputLonText.toDouble()
                                     val pos = LatLng(lat, lon)
-                                    mapInstance?.animateCamera(org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(pos, 12.0))
+                                    mapInstance?.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 12.0))
                                     markerInstance?.position = pos
                                     currentLat = lat
                                     currentLon = lon

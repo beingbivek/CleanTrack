@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.auth
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,10 +14,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -29,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cleantrack.R
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.White
@@ -60,10 +64,10 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
     var municipalityFieldSize = remember { Size.Zero }
     var wardFieldSize = remember { Size.Zero }
 
-    var expandedProvince = remember { androidx.compose.runtime.mutableStateOf(false) }
-    var expandedDistrict = remember { androidx.compose.runtime.mutableStateOf(false) }
-    var expandedMunicipality = remember { androidx.compose.runtime.mutableStateOf(false) }
-    var expandedWard = remember { androidx.compose.runtime.mutableStateOf(false) }
+    var expandedProvince = remember { mutableStateOf(false) }
+    var expandedDistrict = remember { mutableStateOf(false) }
+    var expandedMunicipality = remember { mutableStateOf(false) }
+    var expandedWard = remember { mutableStateOf(false) }
 
     Scaffold { padding ->
         Column(
@@ -189,13 +193,13 @@ fun UserAddressBody(vm: UserAddressViewModel = viewModel()) {
                     .padding(horizontal = 16.dp)
                     .height(56.dp)
                     .background(
-                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(ButtonColor),
+                        brush = Brush.horizontalGradient(ButtonColor),
                         shape = RoundedCornerShape(12.dp)
                     ),
-                colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 15.dp)
             ) {
-                Text("Submit", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = androidx.compose.ui.graphics.Color.White)
+                Text("Submit", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
 
             Spacer(modifier = Modifier.height(24.dp))

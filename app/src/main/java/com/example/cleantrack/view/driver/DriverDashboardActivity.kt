@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.driver
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,21 +24,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.ui.theme.Black
-import com.example.cleantrack.ui.theme.CleanTrackTheme
 import com.example.cleantrack.ui.theme.White
 
-class UserDashboardActivity : ComponentActivity() {
+class DriverDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            UserDashboardBody()
+            DriverDashboardBody()
         }
     }
 }
 
 @Composable
-fun UserDashboardBody() {
+fun DriverDashboardBody() {
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -51,7 +50,7 @@ fun UserDashboardBody() {
             Spacer(modifier = Modifier.height(50.dp))
 
             Text(
-                "User Dashboard",
+                "Driver Dashboard",
                 style = TextStyle(
                     textAlign = TextAlign.Center,
                     color = Black,
@@ -66,6 +65,6 @@ fun UserDashboardBody() {
 
 @Preview
 @Composable
-fun UserDashboardPreview(){
-    UserDashboardBody()
+fun DriverDashboardPreview(){
+    DriverDashboardBody()
 }

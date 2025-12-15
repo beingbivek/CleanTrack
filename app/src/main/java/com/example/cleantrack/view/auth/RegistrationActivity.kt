@@ -1,9 +1,7 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.auth
 
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -53,7 +51,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cleantrack.R
 import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
