@@ -1,5 +1,6 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.driver
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
@@ -28,6 +29,7 @@ import org.maplibre.android.MapLibre
 import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
@@ -55,8 +57,8 @@ class DriverLocationMapActivity : ComponentActivity() {
 
 // Check if location permission granted
 fun hasDriverLocationPermission(context: Context): Boolean {
-    return ActivityCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            ActivityCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 }
 
 @SuppressLint("MissingPermission")
@@ -96,7 +98,7 @@ fun DriverMapComposable(savedInstanceState: Bundle?) {
                 if (!hasCenteredOnGPS && mapInstance != null) {
                     hasCenteredOnGPS = true
                     mapInstance?.animateCamera(
-                        org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(pos, 15.0)
+                        CameraUpdateFactory.newLatLngZoom(pos, 15.0)
                     )
                 }
 
@@ -110,8 +112,8 @@ fun DriverMapComposable(savedInstanceState: Bundle?) {
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { perms ->
-        if (perms[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            perms[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (perms[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            perms[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
         } else {
@@ -122,7 +124,7 @@ fun DriverMapComposable(savedInstanceState: Bundle?) {
     LaunchedEffect(Unit) {
         if (!hasDriverLocationPermission(context)) {
             locationPermissionLauncher.launch(
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
             )
         } else {
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)

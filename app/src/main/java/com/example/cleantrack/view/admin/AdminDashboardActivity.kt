@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.admin
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -39,7 +39,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,14 +49,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.foundation.lazy.items
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.AccentRed
 import com.example.cleantrack.ui.theme.BackgroundLightGray
 import com.example.cleantrack.ui.theme.CleanTrackTheme
 import com.example.cleantrack.ui.theme.PrimaryGreen
-import com.example.cleantrack.viewmodel.AuthViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
+import androidx.compose.runtime.livedata.observeAsState
+
 
 class AdminDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,14 +70,22 @@ class AdminDashboardActivity : ComponentActivity() {
 }
 
 @Composable
-fun AdminDashboardScreen(authViewModel: AuthViewModel = viewModel()) {
+fun AdminDashboardScreen() {
+
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     // Start listening to users collection
     LaunchedEffect(Unit) {
-        authViewModel.startUsersListener()
+        userViewModel.getAllUsers()
     }
 
-    val users by authViewModel.users.collectAsState()
-    val total by authViewModel.totalUsers.collectAsState()
+    val allUsers by userViewModel.allUsers.observeAsState(initial = null)
+
+    val loading by userViewModel.loading.observeAsState(initial = false)
+
+    val total = allUsers?.size ?: 0
+
+
+
 
     var editingUser by remember { mutableStateOf<UserModel?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -109,7 +117,9 @@ fun AdminDashboardScreen(authViewModel: AuthViewModel = viewModel()) {
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(users, key = { it.userId }) { user ->
+
+                    val userList = allUsers ?: emptyList()
+                    items(userList, key = { it.userId }) { user ->
                         UserCard(
                             user = user,
                             onEdit = {
@@ -134,7 +144,8 @@ fun AdminDashboardScreen(authViewModel: AuthViewModel = viewModel()) {
                         editingUser = null
                     },
                     onSave = { updated ->
-                        authViewModel.updateUser(updated) { success, err ->
+                        val id = updated.userId   ?: ""
+                        userViewModel.editUserProfile(id,updated) { success, err ->
                             // optional: show result via snackbar/toast
                             showEditDialog = false
                             editingUser = null
@@ -153,7 +164,7 @@ fun AdminDashboardScreen(authViewModel: AuthViewModel = viewModel()) {
                         Button(onClick = {
                             val id = userToDeleteId
                             if (!id.isNullOrBlank()) {
-                                authViewModel.deleteUser(id) { success, err ->
+                                userViewModel.deleteUser(id) { success, err ->
                                     // optional: show result via snackbar/toast
                                 }
                             }
@@ -173,6 +184,21 @@ fun AdminDashboardScreen(authViewModel: AuthViewModel = viewModel()) {
                     }
                 )
             }
+
+            // Optional: show a simple loading indicator (you can replace with a nicer one)
+            if (loading == true) {
+                // Very simple center text — replace with CircularProgressIndicator if you want
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Loading...", color = Color.Gray)
+                }
+            }
+
+
+
         }
     }
 }
@@ -273,7 +299,7 @@ fun UserCard(user: UserModel, onEdit: (UserModel) -> Unit, onDelete: (String) ->
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { onDelete(user.userId) }
+                        .clickable { onDelete(user.userId ?: "") }
                         .padding(8.dp)
                 ) {
                     Icon(
@@ -407,7 +433,7 @@ fun EditUserDialog(user: UserModel, onDismiss: () -> Unit, onSave: (UserModel) -
 @Composable
 fun AdminDashboardPreview() {
     CleanTrackTheme {
-        Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Text("Preview - run on device/emulator")
         }
     }

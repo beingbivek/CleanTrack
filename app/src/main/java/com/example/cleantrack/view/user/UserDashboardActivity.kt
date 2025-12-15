@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.user
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -27,7 +27,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.ui.theme.Black
-import com.example.cleantrack.ui.theme.CleanTrackTheme
 import com.example.cleantrack.ui.theme.White
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.Query
