@@ -16,9 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
-            android:name=".view.auth.UserAddressActivtiy"
+            android:name=".SettingsActivity"
             android:exported="true"
-            android:label="@string/title_activity_user_address_activtiy"
+            android:label="@string/title_activity_settings"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,9 +27,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.driver.DriverLocationMapActivity"
+            android:name=".DriverDashboardActivity"
             android:exported="true"
-            android:label="@string/title_activity_driver_location_map"
+            android:label="@string/title_activity_settings"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -38,18 +38,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.auth.UserLocationMapActivity"
-            android:exported="true"
-            android:label="@string/title_activity_map"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.driver.DriverDashboardActivity"
+            android:name=".UserDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_dashboard"
             android:theme="@style/Theme.CleanTrack">
@@ -60,7 +49,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.user.UserDashboardActivity"
+            android:name=".AdminDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_user_dashboard"
             android:theme="@style/Theme.CleanTrack">
@@ -71,20 +60,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.admin.AdminDashboardActivity"
+            android:name=".PrivacyPolicyActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_dashboard"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.common.TermsAndConditionActivity"
-            android:exported="true"
-            android:label="@string/title_activity_privacy_policy"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
