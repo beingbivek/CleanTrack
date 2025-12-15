@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Internet Permission -->
-    <uses-permission android:name="android.permission.INTERNET" /> <!-- Location Permission -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Location Permission -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -65,7 +66,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.driver.DriverDashboardActivity"
+            android:name=".view.driver.DriverDashBoardActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_dashboard"
             android:theme="@style/Theme.CleanTrack">

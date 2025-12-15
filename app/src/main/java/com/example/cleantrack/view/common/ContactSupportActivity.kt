@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.common
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

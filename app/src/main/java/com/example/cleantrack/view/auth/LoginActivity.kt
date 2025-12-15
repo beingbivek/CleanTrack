@@ -1,11 +1,10 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.auth
 
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -59,22 +58,21 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import com.example.cleantrack.R
 import com.example.cleantrack.repository.UserRepoImpl
-import androidx.core.app.ActivityCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
-import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
+import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.view.admin.AdminDashboardActivity
-import com.example.cleantrack.view.auth.RegistrationActivity
-import com.example.cleantrack.view.driver.DriverDashboardActivity
+import com.example.cleantrack.view.common.ErrorActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
+import com.example.cleantrack.view.driver.DriverDashBoardActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -151,7 +149,7 @@ fun LoginBody() {
                             getFCMToken()
                             val destinationActivity = when (role) {
                                 "ADMIN" -> AdminDashboardActivity::class.java
-                                "DRIVER" -> DriverDashboardActivity::class.java // Use DriverDashboardActivity
+                                "DRIVER" -> DriverDashBoardActivity::class.java // Use DriverDashboardActivity
                                 "USER" -> UserDashboardActivity::class.java
                                 else -> UserDashboardActivity::class.java
                             }
@@ -323,9 +321,9 @@ fun LoginBody() {
                                getFCMToken()
                                val destinationActivity = when (role){
                                    "ADMIN"-> AdminDashboardActivity::class.java
-                                   "DRIVER"-> DriverDashboardActivity::class.java
+                                   "DRIVER"-> DriverDashBoardActivity::class.java
                                    "USER"-> UserDashboardActivity::class.java
-                                   else -> UserDashboardActivity::class.java
+                                   else -> ErrorActivity::class.java
 
                                }
 
