@@ -45,7 +45,7 @@ class DriverDashBoardActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-
+            DriverDashboardScreen()
         }
     }
 }
