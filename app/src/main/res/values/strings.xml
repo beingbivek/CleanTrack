@@ -14,4 +14,6 @@
     <string name="title_activity_map">MapActivity</string>
     <string name="title_activity_driver_location_map">DriverLocationMapActivity</string>
     <string name="title_activity_user_address_activtiy">UserAddressActivtiy</string>
+    <string name="title_activity_error">ErrorActivity</string>
+    <string name="title_activity_admin_route_setup">AdminRouteSetupActivity</string>
 </resources>

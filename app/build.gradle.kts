@@ -45,65 +45,39 @@ android {
 
 dependencies {
 
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.database)
 
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
+    implementation("androidx.compose.runtime:runtime-livedata")
 
-    // Import the Firebase BOM
-    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
+    // Firebase BOM (ONE ONLY)
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-database-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
 
-    // REQUIRED: Google Sign-In Client
-    implementation("com.google.android.gms:play-services-auth:21.0.0") // Use the latest stable version
-
-
-
-
-
-    //Map Section
-    // Retrofit for REST API calls
+    // Map + Network
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-
-    // OkHttp logging interceptor for network debugging
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-
-    // MapLibre for map rendering
     implementation("org.maplibre.gl:android-sdk:11.12.1")
-
-    // Location service for Live Location/GPS
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
-    //Map Section End
-
-
-    // Kotlin coroutines
+    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-//    ObserveAsState Dependency
-
     implementation("androidx.compose.runtime:runtime-livedata:<compose_version>")
-
 
 }

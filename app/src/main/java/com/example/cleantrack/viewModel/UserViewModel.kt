@@ -5,7 +5,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.UserRepo
-import com.google.firebase.firestore.auth.User
 
 class UserViewModel(val repo : UserRepo) : ViewModel() {
 
