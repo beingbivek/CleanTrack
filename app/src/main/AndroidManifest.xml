@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".viewmodel.PrivacyPolicyActivity"
+            android:name=".viewModel.PrivacyPolicyActivity"
             android:exported="false"
             android:label="@string/title_activity_privacy_policy"
             android:theme="@style/Theme.CleanTrack" />
@@ -39,7 +39,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".DriverDashboardActivity"
+            android:name=".view.DriverDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_dashboard"
             android:theme="@style/Theme.CleanTrack">

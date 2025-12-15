@@ -1,6 +1,5 @@
-package com.example.cleantrack.viewmodel.ui.theme
+package com.example.cleantrack.viewModel.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

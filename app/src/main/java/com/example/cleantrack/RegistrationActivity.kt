@@ -1,7 +1,6 @@
 package com.example.cleantrack
 
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -59,7 +58,7 @@ import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
-import com.example.cleantrack.viewmodel.AuthViewModel
+import com.example.cleantrack.viewModel.AuthViewModel
 
 
 class RegistrationActivity : ComponentActivity() {

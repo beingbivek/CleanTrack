@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,7 +24,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.ui.theme.Black
-import com.example.cleantrack.ui.theme.CleanTrackTheme
 import com.example.cleantrack.ui.theme.White
 
 class DriverDashboardActivity : ComponentActivity() {

@@ -1,10 +1,8 @@
-package com.example.cleantrack.viewmodel
+package com.example.cleantrack.viewModel
 
-import android.R
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.UserModel
 import com.google.firebase.Firebase
-import com.google.firebase.auth.GoogleAuthCredential
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
