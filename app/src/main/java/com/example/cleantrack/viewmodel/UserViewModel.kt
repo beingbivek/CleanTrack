@@ -63,7 +63,7 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
     fun getAllUsers(){
 
-        _loading.postValue(true)
+//        _loading.postValue(true)
 
         repo.getAllUsers{
             success, message, data ->
