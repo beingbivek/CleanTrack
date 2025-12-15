@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("kotlin-parcelize") //parcelize for data models
 }
 
 android {
@@ -55,9 +56,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)
+    implementation(libs.firebase.database)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,11 +70,40 @@ dependencies {
     // Import the Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
 
-    implementation("com.google.firebase:firebase-auth-ktx")
-
-    // Firebase Firestore
-    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
 
     // REQUIRED: Google Sign-In Client
     implementation("com.google.android.gms:play-services-auth:21.0.0") // Use the latest stable version
+
+
+
+
+
+    //Map Section
+    // Retrofit for REST API calls
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // OkHttp logging interceptor for network debugging
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    // MapLibre for map rendering
+    implementation("org.maplibre.gl:android-sdk:11.12.1")
+
+    // Location service for Live Location/GPS
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    //Map Section End
+
+
+    // Kotlin coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+//    ObserveAsState Dependency
+
+    implementation("androidx.compose.runtime:runtime-livedata:<compose_version>")
+
+
 }

@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.auth
 
 import android.app.Activity
 import android.os.Bundle
@@ -51,14 +51,17 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cleantrack.R
+import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
-import com.example.cleantrack.viewModel.AuthViewModel
+import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.viewmodel.UserViewModel
 
 
 class RegistrationActivity : ComponentActivity() {
@@ -73,7 +76,11 @@ class RegistrationActivity : ComponentActivity() {
 
 
 @Composable
-fun RegisterBody(authViewModel: AuthViewModel = viewModel() ) {
+fun RegisterBody( ) {
+
+
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
     var fullname by remember { mutableStateOf("") }
     var number by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -339,28 +346,36 @@ fun RegisterBody(authViewModel: AuthViewModel = viewModel() ) {
                             }
 
                             else ->{
-                                authViewModel.signup(
-                                        email,
-                                        fullname,
-                                        number,
-                                        password,
-                                        confirmpassword
-                                    ) { success, errorMessage ->
-                                        if (success) {
+
+                                userViewModel.register(email, password ){
+                                    success, message, userId ->
+                                    if (success){
+
+                                        var model = UserModel(
+                                            userId = userId ,
+                                            email = email,
+                                            fullname = fullname,
+                                            number = number,
 
 
-                                            activity.finish()
+                                        )
 
+                                        userViewModel.addUserToDatabase(userId, model){
+                                            success, message ->
+                                            if (success){
 
-                                        } else {
+                                                AppUtil.showToast(context , message )
 
-                                            AppUtil.showToast(
-                                                context,
-                                                errorMessage ?: "Something went wrong!"
-                                            )
-
+                                            }else{
+                                                AppUtil.showToast(context , message )
+                                            }
                                         }
+
+                                    }else{
+                                        AppUtil.showToast(context , message )
                                     }
+                                }
+
                             }
                         }
                     },

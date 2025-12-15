@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.auth
 
 import android.app.Activity
 import android.content.Intent
@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -55,7 +56,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cleantrack.R
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.ui.theme.ButtonColor
@@ -63,8 +65,11 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
-import com.example.cleantrack.view.DriverDashboardActivity
-import com.example.cleantrack.viewModel.AuthViewModel
+import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.view.admin.AdminDashboardActivity
+import com.example.cleantrack.view.driver.DriverDashboardActivity
+import com.example.cleantrack.view.user.UserDashboardActivity
+import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -82,7 +87,11 @@ class LoginActivity : ComponentActivity() {
 
 
 @Composable
-fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
+fun LoginBody() {
+
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordvisibility by remember { mutableStateOf(false) }
@@ -91,11 +100,14 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
 
     val activity = context as Activity
 
+    var showForgotPasswordDialog by remember { mutableStateOf(false ) }
+    var forgotPasswordEmail by remember { mutableStateOf("") }
+
     // 1. Configure Google Sign-In Options
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
 
-        // IMPORTANT: Request the ID token for Firebase authentication i.e. sign wiht google
+        // IMPORTANT: Request the ID token for Firebase authentication i.e. sign with google
             .requestIdToken(context.getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
@@ -116,12 +128,12 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                 val idToken = account.idToken
                 if (idToken != null){
 
-                    authViewModel.signInWithGoogle(idToken ){
+                    userViewModel.signInWithGoogle(idToken ){
                         Success, errorMessage, role ->
                         if (Success){
                             val destinationActivity = when (role) {
                                 "ADMIN" -> AdminDashboardActivity::class.java
-                                "DRIVER" -> UserDashboardActivity::class.java // Use DriverDashboardActivity
+                                "DRIVER" -> DriverDashboardActivity::class.java // Use DriverDashboardActivity
                                 "USER" -> UserDashboardActivity::class.java
                                 else -> UserDashboardActivity::class.java
                             }
@@ -272,6 +284,11 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 15.dp)
+                    .clickable{
+
+                        forgotPasswordEmail = email
+                        showForgotPasswordDialog = true
+                    }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -282,7 +299,7 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
             ) {
                 Button(
                     onClick = {
-                       authViewModel.login(email, password){
+                       userViewModel.login(email, password){
                            Success, errorMessage, role->
                            if (Success){
 
@@ -403,7 +420,81 @@ fun LoginBody(authViewModel: AuthViewModel = viewModel()) {
 
         }
 
+        if (showForgotPasswordDialog){
+            ForgotPasswordDialog(
+                initialEmail = forgotPasswordEmail,
+                onDimiss = { showForgotPasswordDialog = false},
+                onSendReset = { enteredEmail ->
+                    forgotPasswordEmail = enteredEmail
+                    showForgotPasswordDialog = false
+
+                    userViewModel.forgotPassword(enteredEmail){
+                        Success, errorMessage ->
+                        if (Success) {
+                            AppUtil.showToast(
+                                context,
+                                "Password reset email sent to $enteredEmail. Check your inbox"
+                            )
+                        } else  {
+                            AppUtil.showToast(
+                                context,
+                                errorMessage ?: "Failed to send password reset email."
+                            )
+                        }
+                    }
+                }
+            )
+
+        }
+
     }
+}
+
+@Composable
+fun ForgotPasswordDialog(
+    initialEmail: String,
+    onDimiss: () -> Unit,
+    onSendReset: (String) -> Unit
+){
+    var emailInput by remember { mutableStateOf(initialEmail) }
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDimiss,
+        title = {Text("Reset Password")},
+        text = {
+            Column() {
+                Text("Enter the email address associated with your account to receive a password reset link.")
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = emailInput,
+                    onValueChange = { emailInput = it},
+                    label = { Text("Email")},
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (emailInput.isNotBlank()){
+                        onSendReset(emailInput)
+                    }else{
+                        AppUtil.showToast(context , "Email fiels cannot be empty.")
+                    }
+                }
+            ){
+                Text("Send Reset Link")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDimiss) {
+                Text("Cancel")
+            }
+        }
+    )
+
 }
 
 @Preview

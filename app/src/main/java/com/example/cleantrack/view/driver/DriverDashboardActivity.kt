@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:app/src/main/java/com/example/cleantrack/view/DriverDashboardActivity.kt
 package com.example.cleantrack.view
+========
+package com.example.cleantrack.view.driver
+>>>>>>>> origin/dev:app/src/main/java/com/example/cleantrack/view/driver/DriverDashboardActivity.kt
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

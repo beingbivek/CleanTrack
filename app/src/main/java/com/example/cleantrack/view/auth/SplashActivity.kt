@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.auth
 
 import android.app.Activity
 import android.content.Intent
@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.cleantrack.R
 import kotlinx.coroutines.delay
 
 class  SplashActivity : ComponentActivity() {

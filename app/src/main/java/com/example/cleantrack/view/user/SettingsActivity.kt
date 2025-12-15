@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.view.user
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -209,7 +209,7 @@ fun SettingsBody() {
                                 NotificationSwitch(allNotificationsChecked, onToggleAll)
                             })
                         },
-                        
+
                         {
                             SettingListItem("Truck Near Alerts", trailingContent = {
                                 NotificationSwitch(truckNearAlerts) { truckNearAlerts = it }

@@ -1,4 +1,4 @@
-package com.example.cleantrack
+package com.example.cleantrack.util
 
 import android.content.Context
 import android.widget.Toast
@@ -6,6 +6,6 @@ import android.widget.Toast
 object AppUtil {
 
     fun showToast(context : Context, message : String){
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 }

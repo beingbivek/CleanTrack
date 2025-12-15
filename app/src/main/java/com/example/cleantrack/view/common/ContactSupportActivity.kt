@@ -1,4 +1,3 @@
-
 package com.example.cleantrack
 
 import android.os.Bundle
@@ -53,10 +52,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import com.example.cleantrack.R
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
-import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 
@@ -76,8 +75,9 @@ class ContactSupportActivity : ComponentActivity() {
 fun ContactSupportBody() {
     var fullname by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    var selectedOptionText by remember { mutableStateOf("Select Option") }
+    var selectedOptionText by remember { mutableStateOf("Select Issues") }
     val options = listOf("Option 1", "Option 2", "Others")
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
@@ -228,9 +228,9 @@ fun ContactSupportBody() {
             }
 
             OutlinedTextField(
-                value = fullname,
+                value = message,
                 onValueChange = { data ->
-                    fullname = data
+                    message = data
                 },
                 modifier = Modifier
                     .fillMaxWidth()
