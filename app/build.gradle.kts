@@ -101,6 +101,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+//    ObserveAsState Dependency
+
     implementation("androidx.compose.runtime:runtime-livedata:<compose_version>")
 
 
