@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- Internet Permission -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Location Permission -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -12,9 +17,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
-            android:name=".SettingsActivity"
+            android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"
-            android:label="@string/title_activity_settings"
+            android:label="@string/title_activity_admin_route_setup"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,7 +28,45 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".DriverDashboardActivity"
+            android:name=".view.common.ErrorActivity"
+            android:exported="false"
+            android:label="@string/title_activity_error"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.auth.UserAddressActivtiy"
+            android:exported="true"
+            android:label="@string/title_activity_user_address_activtiy"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.driver.DriverLocationMapActivity"
+            android:exported="true"
+            android:label="@string/title_activity_driver_location_map"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.auth.UserLocationMapActivity"
+            android:exported="true"
+            android:label="@string/title_activity_map"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.driver.DriverDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_dashboard"
             android:theme="@style/Theme.CleanTrack">
@@ -34,7 +77,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".UserDashboardActivity"
+            android:name=".view.user.UserDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_user_dashboard"
             android:theme="@style/Theme.CleanTrack">
@@ -45,7 +88,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".AdminDashboardActivity"
+            android:name=".view.admin.AdminDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_dashboard"
             android:theme="@style/Theme.CleanTrack">
@@ -56,7 +99,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".PrivacyPolicyActivity"
+            android:name=".view.common.TermsAndConditionActivity"
             android:exported="true"
             android:label="@string/title_activity_privacy_policy"
             android:theme="@style/Theme.CleanTrack">
@@ -67,7 +110,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".SplashActivity"
+            android:name=".view.auth.SplashActivity"
             android:exported="true"
             android:label="@string/title_activity_splash"
             android:theme="@style/Theme.CleanTrack">
@@ -78,7 +121,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ContactSupportActivity"
+            android:name=".view.common.ContactSupportActivity"
             android:exported="true"
             android:label="@string/title_activity_contact_support"
             android:theme="@style/Theme.CleanTrack">
@@ -89,7 +132,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".StartActivity"
+            android:name=".view.auth.StartActivity"
             android:exported="true"
             android:label="@string/title_activity_start"
             android:theme="@style/Theme.CleanTrack">
@@ -100,7 +143,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".LoginActivity"
+            android:name=".view.auth.LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.CleanTrack">
@@ -111,7 +154,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".RegistrationActivity"
+            android:name=".view.auth.RegistrationActivity"
             android:exported="true"
             android:label="@string/title_activity_registration"
             android:theme="@style/Theme.CleanTrack">
@@ -122,7 +165,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name=".view.auth.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.CleanTrack">
@@ -132,6 +175,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".util.FCMNotificationService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

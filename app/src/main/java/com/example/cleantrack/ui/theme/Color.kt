@@ -15,3 +15,11 @@ val Green = Color(0xFF63BB5A)
 val Red = Color(0xFFFF0000)
 val ButtonColor = listOf(Color(0xFF58A9E6), Color(0xFF61C947))
 val TextBoxColor = Color(0xFFDAEEDF)
+
+// Custom colors derived from the image
+val PrimaryGreen = Color(0xFF4CAF50)
+val DarkGreen = Color(0xFF2E7D32)
+val AccentRed = Color(0xFFF44336)
+val AccentLinkGreen = Color(0xFF43A047)
+val BackgroundLightGray = Color(0xFFF5F5F5)
+val Transparent = Color(0x0000000)
