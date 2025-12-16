@@ -6,6 +6,12 @@ data class UserModel(
     val number : String = "",
     val role : String = "USER",
     val userId : String = "",
+
+//    location model updated
+
+    val latitude : Double? = null,
+    val longitude : Double? = null,
+
 ){
     fun toMap() : Map<String, Any?>{
         return mapOf(
@@ -15,6 +21,8 @@ data class UserModel(
             "number" to number,
             "role" to role,
             "userId" to userId,
+            "latitude" to latitude,
+            "longitude" to longitude
         )
 
     }
