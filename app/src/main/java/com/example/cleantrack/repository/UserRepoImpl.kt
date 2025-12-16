@@ -144,7 +144,7 @@ class UserRepoImpl : UserRepo{
             .addOnCompleteListener {
                 if (it.isSuccessful){
 
-                    callback(true, "Registration success")
+                    callback(true, "Registration successful. Now confirm your location.")
 
                 }else{
                     callback(false, "${it.exception?.message}")
@@ -252,6 +252,27 @@ class UserRepoImpl : UserRepo{
                     callback(true, "User Account Deleted")
                 }else{
                     callback(false, "${it.exception?.message}")
+                }
+            }
+    }
+
+    override fun saveUserLocation(
+        userId: String,
+        latitude: Double,
+        longitude: Double,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val loactionUpdates = mapOf<String, Any?>(
+            "latitude" to latitude,
+            "longitude" to longitude
+        )
+
+        ref.child(userId).updateChildren(loactionUpdates)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "User location saved successfully.")
+                } else {
+                    callback(false, "Failed to save location: ${it.exception?.message}")
                 }
             }
     }

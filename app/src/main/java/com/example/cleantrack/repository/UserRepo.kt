@@ -21,4 +21,6 @@ interface UserRepo {
     fun editUserProfile(userId: String, model: UserModel, callback: (Boolean, String) -> Unit)
 
     fun deleteUser(userId: String, callback: (Boolean, String) -> Unit)
+
+    fun saveUserLocation(userId: String, latitude : Double, longitude : Double, callback: (Boolean, String) -> Unit)
 }
