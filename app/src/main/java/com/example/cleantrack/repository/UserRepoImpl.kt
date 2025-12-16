@@ -171,7 +171,7 @@ class UserRepoImpl : UserRepo{
         callback: (Boolean, String, UserModel?) -> Unit
     ) {
 
-        ref.child(userId).addValueEventListener(object : ValueEventListener{
+        ref.child(userId).addListenerForSingleValueEvent(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
 
                 if(snapshot.exists()){

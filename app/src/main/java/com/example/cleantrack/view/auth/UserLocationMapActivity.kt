@@ -90,6 +90,11 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
     val context = LocalContext.current
     val activity = context as ComponentActivity
 
+    // 1. Retrieve the flag
+    val isNewRegistration = remember {
+        activity.intent.getBooleanExtra("IS_NEW_REGISTRATION", false)
+    }
+
     // --- FIX: Get userId directly from the Intent ---
     // The activity's intent is available immediately.
     val userId = remember {
@@ -345,28 +350,19 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
 
                         Button(
                             onClick = {
-                                userViewModel.saveUserLocation(
+                                userViewModel.saveLocationAndFinalNavigate(
                                     userId = userId,
                                     latitude = currentLat,
-                                    longitude = currentLon
-                                ){success, message ->
-                                    if(success){
-
-                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                        Log.d("LocationSave", "Location saved for $userId: $currentLat, $currentLon")
-
-                                        // 2. Navigate to LoginActivity
-                                        val intent = Intent(context, LoginActivity::class.java)
-
-                                        context.startActivity(intent)
-
-                                        activity.finish()
-                                    }else{
-
-                                        Toast.makeText(context, "Error saving location: $message", Toast.LENGTH_LONG).show()
-                                        Log.e("LocationSave", "Failed to save location: $message")
-
+                                    longitude = currentLon,
+                                    isNewRegistration = isNewRegistration, // <-- PASS THE FLAG
+                                    context = context,
+                                    activity = activity
+                                ) { success, message ->
+                                    if (!success) {
+                                        // Show error toast only if saving/navigation failed
+                                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                                     }
+                                    // Success toasts/navigation are handled inside the ViewModel
                                 }
 
                             },

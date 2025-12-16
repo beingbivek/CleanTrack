@@ -372,6 +372,8 @@ fun RegisterBody( ) {
                                                     UserLocationMapActivity::class.java)
                                                     .apply {
                                                         putExtra("userId", userId)
+
+                                                        putExtra("IS_NEW_REGISTRATION", true)
                                                     }
 
                                                 context.startActivity(intent)

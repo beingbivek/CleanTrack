@@ -10,6 +10,7 @@ import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.UserRepo
 import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.view.admin.AdminDashboardActivity
+import com.example.cleantrack.view.auth.LoginActivity
 import com.example.cleantrack.view.auth.UserLocationMapActivity
 import com.example.cleantrack.view.driver.DriverDashboardActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
@@ -103,8 +104,68 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
     }
 
-    fun saveUserLocation(userId: String, latitude : Double, longitude : Double, callback: (Boolean, String) -> Unit){
-        repo.saveUserLocation(userId, latitude, longitude, callback)
+    fun navigateToDashboardByRole(
+        userModel: UserModel,
+        context: Context,
+        activity: Activity
+    ) {
+        val destinationActivity = when (userModel.role) {
+            "ADMIN" -> AdminDashboardActivity::class.java
+            "DRIVER" -> DriverDashboardActivity::class.java
+            "USER" -> UserDashboardActivity::class.java
+            else -> UserDashboardActivity::class.java
+        }
+
+        val intent = Intent(context, destinationActivity).apply {
+            // Essential: Clear the back stack to prevent users from returning to Login/Map
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        context.startActivity(intent)
+        activity.finish()
+    }
+
+
+    fun saveLocationAndFinalNavigate(
+        userId: String,
+        latitude: Double,
+        longitude: Double,
+        isNewRegistration: Boolean, // <-- FLAG to differentiate the two flows
+        context: Context,
+        activity: Activity,
+        callback: (Boolean, String) -> Unit
+    ) {
+        // 1. Save the location (Fixing the callback syntax issue here)
+        // NOTE: This assumes your repo.saveUserLocation callback is (Boolean, String) -> Unit
+        repo.saveUserLocation(userId, latitude, longitude) { success, message ->
+            if (success) {
+
+                if (isNewRegistration) {
+                    // SCENARIO 1: Coming from Registration (Requirement 1)
+                    val intent = Intent(context, LoginActivity::class.java)
+                    context.startActivity(intent)
+                    activity.finish()
+                    callback(true, "Location saved. Please login to complete registration.")
+
+                } else {
+                    // SCENARIO 2: Coming from Login (Requirement 2)
+
+                    // Fetch the full user model to get the role
+                    repo.getUserById(userId) { fetchSuccess, fetchMessage, userModel ->
+                        if (fetchSuccess && userModel != null) {
+                            // Navigate based on the fetched role directly to the dashboard
+                            navigateToDashboardByRole(userModel, context, activity)
+                            callback(true, "Location saved and navigating to your dashboard.")
+                        } else {
+                            // Fallback
+                            callback(false, "Location saved but failed to fetch user profile. Please restart the app.")
+                        }
+                    }
+                }
+            } else {
+                // Location save failed
+                callback(false, message)
+            }
+        }
     }
 
     fun checkAndNavigateAfterLogin(userId: String, context : Context, activity : Activity){
@@ -121,6 +182,8 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
                     val intent = Intent(context, UserLocationMapActivity::class.java)
                         .apply {
                             putExtra("userId", userId)
+
+                            putExtra("IS_NEW_REGISTRATION", false)
                         }
 
                     context.startActivity(intent)
