@@ -1,6 +1,7 @@
 package com.example.cleantrack.view.auth
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -365,6 +366,19 @@ fun RegisterBody( ) {
                                             if (success){
 
                                                 AppUtil.showToast(context , message )
+
+//                                                Updated for map location
+                                                val intent = Intent(context,
+                                                    UserLocationMapActivity::class.java)
+                                                    .apply {
+                                                        putExtra("userId", userId)
+
+                                                        putExtra("IS_NEW_REGISTRATION", true)
+                                                    }
+
+                                                context.startActivity(intent)
+
+                                                activity.finish()
 
                                             }else{
                                                 AppUtil.showToast(context , message )

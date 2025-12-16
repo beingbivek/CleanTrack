@@ -23,7 +23,7 @@ class UserRepoImpl : UserRepo{
     override fun login(
         email: String,
         password: String,
-        callback: (Boolean, String?, String?) -> Unit
+        callback: (Boolean, String?, String?, String?) -> Unit
     ) {
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener {
@@ -40,24 +40,24 @@ class UserRepoImpl : UserRepo{
                                     val role = snapshot.getValue(String::class.java)
 
                                     if (role != null){
-                                        callback(true, "login successfull",role)
+                                        callback(true, "login successfull",role, userId)
                                     }else{
-                                        callback(false, "Login successful, but user role not defined.", null)
+                                        callback(false, "Login successful, but user role not defined.", null, null)
                                     }
 
                                 }
                                 .addOnFailureListener { e ->
-                                    callback(false, "Login successful, but failed to fetch role: ${e.localizedMessage}", null)
+                                    callback(false, "Login successful, but failed to fetch role: ${e.localizedMessage}", null, null)
                                 }
 
                         }
                         else {
-                            callback(false, "Login successful, but userID is missing.", null)
+                            callback(false, "Login successful, but userID is missing.", null, null)
                         }
 
 
                     }else{
-                        callback(false, "${it.exception?.message}", null)
+                        callback(false, "${it.exception?.message}", null, null)
                     }
                 }
     }
@@ -144,7 +144,7 @@ class UserRepoImpl : UserRepo{
             .addOnCompleteListener {
                 if (it.isSuccessful){
 
-                    callback(true, "Registration success")
+                    callback(true, "Registration successful. Now confirm your location.")
 
                 }else{
                     callback(false, "${it.exception?.message}")
@@ -171,7 +171,7 @@ class UserRepoImpl : UserRepo{
         callback: (Boolean, String, UserModel?) -> Unit
     ) {
 
-        ref.child(userId).addValueEventListener(object : ValueEventListener{
+        ref.child(userId).addListenerForSingleValueEvent(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
 
                 if(snapshot.exists()){
@@ -252,6 +252,27 @@ class UserRepoImpl : UserRepo{
                     callback(true, "User Account Deleted")
                 }else{
                     callback(false, "${it.exception?.message}")
+                }
+            }
+    }
+
+    override fun saveUserLocation(
+        userId: String,
+        latitude: Double,
+        longitude: Double,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val loactionUpdates = mapOf<String, Any?>(
+            "latitude" to latitude,
+            "longitude" to longitude
+        )
+
+        ref.child(userId).updateChildren(loactionUpdates)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "User location saved successfully.")
+                } else {
+                    callback(false, "Failed to save location: ${it.exception?.message}")
                 }
             }
     }
