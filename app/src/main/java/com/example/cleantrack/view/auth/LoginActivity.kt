@@ -131,15 +131,13 @@ fun LoginBody() {
                     userViewModel.signInWithGoogle(idToken ){
                         Success, errorMessage, role ->
                         if (Success){
-                            val destinationActivity = when (role) {
-                                "ADMIN" -> AdminDashboardActivity::class.java
-                                "DRIVER" -> DriverDashboardActivity::class.java // Use DriverDashboardActivity
-                                "USER" -> UserDashboardActivity::class.java
-                                else -> UserDashboardActivity::class.java
+
+                            val userId = account.id
+                            if (userId != null) {
+                                userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
+                            } else {
+                                AppUtil.showToast(context, "Google Sign-In successful, but Firebase UID is missing.")
                             }
-                            val intent = Intent(context, destinationActivity)
-                            context.startActivity(intent)
-                            activity.finish()
 
                         }else{
                             AppUtil.showToast(context, errorMessage ?: "Google Sign-In failed.")
@@ -300,21 +298,14 @@ fun LoginBody() {
                 Button(
                     onClick = {
                        userViewModel.login(email, password){
-                           Success, errorMessage, role->
+                           Success, errorMessage, role, userId->
                            if (Success){
 
-                               val destinationActivity = when (role){
-                                   "ADMIN"-> AdminDashboardActivity::class.java
-                                   "DRIVER"-> DriverDashboardActivity::class.java
-                                   "USER"-> UserDashboardActivity::class.java
-                                   else -> UserDashboardActivity::class.java
-
+                               if (userId != null) {
+                                   userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
+                               } else {
+                                   AppUtil.showToast(context, "Login successful, but User ID is missing.")
                                }
-
-                               val intent = Intent(context, destinationActivity)
-
-                               context.startActivity(intent)
-                               activity.finish()
 
 
 

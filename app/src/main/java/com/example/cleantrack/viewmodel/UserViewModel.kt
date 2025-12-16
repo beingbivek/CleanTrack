@@ -1,15 +1,23 @@
 package com.example.cleantrack.viewmodel
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.UserRepo
+import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.view.admin.AdminDashboardActivity
+import com.example.cleantrack.view.auth.UserLocationMapActivity
+import com.example.cleantrack.view.driver.DriverDashboardActivity
+import com.example.cleantrack.view.user.UserDashboardActivity
 import com.google.firebase.firestore.auth.User
 
 class UserViewModel(val repo : UserRepo) : ViewModel() {
 
-    fun login(email : String , password : String , callback : (Boolean, String?, String?)-> Unit){
+    fun login(email : String , password : String , callback : (Boolean, String?, String?, String?)-> Unit){
                 repo.login(email, password, callback)
     }
 
@@ -97,5 +105,47 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
     fun saveUserLocation(userId: String, latitude : Double, longitude : Double, callback: (Boolean, String) -> Unit){
         repo.saveUserLocation(userId, latitude, longitude, callback)
+    }
+
+    fun checkAndNavigateAfterLogin(userId: String, context : Context, activity : Activity){
+        repo.getUserById(userId){
+            success, message, userModel ->
+            if (success && userModel != null){
+//                val destinationActivity: Class<*>
+
+                // Check if location fields are null/missing
+                val locationMissing = userModel.latitude == null || userModel.longitude == null
+
+                if (locationMissing){
+
+                    val intent = Intent(context, UserLocationMapActivity::class.java)
+                        .apply {
+                            putExtra("userId", userId)
+                        }
+
+                    context.startActivity(intent)
+                    activity.finish()
+
+                }else{
+
+                    val destinationActivity = when(userModel.role){
+                        "ADMIN" -> AdminDashboardActivity::class.java
+                        "DRIVER" -> DriverDashboardActivity::class.java
+                        "USER" -> UserDashboardActivity::class.java
+                        else -> UserDashboardActivity::class.java
+                    }
+
+                    val intent = Intent(context, destinationActivity)
+
+                    context.startActivity(intent)
+
+                    activity.finish()
+                }
+
+            }else{
+                // Failed to fetch user data after successful login
+                AppUtil.showToast(context, "Login succeeded but failed to fetch user profile: $message")
+            }
+        }
     }
 }
