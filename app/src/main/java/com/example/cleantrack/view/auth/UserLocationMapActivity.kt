@@ -3,8 +3,10 @@ package com.example.cleantrack.view.auth
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -30,8 +32,10 @@ import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.cleantrack.model.MapSearchResultModel
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.util.ApiTokenUtil
+import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
@@ -49,10 +53,14 @@ import org.maplibre.android.maps.MapView
 private var mapViewState: MapView? = null
 
 class UserLocationMapActivity : ComponentActivity() {
+
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         MapLibre.getInstance(applicationContext)
+
         setContent { MapViewComposable(savedInstanceState) }
     }
 
@@ -76,7 +84,24 @@ fun hasLocationPermission(context: Context): Boolean {
 @SuppressLint("MissingPermission")
 @Composable
 fun MapViewComposable(savedInstanceState: Bundle?) {
+
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
     val context = LocalContext.current
+    val activity = context as ComponentActivity
+
+    // --- FIX: Get userId directly from the Intent ---
+    // The activity's intent is available immediately.
+    val userId = remember {
+        activity.intent.getStringExtra("userId")
+            ?: run {
+                // If ID is truly missing, finish the activity and show an error.
+                Toast.makeText(context, "Error: User ID is missing. Cannot save location.", Toast.LENGTH_LONG).show()
+                activity.finish()
+                "" // Return empty string as a placeholder, though activity is finishing.
+            }
+    }
+
     val scope = rememberCoroutineScope()
 
     var currentLat by remember { mutableStateOf(27.7172) }
@@ -320,7 +345,30 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
 
                         Button(
                             onClick = {
-                                Toast.makeText(context, "Location Confirmed:\nLat: $currentLat\nLon: $currentLon", Toast.LENGTH_SHORT).show()
+                                userViewModel.saveUserLocation(
+                                    userId = userId,
+                                    latitude = currentLat,
+                                    longitude = currentLon
+                                ){success, message ->
+                                    if(success){
+
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        Log.d("LocationSave", "Location saved for $userId: $currentLat, $currentLon")
+
+                                        // 2. Navigate to LoginActivity
+                                        val intent = Intent(context, LoginActivity::class.java)
+
+                                        context.startActivity(intent)
+
+                                        activity.finish()
+                                    }else{
+
+                                        Toast.makeText(context, "Error saving location: $message", Toast.LENGTH_LONG).show()
+                                        Log.e("LocationSave", "Failed to save location: $message")
+
+                                    }
+                                }
+
                             },
                             modifier = Modifier.weight(1f).background(Brush.horizontalGradient(ButtonColor), shape = RoundedCornerShape(12.dp)),
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)

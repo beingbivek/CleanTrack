@@ -94,4 +94,8 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
         repo.deleteUser(userId, callback)
 
     }
+
+    fun saveUserLocation(userId: String, latitude : Double, longitude : Double, callback: (Boolean, String) -> Unit){
+        repo.saveUserLocation(userId, latitude, longitude, callback)
+    }
 }
