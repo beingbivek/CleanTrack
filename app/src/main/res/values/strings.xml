@@ -16,4 +16,5 @@
     <string name="title_activity_user_address_activtiy">UserAddressActivtiy</string>
     <string name="title_activity_error">ErrorActivity</string>
     <string name="title_activity_admin_route_setup">AdminRouteSetupActivity</string>
+    <string name="title_activity_admin_privacy_policy">AdminPrivacyPolicyActivity</string>
 </resources>
