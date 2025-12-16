@@ -13,7 +13,7 @@ import com.example.cleantrack.view.admin.AdminDashboardActivity
 import com.example.cleantrack.view.auth.UserLocationMapActivity
 import com.example.cleantrack.view.driver.DriverDashboardActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
-import com.google.firebase.firestore.auth.User
+
 
 class UserViewModel(val repo : UserRepo) : ViewModel() {
 

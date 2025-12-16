@@ -1,4 +1,4 @@
-package com.example.cleantrack.model
+package com.example.cleantrack.model.map
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize

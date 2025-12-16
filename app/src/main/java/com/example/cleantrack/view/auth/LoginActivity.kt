@@ -66,9 +66,6 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.view.admin.AdminDashboardActivity
-import com.example.cleantrack.view.driver.DriverDashboardActivity
-import com.example.cleantrack.view.user.UserDashboardActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions

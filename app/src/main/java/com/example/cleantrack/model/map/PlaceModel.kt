@@ -1,4 +1,4 @@
-package com.example.cleantrack.model
+package com.example.cleantrack.model.map
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
@@ -16,4 +16,3 @@ data class PlaceModel(
     var type: String?,
     var tags: List<String>?
 ) : Parcelable
-

@@ -5,10 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cleantrack.model.DistrictModel
-import com.example.cleantrack.model.MunicipalityModel
-import com.example.cleantrack.model.MunicipalityDetailModel
-import com.example.cleantrack.model.ProvinceModel
+import com.example.cleantrack.model.useraddress.DistrictModel
+import com.example.cleantrack.model.useraddress.MunicipalityModel
+import com.example.cleantrack.model.useraddress.MunicipalityDetailModel
+import com.example.cleantrack.model.useraddress.ProvinceModel
 import com.example.cleantrack.repository.UserAddressApiRepo
 import kotlinx.coroutines.launch
 
