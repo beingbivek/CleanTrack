@@ -9,8 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.cleantrack.model.LatLngPoint
-import com.example.cleantrack.model.RouteModel
+import com.example.cleantrack.model.map.LatLngPoint
+import com.example.cleantrack.model.map.RouteModel
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.util.ApiTokenUtil
 import com.example.cleantrack.viewmodel.RouteViewModel

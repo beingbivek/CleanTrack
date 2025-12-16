@@ -1,4 +1,4 @@
-package com.example.cleantrack.model
+package com.example.cleantrack.model.map
 
 data class LatLngPoint(
     val lat: Double = 0.0,
