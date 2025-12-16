@@ -1,9 +1,9 @@
 package com.example.cleantrack.repository
 
-import com.example.cleantrack.model.DistrictModel
-import com.example.cleantrack.model.MunicipalityModel
-import com.example.cleantrack.model.MunicipalityDetailModel
-import com.example.cleantrack.model.ProvinceModel
+import com.example.cleantrack.model.useraddress.DistrictModel
+import com.example.cleantrack.model.useraddress.MunicipalityModel
+import com.example.cleantrack.model.useraddress.MunicipalityDetailModel
+import com.example.cleantrack.model.useraddress.ProvinceModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit

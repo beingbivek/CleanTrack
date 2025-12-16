@@ -1,7 +1,7 @@
 package com.example.cleantrack.repository
 
-import com.example.cleantrack.model.RouteAssignmentModel
-import com.example.cleantrack.model.RouteModel
+import com.example.cleantrack.model.map.RouteAssignmentModel
+import com.example.cleantrack.model.map.RouteModel
 import kotlinx.coroutines.flow.Flow
 
 interface RouteRepo {

@@ -1,4 +1,4 @@
-package com.example.cleantrack.model
+package com.example.cleantrack.model.map
 
 data class MapSearchResultModel(
     val placeId: Int,

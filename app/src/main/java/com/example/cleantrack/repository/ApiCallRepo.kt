@@ -1,6 +1,6 @@
 package com.example.cleantrack.repository
 
-import com.example.cleantrack.model.PlaceAPIResponseModel
+import com.example.cleantrack.model.map.PlaceAPIResponseModel
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 

@@ -29,7 +29,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.cleantrack.model.MapSearchResultModel
+import com.example.cleantrack.model.map.MapSearchResultModel
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.util.ApiTokenUtil
 import com.google.android.gms.location.*

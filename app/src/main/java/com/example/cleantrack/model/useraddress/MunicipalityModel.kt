@@ -1,4 +1,4 @@
-package com.example.cleantrack.model
+package com.example.cleantrack.model.useraddress
 
 data class MunicipalityModel(
     val id: Int,

@@ -2,8 +2,8 @@ package com.example.cleantrack.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cleantrack.model.RouteAssignmentModel
-import com.example.cleantrack.model.RouteModel
+import com.example.cleantrack.model.map.RouteAssignmentModel
+import com.example.cleantrack.model.map.RouteModel
 import com.example.cleantrack.repository.RouteRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
