@@ -2,8 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Internet Permission -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Location Permission -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- Location Permission -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -16,6 +15,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
+        <activity
+            android:name=".view.admin.AdminPrivacyPolicyActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_privacy_policy"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.PrivacyPolicyActivity"
+            android:exported="false"
+            android:label="@string/title_activity_privacy_policy"
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"
