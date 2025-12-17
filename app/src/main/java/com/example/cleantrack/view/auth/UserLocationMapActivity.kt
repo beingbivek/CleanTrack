@@ -3,10 +3,8 @@ package com.example.cleantrack.view.auth
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,7 +33,7 @@ import com.example.cleantrack.model.map.MapSearchResultModel
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.util.ApiTokenUtil
-import com.example.cleantrack.viewmodel.UserViewModel
+import com.example.cleantrack.viewModel.UserViewModel
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient

@@ -66,7 +66,8 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.viewmodel.UserViewModel
+
+import com.example.cleantrack.viewModel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -125,22 +126,19 @@ fun LoginBody() {
                 val idToken = account.idToken
                 if (idToken != null){
 
-                    userViewModel.signInWithGoogle(idToken ){
-                        Success, errorMessage, role ->
-                        if (Success){
-
-                            val userId = account.id
-                            if (userId != null) {
-                                userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
-                            } else {
-                                AppUtil.showToast(context, "Google Sign-In successful, but Firebase UID is missing.")
+                    // --- UPDATED CALL HERE ---
+                    userViewModel.signInWithGoogle(idToken, context, activity) { success, errorMessage ->
+                        if (success) {
+                            // If successful, the ViewModel handles navigation (either to Dashboard or Registration).
+                            if (errorMessage != null && errorMessage != "Login successful!") {
+                                AppUtil.showToast(context, errorMessage)
                             }
-
-                        }else{
-                            AppUtil.showToast(context, errorMessage ?: "Google Sign-In failed.")
-
+                        } else {
+                            // Failure to sign in or failure in repo logic
+                            AppUtil.showToast(context, errorMessage ?: "Google Sign-In process failed.")
                         }
                     }
+                    // --- END UPDATED CALL ---
 
                 }else{
                     AppUtil.showToast(context  ,"Google Sign-In token missing.")

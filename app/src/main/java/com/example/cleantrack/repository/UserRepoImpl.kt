@@ -62,7 +62,7 @@ class UserRepoImpl : UserRepo{
                 }
     }
 
-    override fun signInWithGoogle(idToken: String, callback: (Boolean, String?, String?) -> Unit) {
+    override fun signInWithGoogle(idToken: String, callback: (Boolean, String?,UserModel?, String?) -> Unit) {
         val credential = GoogleAuthProvider.getCredential(idToken,null)
 
         auth.signInWithCredential(credential)
@@ -75,16 +75,23 @@ class UserRepoImpl : UserRepo{
 
                         // checks if user document already exists in firestore
 
-                        val roleRefr = ref.child(userId).child("role")
+                        val roleRefr = ref.child(userId)
 
                         roleRefr
                             .get()
                             .addOnSuccessListener { documentSnapshot ->
-                                if(documentSnapshot.exists()){
+                                val userModel = documentSnapshot.getValue(UserModel::class.java)
 
-                                    // user exists, retrieve their role
-                                    val role = documentSnapshot.getValue(String::class.java)
-                                    callback(true, null, role)
+
+                                if(documentSnapshot.exists() && userModel != null){
+
+                                    if (userModel.number.isNullOrEmpty()) {
+                                        // User exists but mandatory field is missing -> Navigate to Registration
+                                        callback(true, null, userModel, null) // success, null, userModel (for pre-fill), null
+                                    } else {
+                                        // User exists and registration is complete -> Proceed to Login/Dashboard
+                                        callback(true, null, null, userModel.role) // success, null, null, role
+                                    }
                                 } else  {
 
                                     // New user : create its firestore document
@@ -99,23 +106,23 @@ class UserRepoImpl : UserRepo{
 
                                     ref.child(userId).setValue(userModel)
                                         .addOnSuccessListener {
-                                           callback (true, null, defaultRole)
+                                           callback (true, null,userModel, defaultRole)
                                         }
                                         .addOnFailureListener { dbError ->
-                                            callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}", null)
+                                            callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}",null, null)
                                         }
                                 }
                             }
                             .addOnFailureListener { fetchError ->
-                                callback(false, "Google sign-in succeeded, but failed to check user document: ${fetchError.localizedMessage}", null)
+                                callback(false, "Google sign-in succeeded, but failed to check user document: ${fetchError.localizedMessage}", null, null)
                             }
 
                     }else{
-                        callback(false, "Google sign-in succeeded, but missing required user details (ID/Email).", null)
+                        callback(false, "Google sign-in succeeded, but missing required user details (ID/Email).", null, null)
                     }
 
                 }else{
-                    callback(false, authTask.exception?.localizedMessage, null)
+                    callback(false, authTask.exception?.localizedMessage, null, null)
                 }
             }
     }

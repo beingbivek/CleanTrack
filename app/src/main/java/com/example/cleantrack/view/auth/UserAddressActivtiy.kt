@@ -36,7 +36,7 @@ import com.example.cleantrack.R
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.White
-import com.example.cleantrack.viewmodel.UserAddressViewModel
+import com.example.cleantrack.viewModel.UserAddressViewModel
 
 class UserAddressActivtiy : ComponentActivity() {
 

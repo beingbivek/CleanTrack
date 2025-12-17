@@ -1,4 +1,4 @@
-package com.example.cleantrack.viewmodel
+package com.example.cleantrack.viewModel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
