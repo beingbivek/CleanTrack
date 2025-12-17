@@ -1,5 +1,11 @@
 package com.example.cleantrack.model
 
+import android.os.Parcelable
+import com.google.firebase.database.Exclude
+import kotlinx.parcelize.Parcelize
+
+
+@Parcelize
 data class UserModel(
     val email : String = "",
     val fullname : String = "",
@@ -12,7 +18,9 @@ data class UserModel(
     val latitude : Double? = null,
     val longitude : Double? = null,
 
-){
+) : Parcelable{
+
+    @Exclude
     fun toMap() : Map<String, Any?>{
         return mapOf(
 

@@ -13,7 +13,7 @@ import com.example.cleantrack.model.map.LatLngPoint
 import com.example.cleantrack.model.map.RouteModel
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.util.ApiTokenUtil
-import com.example.cleantrack.viewmodel.RouteViewModel
+import com.example.cleantrack.viewModel.RouteViewModel
 import org.maplibre.android.MapLibre
 import org.maplibre.android.annotations.Polyline
 import org.maplibre.android.annotations.PolylineOptions

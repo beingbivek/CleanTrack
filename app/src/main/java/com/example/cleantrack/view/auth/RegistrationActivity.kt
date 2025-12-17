@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,29 +63,42 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.viewmodel.UserViewModel
+import com.example.cleantrack.viewModel.UserViewModel
 
 
 class RegistrationActivity : ComponentActivity() {
+
+    // Member variable to hold the model if passed by Google Sign-In
+    private var googleUserModel: UserModel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // 1. CHECK INTENT FOR GOOGLE USER MODEL
+        @Suppress("DEPRECATION")
+        googleUserModel = intent.getParcelableExtra("Google_UserModel")
+
+        // Pass the model to the Composable
         setContent {
-            RegisterBody()
+            RegisterBody(googleUserModel)
         }
     }
 }
 
 
 @Composable
-fun RegisterBody( ) {
+// FIX: The Composable function must accept the parameter passed by the Activity
+fun RegisterBody(googleUserModel: UserModel? = null ) {
 
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
 
-    var fullname by remember { mutableStateOf("") }
-    var number by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+    val isGoogleSignInFlow = googleUserModel != null
+
+    var fullname by remember { mutableStateOf(googleUserModel?.fullname?:"") }
+    var number by remember { mutableStateOf(googleUserModel?.number?:"") }
+    var email by remember { mutableStateOf(googleUserModel?.email?:"") }
     var password by remember { mutableStateOf("") }
     var confirmpassword by remember { mutableStateOf("") }
     var passwordvisibility by remember { mutableStateOf(false) }
@@ -93,6 +107,96 @@ fun RegisterBody( ) {
     val context = LocalContext.current
 
     val activity = context as Activity
+
+    // 3. DEFINE CORE REGISTRATION/UPDATE LOGIC
+    val onRegisterOrUpdate: () -> Unit = myValidationCheck@{ // <-- 1. Define the label here
+
+        // Basic Validation
+        if (fullname.isEmpty() || email.isEmpty() || number.isEmpty()) {
+            AppUtil.showToast(context, "Please fill in Name, Email, and Phone Number.")
+            return@myValidationCheck // <-- 2. Use the label to exit the lambda
+        }
+
+        if (!isGoogleSignInFlow) {
+            // Standard registration requires password validation
+            if (password.isEmpty() || confirmpassword.isEmpty()) {
+                AppUtil.showToast(context, "Please enter and confirm your password.")
+                return@myValidationCheck
+            }
+            if (confirmpassword != password) {
+                AppUtil.showToast(context, "Passwords do not match.")
+                return@myValidationCheck
+            }
+            if (!terms) {
+                AppUtil.showToast(context, "You must agree to the Terms and Conditions.")
+                return@myValidationCheck
+            }
+        }
+
+        if (isGoogleSignInFlow) {
+            // --- GOOGLE SIGN-IN FLOW: UPDATE EXISTING AUTH USER'S DB PROFILE (Req 2 & 3) ---
+
+            // This is safe because if isGoogleSignInFlow is true, googleUserModel is not null
+            val userId = googleUserModel!!.userId
+            val updatedModel = googleUserModel.copy(
+                fullname = fullname,
+                email = email,
+                number = number // This completes the profile required field
+                // Role remains "USER"
+            )
+
+            userViewModel.addUserToDatabase(userId, updatedModel) { success, message ->
+                if (success) {
+                    AppUtil.showToast(context, "Profile Updated. Finding location...")
+
+                    // Navigate to Map Activity
+                    val intent = Intent(context, UserLocationMapActivity::class.java).apply {
+                        putExtra("userId", userId)
+                        // Treat as continuation of login flow (not a brand new registration)
+                        putExtra("IS_NEW_REGISTRATION", false)
+                    }
+                    context.startActivity(intent)
+                    activity.finish()
+                } else {
+                    AppUtil.showToast(context, "Profile update failed: $message")
+                }
+            }
+
+        } else {
+            // --- STANDARD EMAIL/PASSWORD REGISTRATION FLOW ---
+            userViewModel.register(email, password) { success, message, userId ->
+                if (success) {
+                    val model = UserModel(
+                        userId = userId,
+                        email = email,
+                        fullname = fullname,
+                        number = number,
+                        role = "USER"
+                    )
+
+                    userViewModel.addUserToDatabase(userId, model) { addSuccess, addMessage ->
+                        if (addSuccess) {
+                            AppUtil.showToast(context , addMessage )
+
+                            // Navigate to Map Activity
+                            val intent = Intent(context, UserLocationMapActivity::class.java)
+                                .apply {
+                                    putExtra("userId", userId)
+                                    putExtra("IS_NEW_REGISTRATION", true) // New registration
+                                }
+
+                            context.startActivity(intent)
+                            activity.finish()
+                        } else {
+                            AppUtil.showToast(context, addMessage)
+                        }
+                    }
+                } else {
+                    AppUtil.showToast(context, message)
+                }
+            }
+        }
+    }
 
 
 
@@ -111,7 +215,8 @@ fun RegisterBody( ) {
             Spacer(modifier = Modifier.height(50.dp))
 
             Text(
-                "Create A New Account",
+                // Update title based on flow
+                if (isGoogleSignInFlow) "Complete Your Profile" else "Create A New Account",
                 style = TextStyle(
                     textAlign = TextAlign.Center,
                     color = Black,
@@ -186,6 +291,7 @@ fun RegisterBody( ) {
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email
                 ),
+                enabled = !isGoogleSignInFlow, // Disable editing for Google users
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = TextBoxColor,
                     unfocusedContainerColor = TextBoxColor,
@@ -304,95 +410,47 @@ fun RegisterBody( ) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Checkbox(
-                    checked = terms,
-                    onCheckedChange = {
-                        terms = it
-                    },
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = Green,
-                        checkmarkColor = White
+                // Conditional Checkbox (only for standard registration)
+                if (!isGoogleSignInFlow) {
+                    Checkbox(
+                        checked = terms,
+                        onCheckedChange = {
+                            terms = it
+                        },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = Green,
+                            checkmarkColor = White
+                        )
                     )
-                )
+                }
                 Text(buildAnnotatedString {
 
-                    withStyle(SpanStyle(color = Black)){
-                        append("By checking this box, you agree to our")
+                    if (isGoogleSignInFlow) {
+                        withStyle(SpanStyle(color = Black)) {
+                            append("Please fill the phone number to complete your profile.")
+                        }
+                    } else {
+                        // Existing text for standard registration
+                        withStyle(SpanStyle(color = Black)){ append("By checking this box, you agree to our") }
+                        withStyle(SpanStyle(color = Blue)) { append(" Terms and Condition") }
+                        withStyle(SpanStyle(color = Black)) { append(" and") }
+                        withStyle(SpanStyle(color = Blue)) { append(" Privacy Policy") }
                     }
 
-                    withStyle(SpanStyle(color = Blue)) {
-                        append(" Terms and Condition")
+                }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp).clickable {
+                    // Allow navigation to Login only if not in the middle of Google flow completion
+                    if (!isGoogleSignInFlow) {
+                        context.startActivity(Intent(context, LoginActivity::class.java))
+                        activity.finish()
                     }
-
-                    withStyle(SpanStyle(color = Black)) {
-                        append(" and")
-                    }
-
-                    withStyle(SpanStyle(color = Blue)) {
-                        append(" Privacy Policy")
-                    }
-
-                }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+                })
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Button(
-                    onClick = {
-                        when {
-                            confirmpassword != password -> {
-
-                                AppUtil.showToast(context, "Passwords do not match")
-                            }
-
-                            else ->{
-
-                                userViewModel.register(email, password ){
-                                    success, message, userId ->
-                                    if (success){
-
-                                        var model = UserModel(
-                                            userId = userId ,
-                                            email = email,
-                                            fullname = fullname,
-                                            number = number,
-
-
-                                        )
-
-                                        userViewModel.addUserToDatabase(userId, model){
-                                            success, message ->
-                                            if (success){
-
-                                                AppUtil.showToast(context , message )
-
-//                                                Updated for map location
-                                                val intent = Intent(context,
-                                                    UserLocationMapActivity::class.java)
-                                                    .apply {
-                                                        putExtra("userId", userId)
-
-                                                        putExtra("IS_NEW_REGISTRATION", true)
-                                                    }
-
-                                                context.startActivity(intent)
-
-                                                activity.finish()
-
-                                            }else{
-                                                AppUtil.showToast(context , message )
-                                            }
-                                        }
-
-                                    }else{
-                                        AppUtil.showToast(context , message )
-                                    }
-                                }
-
-                            }
-                        }
-                    },
+                    onClick =  onRegisterOrUpdate, // Use the unified function,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
@@ -406,7 +464,11 @@ fun RegisterBody( ) {
                         defaultElevation = 15.dp
                     ),
                 ) {
-                    Text("Sign Up", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text(// Update button text based on flow
+                        if (isGoogleSignInFlow) "Save & Continue" else "Register"
+                        , fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White)
                 }
 
             }
