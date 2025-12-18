@@ -90,7 +90,7 @@ class UserRepoImpl : UserRepo{
                                         callback(true, null, userModel, null) // success, null, userModel (for pre-fill), null
                                     } else {
                                         // User exists and registration is complete -> Proceed to Login/Dashboard
-                                        callback(true, null, null, userModel.role) // success, null, null, role
+                                        callback(true, null, userModel  , userModel.role) // success, null, null, role
                                     }
                                 } else  {
 

@@ -33,7 +33,7 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
         callback: (Boolean, String?) -> Unit // Simplified callback for UI success/failure message
     ){
         repo.signInWithGoogle(idToken) { success, errorMessage, userModel, role ->
-            if (success) {
+            if (success && userModel != null) {
                 if (role != null) {
                     // SCENARIO 1: FULL LOGIN SUCCESS (Existing user with complete profile)
                     // We use checkAndNavigateAfterLogin which handles the location check
