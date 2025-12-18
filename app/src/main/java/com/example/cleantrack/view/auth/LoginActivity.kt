@@ -369,8 +369,13 @@ fun LoginBody() {
             ) {
                 Button(
                     onClick = {
-                        val signIntent = googleSignInClient.signInIntent
-                        googleSignInLauncher.launch(signIntent)
+                        // 1. Sign out of the Google Client first
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            // 2. Once the sign-out is complete, get a fresh Intent
+                            val signIntent = googleSignInClient.signInIntent
+                            // 3. Launch the picker
+                            googleSignInLauncher.launch(signIntent)
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
