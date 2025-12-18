@@ -90,7 +90,7 @@ class UserRepoImpl : UserRepo{
                                         callback(true, null, userModel, null) // success, null, userModel (for pre-fill), null
                                     } else {
                                         // User exists and registration is complete -> Proceed to Login/Dashboard
-                                        callback(true, null, null, userModel.role) // success, null, null, role
+                                        callback(true, null, userModel  , userModel.role) // success, null, null, role
                                     }
                                 } else  {
 
@@ -106,7 +106,7 @@ class UserRepoImpl : UserRepo{
 
                                     ref.child(userId).setValue(userModel)
                                         .addOnSuccessListener {
-                                           callback (true, null,userModel, defaultRole)
+                                           callback (true, null,userModel, null)
                                         }
                                         .addOnFailureListener { dbError ->
                                             callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}",null, null)
