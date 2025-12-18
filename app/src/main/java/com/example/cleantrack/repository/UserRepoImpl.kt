@@ -106,7 +106,7 @@ class UserRepoImpl : UserRepo{
 
                                     ref.child(userId).setValue(userModel)
                                         .addOnSuccessListener {
-                                           callback (true, null,userModel, defaultRole)
+                                           callback (true, null,userModel, null)
                                         }
                                         .addOnFailureListener { dbError ->
                                             callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}",null, null)
