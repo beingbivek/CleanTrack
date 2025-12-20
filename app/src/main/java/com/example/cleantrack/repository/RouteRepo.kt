@@ -5,12 +5,28 @@ import com.example.cleantrack.model.map.RouteModel
 import kotlinx.coroutines.flow.Flow
 
 interface RouteRepo {
-    suspend fun createRoute(route: RouteModel): Result<String>
-    suspend fun updateRoute(route: RouteModel): Result<Unit>
-    suspend fun deleteRoute(routeId: String): Result<Unit>
 
-    fun observeRoutes(): Flow<List<RouteModel>>
+    fun addRoute(
+        model: RouteModel,
+        callback: (Boolean, String) -> Unit
+    )
 
-    suspend fun createAssignment(a: RouteAssignmentModel): Result<String>
-    fun observeAssignmentsForDriver(driverId: String): Flow<List<RouteAssignmentModel>>
+    fun updateRoute(
+        model: RouteModel,
+        callback: (Boolean, String) -> Unit
+    )
+
+    fun deleteRoute(
+        routeId: String,
+        callback: (Boolean, String) -> Unit
+    )
+
+    fun getAllRoutes(
+        callback: (Boolean, String, List<RouteModel>?) -> Unit
+    )
+
+    fun getRouteById(
+        routeId: String,
+        callback: (Boolean, String, RouteModel?) -> Unit
+    )
 }
