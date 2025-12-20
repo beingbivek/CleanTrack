@@ -62,7 +62,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
@@ -77,8 +76,8 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.viewModel.UserAddressViewModel
-import com.example.cleantrack.viewModel.UserViewModel
+import com.example.cleantrack.viewmodel.UserAddressViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 
 
 class RegistrationActivity : ComponentActivity() {

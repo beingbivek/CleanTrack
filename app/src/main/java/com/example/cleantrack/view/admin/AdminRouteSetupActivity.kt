@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.cleantrack.repository.RouteRepoImpl
-import com.example.cleantrack.viewModel.RouteViewModel
+import com.example.cleantrack.viewmodel.RouteViewModel
 
 class AdminRouteSetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,4 +1,4 @@
-package com.example.cleantrack.viewModel
+package com.example.cleantrack.viewmodel
 
 import android.app.Activity
 import android.content.Context

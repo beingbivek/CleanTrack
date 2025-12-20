@@ -1,4 +1,4 @@
-package com.example.cleantrack.viewModel
+package com.example.cleantrack.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
