@@ -33,17 +33,6 @@
             android:label="@string/title_activity_error"
             android:theme="@style/Theme.CleanTrack" />
         <activity
-            android:name=".view.auth.UserAddressActivtiy"
-            android:exported="true"
-            android:label="@string/title_activity_user_address_activtiy"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".view.driver.DriverLocationMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_location_map"

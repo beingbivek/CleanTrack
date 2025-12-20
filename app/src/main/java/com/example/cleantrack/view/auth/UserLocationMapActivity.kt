@@ -33,7 +33,7 @@ import com.example.cleantrack.model.map.MapSearchResultModel
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.util.ApiTokenUtil
-import com.example.cleantrack.viewModel.UserViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
