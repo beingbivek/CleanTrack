@@ -4,20 +4,16 @@ import com.example.cleantrack.model.ActiveTripModel
 
 interface ActiveTripRepo {
 
-    fun startTrip(model: ActiveTripModel, callback: (Boolean, String) -> Unit)
-
-    fun getActiveTripForDriver(
-        driverId: String,
-        callback: (Boolean, String, ActiveTripModel?) -> Unit
-    )
-
-    fun getActiveTripForVehicle(
-        vehicleId: String,
-        callback: (Boolean, String, ActiveTripModel?) -> Unit
-    )
-
-    fun completeTrip(
-        tripId: String,
+    fun startTrip(
+        scheduleId: String,
         callback: (Boolean, String) -> Unit
     )
+
+    fun updateLocation(
+        tripId: String,
+        lat: Double,
+        lng: Double
+    )
+
+    fun endTrip(tripId: String, callback: (Boolean, String) -> Unit)
 }

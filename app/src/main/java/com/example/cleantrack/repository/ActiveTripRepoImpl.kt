@@ -1,121 +1,88 @@
 package com.example.cleantrack.repository
 
 import com.example.cleantrack.model.ActiveTripModel
-import com.google.firebase.database.*
+import com.example.cleantrack.model.ScheduleModel
+import com.google.firebase.database.FirebaseDatabase
 
 class ActiveTripRepoImpl : ActiveTripRepo {
 
-    private val database = FirebaseDatabase.getInstance()
-    private val ref: DatabaseReference = database.getReference("ActiveTrips")
+    private val db = FirebaseDatabase.getInstance()
+    private val tripRef = db.getReference("ActiveTrips")
+    private val scheduleRef = db.getReference("Schedules")
 
     override fun startTrip(
-        model: ActiveTripModel,
+        scheduleId: String,
         callback: (Boolean, String) -> Unit
     ) {
-        // Step 1: Check if driver already has an active trip
-        ref.orderByChild("driverId").equalTo(model.driverId)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(driverSnap: DataSnapshot) {
-                    for (child in driverSnap.children) {
-                        val trip = child.getValue(ActiveTripModel::class.java)
-                        if (trip?.status == "ACTIVE") {
-                            callback(false, "Driver already has an active trip")
-                            return
+
+        scheduleRef.child(scheduleId).get()
+            .addOnSuccessListener { snapshot ->
+                val schedule = snapshot.getValue(ScheduleModel::class.java)
+                    ?: return@addOnSuccessListener callback(false, "Schedule not found")
+
+                // Check if driver already has an active trip
+                tripRef.orderByChild("driverId")
+                    .equalTo(schedule.driverId)
+                    .get()
+                    .addOnSuccessListener { tripSnap ->
+
+                        for (child in tripSnap.children) {
+                            val status = child.child("status").getValue(String::class.java)
+                            if (status == "ACTIVE") {
+                                callback(false, "You already have an active route")
+                                return@addOnSuccessListener
+                            }
                         }
+
+                        // Create trip
+                        val tripId = tripRef.push().key
+                            ?: return@addOnSuccessListener callback(false, "Failed to start trip")
+
+                        val trip = ActiveTripModel(
+                            tripId = tripId,
+                            scheduleId = schedule.scheduleId,
+                            routeId = schedule.routeId,
+                            routeName = schedule.routeName,
+                            driverId = schedule.driverId,
+                            vehicleId = schedule.vehicleId,
+                            vehicleNumber = schedule.vehicleNumber,
+                            startTimestamp = System.currentTimeMillis(),
+                            status = "ACTIVE"
+                        )
+
+                        tripRef.child(tripId).setValue(trip)
+                            .addOnSuccessListener {
+                                callback(true, "Route started")
+                            }
+                            .addOnFailureListener {
+                                callback(false, it.localizedMessage ?: "Failed")
+                            }
                     }
-
-                    // Step 2: Check if vehicle already active
-                    ref.orderByChild("vehicleId").equalTo(model.vehicleId)
-                        .addListenerForSingleValueEvent(object : ValueEventListener {
-                            override fun onDataChange(vehicleSnap: DataSnapshot) {
-                                for (child in vehicleSnap.children) {
-                                    val trip = child.getValue(ActiveTripModel::class.java)
-                                    if (trip?.status == "ACTIVE") {
-                                        callback(false, "Vehicle already has an active trip")
-                                        return
-                                    }
-                                }
-
-                                // Step 3: Create trip
-                                val tripId = ref.push().key
-                                    ?: return callback(false, "Failed to create trip")
-
-                                val finalModel = model.copy(
-                                    tripId = tripId,
-                                    startedAt = System.currentTimeMillis()
-                                )
-
-                                ref.child(tripId).setValue(finalModel)
-                                    .addOnSuccessListener {
-                                        callback(true, "Trip started")
-                                    }
-                                    .addOnFailureListener {
-                                        callback(false, it.localizedMessage ?: "Failed to start trip")
-                                    }
-                            }
-
-                            override fun onCancelled(error: DatabaseError) {
-                                callback(false, error.message)
-                            }
-                        })
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    callback(false, error.message)
-                }
-            })
-    }
-
-    override fun getActiveTripForDriver(
-        driverId: String,
-        callback: (Boolean, String, ActiveTripModel?) -> Unit
-    ) {
-        ref.orderByChild("driverId").equalTo(driverId)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val trip = snapshot.children
-                        .mapNotNull { it.getValue(ActiveTripModel::class.java) }
-                        .firstOrNull { it.status == "ACTIVE" }
-
-                    callback(true, "Fetched", trip)
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    callback(false, error.message, null)
-                }
-            })
-    }
-
-    override fun getActiveTripForVehicle(
-        vehicleId: String,
-        callback: (Boolean, String, ActiveTripModel?) -> Unit
-    ) {
-        ref.orderByChild("vehicleId").equalTo(vehicleId)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val trip = snapshot.children
-                        .mapNotNull { it.getValue(ActiveTripModel::class.java) }
-                        .firstOrNull { it.status == "ACTIVE" }
-
-                    callback(true, "Fetched", trip)
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    callback(false, error.message, null)
-                }
-            })
-    }
-
-    override fun completeTrip(
-        tripId: String,
-        callback: (Boolean, String) -> Unit
-    ) {
-        ref.child(tripId).child("status").setValue("COMPLETED")
-            .addOnSuccessListener {
-                callback(true, "Trip completed")
             }
             .addOnFailureListener {
-                callback(false, it.localizedMessage ?: "Failed to complete trip")
+                callback(false, it.localizedMessage ?: "Error")
+            }
+    }
+
+    override fun updateLocation(tripId: String, lat: Double, lng: Double) {
+        tripRef.child(tripId)
+            .updateChildren(
+                mapOf(
+                    "currentLat" to lat,
+                    "currentLng" to lng
+                )
+            )
+    }
+
+    override fun endTrip(tripId: String, callback: (Boolean, String) -> Unit) {
+        tripRef.child(tripId)
+            .child("status")
+            .setValue("COMPLETED")
+            .addOnSuccessListener {
+                callback(true, "Route completed")
+            }
+            .addOnFailureListener {
+                callback(false, it.localizedMessage ?: "Failed")
             }
     }
 }
