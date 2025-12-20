@@ -6,7 +6,7 @@ data class LatLngPoint(
 )
 
 data class RouteModel(
-    val routeId: String = "",
+    var routeId: String = "",
     val name: String = "",
     val points: List<LatLngPoint> = emptyList(),
     val isActive: Boolean = true,
