@@ -23,4 +23,8 @@ interface UserRepo {
     fun deleteUser(userId: String, callback: (Boolean, String) -> Unit)
 
     fun saveUserLocation(userId: String, latitude : Double, longitude : Double, callback: (Boolean, String) -> Unit)
+
+    fun getAllDrivers(
+        callback: (Boolean, String, List<UserModel>?) -> Unit
+    )
 }

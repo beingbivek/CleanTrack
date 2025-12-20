@@ -1,5 +1,6 @@
 package com.example.cleantrack.viewmodel
 
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleantrack.model.map.RouteAssignmentModel
@@ -9,28 +10,35 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class RouteViewModel(private val repo: RouteRepo) : ViewModel() {
+class RouteViewModel(
+    private val repo: RouteRepo
+) : ViewModel() {
 
-    private val _routes = MutableStateFlow<List<RouteModel>>(emptyList())
-    val routes: StateFlow<List<RouteModel>> = _routes
+    val routes = MutableLiveData<List<RouteModel>>()
+    val route = MutableLiveData<RouteModel?>()
+    val loading = MutableLiveData(false)
 
-    fun startRoutesListener() {
-        viewModelScope.launch {
-            repo.observeRoutes().collect { _routes.value = it }
+    fun loadRoutes() {
+        loading.postValue(true)
+        repo.getAllRoutes { success, _, data ->
+            if (success) routes.postValue(data ?: emptyList())
+            loading.postValue(false)
         }
     }
 
-    fun saveNewRoute(route: RouteModel, onDone: (Boolean, String?) -> Unit) {
-        viewModelScope.launch {
-            val res = repo.createRoute(route)
-            onDone(res.isSuccess, res.exceptionOrNull()?.message)
+    fun getRouteById(routeId: String) {
+        repo.getRouteById(routeId) { success, _, data ->
+            if (success) route.postValue(data)
         }
     }
 
-    fun assignRoute(a: RouteAssignmentModel, onDone: (Boolean, String?) -> Unit) {
-        viewModelScope.launch {
-            val res = repo.createAssignment(a)
-            onDone(res.isSuccess, res.exceptionOrNull()?.message)
-        }
-    }
+    fun addRoute(model: RouteModel, cb: (Boolean, String) -> Unit) =
+        repo.addRoute(model, cb)
+
+    fun updateRoute(model: RouteModel, cb: (Boolean, String) -> Unit) =
+        repo.updateRoute(model, cb)
+
+    fun deleteRoute(routeId: String, cb: (Boolean, String) -> Unit) =
+        repo.deleteRoute(routeId, cb)
 }
+
