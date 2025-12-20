@@ -5,19 +5,39 @@ import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.VehicleModel
 import com.example.cleantrack.repository.VehicleRepo
 
-class VehicleViewModel(val repo: VehicleRepo) : ViewModel() {
+class VehicleViewModel(
+    private val repo: VehicleRepo
+) : ViewModel() {
 
-    private val _vehicles = MutableLiveData<List<VehicleModel>>()
-    val vehicles: MutableLiveData<List<VehicleModel>>
-        get() = _vehicles
+    val vehicles = MutableLiveData<List<VehicleModel>>(emptyList())
+    val vehicle = MutableLiveData<VehicleModel?>()
+    val loading = MutableLiveData(false)
 
-    fun loadVehicles() {
+    fun getAllVehicles() {
+        loading.postValue(true)
         repo.getAllVehicles { success, _, data ->
-            if (success) _vehicles.postValue(data)
+            if (success) vehicles.postValue(data)
+            loading.postValue(false)
+        }
+    }
+
+    fun getVehicleById(vehicleId: String) {
+        loading.postValue(true)
+        repo.getVehicleById(vehicleId) { success, _, data ->
+            if (success) vehicle.postValue(data)
+            loading.postValue(false)
         }
     }
 
     fun addVehicle(model: VehicleModel, callback: (Boolean, String) -> Unit) {
         repo.addVehicle(model, callback)
+    }
+
+    fun updateVehicle(model: VehicleModel, callback: (Boolean, String) -> Unit) {
+        repo.updateVehicle(model, callback)
+    }
+
+    fun deleteVehicle(vehicleId: String, callback: (Boolean, String) -> Unit) {
+        repo.deleteVehicle(vehicleId, callback)
     }
 }
