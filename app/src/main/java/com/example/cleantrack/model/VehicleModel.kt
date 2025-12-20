@@ -1,7 +1,7 @@
 package com.example.cleantrack.model
 
 data class VehicleModel(
-    val vehicleId: String = "",
+    var vehicleId: String = "",
     val vehicleNumber: String = "",
     val type: String = "TRUCK",
     val capacity: String = "",
