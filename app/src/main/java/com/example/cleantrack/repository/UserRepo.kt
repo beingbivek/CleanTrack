@@ -21,4 +21,8 @@ interface UserRepo {
     fun editUserProfile(userId: String, model: UserModel, callback: (Boolean, String) -> Unit)
 
     fun deleteUser(userId: String, callback: (Boolean, String) -> Unit)
+
+    fun getAllDrivers(
+        callback: (Boolean, String, List<UserModel>?) -> Unit
+    )
 }
