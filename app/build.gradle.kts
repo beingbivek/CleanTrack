@@ -78,6 +78,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    implementation("androidx.compose.runtime:runtime-livedata:<compose_version>")
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.0")
+
 
 }
