@@ -23,7 +23,7 @@ class UserRepoImpl : UserRepo{
     override fun login(
         email: String,
         password: String,
-        callback: (Boolean, String?, String?) -> Unit
+        callback: (Boolean, String?, String?, String?) -> Unit
     ) {
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener {
@@ -40,29 +40,29 @@ class UserRepoImpl : UserRepo{
                                     val role = snapshot.getValue(String::class.java)
 
                                     if (role != null){
-                                        callback(true, "login successfull",role)
+                                        callback(true, "login successfull",role, userId)
                                     }else{
-                                        callback(false, "Login successful, but user role not defined.", null)
+                                        callback(false, "Login successful, but user role not defined.", null, null)
                                     }
 
                                 }
                                 .addOnFailureListener { e ->
-                                    callback(false, "Login successful, but failed to fetch role: ${e.localizedMessage}", null)
+                                    callback(false, "Login successful, but failed to fetch role: ${e.localizedMessage}", null, null)
                                 }
 
                         }
                         else {
-                            callback(false, "Login successful, but userID is missing.", null)
+                            callback(false, "Login successful, but userID is missing.", null, null)
                         }
 
 
                     }else{
-                        callback(false, "${it.exception?.message}", null)
+                        callback(false, "${it.exception?.message}", null, null)
                     }
                 }
     }
 
-    override fun signInWithGoogle(idToken: String, callback: (Boolean, String?, String?) -> Unit) {
+    override fun signInWithGoogle(idToken: String, callback: (Boolean, String?,UserModel?, String?) -> Unit) {
         val credential = GoogleAuthProvider.getCredential(idToken,null)
 
         auth.signInWithCredential(credential)
@@ -75,16 +75,23 @@ class UserRepoImpl : UserRepo{
 
                         // checks if user document already exists in firestore
 
-                        val roleRefr = ref.child(userId).child("role")
+                        val roleRefr = ref.child(userId)
 
                         roleRefr
                             .get()
                             .addOnSuccessListener { documentSnapshot ->
-                                if(documentSnapshot.exists()){
+                                val userModel = documentSnapshot.getValue(UserModel::class.java)
 
-                                    // user exists, retrieve their role
-                                    val role = documentSnapshot.getValue(String::class.java)
-                                    callback(true, null, role)
+
+                                if(documentSnapshot.exists() && userModel != null){
+
+                                    if (userModel.number.isNullOrEmpty()) {
+                                        // User exists but mandatory field is missing -> Navigate to Registration
+                                        callback(true, null, userModel, null) // success, null, userModel (for pre-fill), null
+                                    } else {
+                                        // User exists and registration is complete -> Proceed to Login/Dashboard
+                                        callback(true, null, userModel  , userModel.role) // success, null, null, role
+                                    }
                                 } else  {
 
                                     // New user : create its firestore document
@@ -99,23 +106,23 @@ class UserRepoImpl : UserRepo{
 
                                     ref.child(userId).setValue(userModel)
                                         .addOnSuccessListener {
-                                           callback (true, null, defaultRole)
+                                           callback (true, null,userModel, null)
                                         }
                                         .addOnFailureListener { dbError ->
-                                            callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}", null)
+                                            callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}",null, null)
                                         }
                                 }
                             }
                             .addOnFailureListener { fetchError ->
-                                callback(false, "Google sign-in succeeded, but failed to check user document: ${fetchError.localizedMessage}", null)
+                                callback(false, "Google sign-in succeeded, but failed to check user document: ${fetchError.localizedMessage}", null, null)
                             }
 
                     }else{
-                        callback(false, "Google sign-in succeeded, but missing required user details (ID/Email).", null)
+                        callback(false, "Google sign-in succeeded, but missing required user details (ID/Email).", null, null)
                     }
 
                 }else{
-                    callback(false, authTask.exception?.localizedMessage, null)
+                    callback(false, authTask.exception?.localizedMessage, null, null)
                 }
             }
     }
@@ -144,7 +151,7 @@ class UserRepoImpl : UserRepo{
             .addOnCompleteListener {
                 if (it.isSuccessful){
 
-                    callback(true, "Registration success")
+                    callback(true, "Registration successful. Now confirm your location.")
 
                 }else{
                     callback(false, "${it.exception?.message}")
@@ -171,7 +178,7 @@ class UserRepoImpl : UserRepo{
         callback: (Boolean, String, UserModel?) -> Unit
     ) {
 
-        ref.child(userId).addValueEventListener(object : ValueEventListener{
+        ref.child(userId).addListenerForSingleValueEvent(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
 
                 if(snapshot.exists()){
@@ -252,6 +259,27 @@ class UserRepoImpl : UserRepo{
                     callback(true, "User Account Deleted")
                 }else{
                     callback(false, "${it.exception?.message}")
+                }
+            }
+    }
+
+    override fun saveUserLocation(
+        userId: String,
+        latitude: Double,
+        longitude: Double,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val loactionUpdates = mapOf<String, Any?>(
+            "latitude" to latitude,
+            "longitude" to longitude
+        )
+
+        ref.child(userId).updateChildren(loactionUpdates)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "User location saved successfully.")
+                } else {
+                    callback(false, "Failed to save location: ${it.exception?.message}")
                 }
             }
     }

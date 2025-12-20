@@ -4,9 +4,9 @@ import com.example.cleantrack.model.UserModel
 
 interface UserRepo {
 
-    fun login(email : String , password : String , callback : (Boolean, String?, String?)-> Unit)
+    fun login(email : String , password : String , callback : (Boolean, String?, String?,String?)-> Unit)
 
-    fun signInWithGoogle(idToken: String, callback: (Boolean, String?, String?) -> Unit)
+    fun signInWithGoogle(idToken: String, callback: (Boolean, String?, UserModel?, String?) -> Unit)
 
     fun register (email: String, password: String, callback: (Boolean, String, String) -> Unit)
 
@@ -21,6 +21,8 @@ interface UserRepo {
     fun editUserProfile(userId: String, model: UserModel, callback: (Boolean, String) -> Unit)
 
     fun deleteUser(userId: String, callback: (Boolean, String) -> Unit)
+
+    fun saveUserLocation(userId: String, latitude : Double, longitude : Double, callback: (Boolean, String) -> Unit)
 
     fun getAllDrivers(
         callback: (Boolean, String, List<UserModel>?) -> Unit
