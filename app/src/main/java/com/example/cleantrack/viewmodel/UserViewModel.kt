@@ -108,6 +108,18 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
     }
 
+    private val _drivers = MutableLiveData<List<UserModel>?>()
+    val drivers: MutableLiveData<List<UserModel>?>
+        get() = _drivers
+
+    fun getAllDrivers() {
+        repo.getAllDrivers { success, _, data ->
+            if (success) {
+                _drivers.postValue(data)
+            }
+        }
+    }
+
     fun getAllUsers(){
 
 //        _loading.postValue(true)

@@ -8,80 +8,72 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+class RouteRepoImpl : RouteRepo {
 
-class RouteRepoImpl(
-    private val db: FirebaseDatabase = FirebaseDatabase.getInstance()
-) : RouteRepo {
+    private val ref =
+        FirebaseDatabase.getInstance().getReference("Routes")
 
-    // Recommended structure:
-    // routes/{routeId}
-    // routeAssignments/{assignmentId}
-
-    private val routesRef = db.getReference("routes")
-    private val assignmentsRef = db.getReference("routeAssignments")
-
-    override suspend fun createRoute(route: RouteModel): Result<String> = runCatching {
-        val id = routesRef.push().key ?: throw IllegalStateException("Failed to create key")
-        val final = route.copy(
-            routeId = id,
-            createdAt = System.currentTimeMillis()
-        )
-        routesRef.child(id).setValue(final).await()
-        id
+    override fun addRoute(model: RouteModel, callback: (Boolean, String) -> Unit) {
+        model.routeId = ref.push().key ?: ""
+        ref.child(model.routeId).setValue(model).addOnCompleteListener {
+            if (it.isSuccessful)
+                callback(true, "Route added successfully")
+            else
+                callback(false, it.exception?.message ?: "Failed")
+        }
     }
 
-    override suspend fun updateRoute(route: RouteModel): Result<Unit> {
-        TODO("Not yet implemented")
+    override fun updateRoute(model: RouteModel, callback: (Boolean, String) -> Unit) {
+        ref.child(model.routeId).setValue(model).addOnCompleteListener {
+            if (it.isSuccessful)
+                callback(true, "Route updated successfully")
+            else
+                callback(false, it.exception?.message ?: "Failed")
+        }
     }
 
-    override suspend fun deleteRoute(routeId: String): Result<Unit> {
-        TODO("Not yet implemented")
+    override fun deleteRoute(routeId: String, callback: (Boolean, String) -> Unit) {
+        ref.child(routeId).removeValue().addOnCompleteListener {
+            if (it.isSuccessful)
+                callback(true, "Route deleted")
+            else
+                callback(false, it.exception?.message ?: "Failed")
+        }
     }
 
-    override fun observeRoutes(): Flow<List<RouteModel>> = callbackFlow {
-        val listener = object : ValueEventListener {
+    override fun getAllRoutes(callback: (Boolean, String, List<RouteModel>?) -> Unit) {
+        ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val list = snapshot.children.mapNotNull { it.getValue<RouteModel>() }
-                    .filter { it.isActive }
-                trySend(list)
+                val routes = mutableListOf<RouteModel>()
+                snapshot.children.forEach {
+                    it.getValue(RouteModel::class.java)?.let(routes::add)
+                }
+                callback(true, "Routes fetched", routes)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                callback(false, error.message, null)
             }
-        }
-
-        routesRef.addValueEventListener(listener)
-        awaitClose { routesRef.removeEventListener(listener) }
+        })
     }
 
-    override suspend fun createAssignment(a: RouteAssignmentModel): Result<String> = runCatching {
-        val id = assignmentsRef.push().key ?: throw IllegalStateException("Failed to create key")
-        val final = a.copy(
-            assignmentId = id,
-            createdAt = System.currentTimeMillis()
-        )
-        assignmentsRef.child(id).setValue(final).await()
-        id
-    }
+    override fun getRouteById(
+        routeId: String,
+        callback: (Boolean, String, RouteModel?) -> Unit
+    ) {
+        ref.child(routeId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    callback(
+                        true,
+                        "Route fetched",
+                        snapshot.getValue(RouteModel::class.java)
+                    )
+                }
 
-    override fun observeAssignmentsForDriver(driverId: String): Flow<List<RouteAssignmentModel>> = callbackFlow {
-        // Query: routeAssignments where driverId == driverId
-        val query = assignmentsRef.orderByChild("driverId").equalTo(driverId)
-
-        val listener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val list = snapshot.children.mapNotNull { it.getValue<RouteAssignmentModel>() }
-                    .filter { it.isActive }
-                trySend(list)
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
-            }
-        }
-
-        query.addValueEventListener(listener)
-        awaitClose { query.removeEventListener(listener) }
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
     }
 }

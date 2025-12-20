@@ -283,4 +283,30 @@ class UserRepoImpl : UserRepo{
                 }
             }
     }
+
+    override fun getAllDrivers(
+        callback: (Boolean, String, List<UserModel>?) -> Unit
+    ) {
+        ref.orderByChild("role")
+            .equalTo("DRIVER")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+
+                    val list = mutableListOf<UserModel>()
+
+                    for (child in snapshot.children) {
+                        val user = child.getValue(UserModel::class.java)
+                        if (user != null) list.add(user)
+                    }
+
+                    callback(true, "Drivers fetched", list)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
+    }
+
 }
