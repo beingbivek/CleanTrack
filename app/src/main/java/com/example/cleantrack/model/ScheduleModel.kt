@@ -1,7 +1,7 @@
 package com.example.cleantrack.model
 
 data class ScheduleModel(
-    val scheduleId: String = "",
+    var scheduleId: String = "",
     val routeId: String = "",
     val routeName: String = "",
     val vehicleId: String = "",
