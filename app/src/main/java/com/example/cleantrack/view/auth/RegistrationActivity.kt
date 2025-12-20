@@ -35,6 +35,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -606,44 +607,46 @@ fun DropdownField(
         OutlinedTextField(
             value = label,
             onValueChange = {},
+            enabled = false,
             modifier = Modifier
                 .fillMaxWidth()
-                .onGloballyPositioned { coordinates ->
-                    onSizeChange(coordinates.size.toSize())
-                }
+                .onGloballyPositioned { onSizeChange(it.size.toSize()) }
                 .clickable { onExpand() },
-            placeholder = { Text(placeholder) },
-            enabled = false,
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = Green
+                )
+            },
+            textStyle = TextStyle(color = Green),
             trailingIcon = {
                 Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = Green
                 )
-            }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledBorderColor = Green,
+                disabledTextColor = Green,
+                disabledPlaceholderColor = Green,
+                disabledTrailingIconColor = Green
+            )
         )
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { onDismiss() },
-            modifier = Modifier.width(with(LocalDensity.current) { fieldSize.width.toDp() })
+            onDismissRequest = onDismiss,
+            modifier = Modifier.width(
+                with(LocalDensity.current) { fieldSize.width.toDp() }
+            )
         ) {
-            if (items.isEmpty()) {
-                // show a disabled placeholder item
-                DropdownMenuItem(text = { Text("No items") }, onClick = {})
-            } else {
-                items.forEach { item ->
-                    DropdownMenuItem(
-                        text = { Text(item) },
-                        onClick = { onItemSelectedText(item) }
-                    )
-                }
+            items.forEach {
+                DropdownMenuItem(
+                    text = { Text(it, color = Green) },
+                    onClick = { onItemSelectedText(it) }
+                )
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun RegisterPreview(){
-    RegisterBody()
 }
