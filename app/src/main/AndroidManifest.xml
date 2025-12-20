@@ -16,6 +16,41 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
+            android:name=".view.admin.AdminVehicleSetupActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_vehicle_setup"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminVehicleListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_vehicle_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminScheduleListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_schedule_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.UserManagementActivity"
+            android:exported="false"
+            android:label="@string/title_activity_user_management"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminRouteListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_route_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminScheduleSetupActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_schedule_setup"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.DriverRoutineActivity"
+            android:exported="false"
+            android:label="@string/title_activity_driver_routine"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
             android:name=".view.admin.AdminPrivacyPolicyActivity"
             android:exported="false"
             android:label="@string/title_activity_admin_privacy_policy"

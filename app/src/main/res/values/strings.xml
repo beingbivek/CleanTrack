@@ -17,4 +17,11 @@
     <string name="title_activity_error">ErrorActivity</string>
     <string name="title_activity_admin_route_setup">AdminRouteSetupActivity</string>
     <string name="title_activity_admin_privacy_policy">AdminPrivacyPolicyActivity</string>
+    <string name="title_activity_driver_routine">DriverRoutineActivity</string>
+    <string name="title_activity_admin_schedule_setup">AdminScheduleSetupActivity</string>
+    <string name="title_activity_admin_route_list">AdminRouteListActivity</string>
+    <string name="title_activity_user_management">UserManagementActivity</string>
+    <string name="title_activity_admin_schedule_list">AdminScheduleListActivity</string>
+    <string name="title_activity_admin_vehicle_list">AdminVehicleListActivity</string>
+    <string name="title_activity_admin_vehicle_setup">AdminVehicleSetupActivity</string>
 </resources>
