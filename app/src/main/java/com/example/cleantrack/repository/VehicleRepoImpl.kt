@@ -1,25 +1,19 @@
 package com.example.cleantrack.repository
 
-import android.util.Log
 import com.example.cleantrack.model.VehicleModel
 import com.google.firebase.database.*
 
 class VehicleRepoImpl : VehicleRepo {
 
-    private val database = FirebaseDatabase.getInstance()
-    private val ref: DatabaseReference = database.getReference("Vehicles")
+    private val ref = FirebaseDatabase.getInstance().getReference("Vehicles")
 
     override fun addVehicle(model: VehicleModel, callback: (Boolean, String) -> Unit) {
-        val id = ref.push().key ?: return callback(false, "Failed to create vehicle ID")
-
-        val finalModel = model.copy(vehicleId = id)
-
-        ref.child(id).setValue(finalModel)
-            .addOnSuccessListener {
-                callback(true, "Vehicle added")
-            }
-            .addOnFailureListener {
-                callback(false, it.localizedMessage ?: "Failed to add vehicle")
+        model.vehicleId = ref.push().key ?: ""
+        ref.child(model.vehicleId)
+            .setValue(model)
+            .addOnCompleteListener {
+                if (it.isSuccessful) callback(true, "Vehicle added")
+                else callback(false, it.exception?.message ?: "Error")
             }
     }
 
@@ -27,25 +21,53 @@ class VehicleRepoImpl : VehicleRepo {
         ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val list = mutableListOf<VehicleModel>()
-                for (child in snapshot.children) {
-                    val v = child.getValue(VehicleModel::class.java)
-                    if (v != null && v.isActive) list.add(v)
+                snapshot.children.forEach {
+                    it.getValue(VehicleModel::class.java)?.let(list::add)
                 }
-                callback(true, "Vehicles fetched", list)
+                callback(true, "Vehicles loaded", list)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("VehicleRepo", error.message)
                 callback(false, error.message, emptyList())
             }
         })
     }
 
-    override fun deactivateVehicle(vehicleId: String, callback: (Boolean, String) -> Unit) {
-        ref.child(vehicleId).child("isActive").setValue(false)
-            .addOnSuccessListener { callback(true, "Vehicle deactivated") }
-            .addOnFailureListener {
-                callback(false, it.localizedMessage ?: "Failed to deactivate")
+    override fun getVehicleById(
+        vehicleId: String,
+        callback: (Boolean, String, VehicleModel?) -> Unit
+    ) {
+        ref.child(vehicleId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    callback(
+                        snapshot.exists(),
+                        if (snapshot.exists()) "Vehicle loaded" else "Not found",
+                        snapshot.getValue(VehicleModel::class.java)
+                    )
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
+    }
+
+    override fun updateVehicle(model: VehicleModel, callback: (Boolean, String) -> Unit) {
+        ref.child(model.vehicleId)
+            .setValue(model)
+            .addOnCompleteListener {
+                if (it.isSuccessful) callback(true, "Vehicle updated")
+                else callback(false, it.exception?.message ?: "Error")
+            }
+    }
+
+    override fun deleteVehicle(vehicleId: String, callback: (Boolean, String) -> Unit) {
+        ref.child(vehicleId)
+            .removeValue()
+            .addOnCompleteListener {
+                if (it.isSuccessful) callback(true, "Vehicle deleted")
+                else callback(false, it.exception?.message ?: "Error")
             }
     }
 }
