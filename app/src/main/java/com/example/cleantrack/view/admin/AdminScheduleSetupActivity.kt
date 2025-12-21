@@ -1,6 +1,8 @@
 package com.example.cleantrack.view.admin
 
 import android.app.Activity
+import android.app.TimePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -10,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Delete
@@ -30,6 +33,7 @@ import com.example.cleantrack.viewmodel.RouteViewModel
 import com.example.cleantrack.viewmodel.ScheduleViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.viewmodel.VehicleViewModel
+import java.util.Calendar
 
 class AdminScheduleSetupActivity : ComponentActivity() {
 
@@ -172,10 +176,10 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
                     DropdownField(
                         label = "Driver",
                         value = driverName,
-                        options = drivers!!.map { "${it.fullname}"},
+                        options = drivers!!.map { it.fullname },
                         onSelect = { name ->
                             val driver = drivers!!.first {
-                                "${it.fullname}" == name
+                                it.fullname == name
                             }
                             driverId = driver.userId
                             driverName = name
@@ -196,37 +200,49 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
 
 
                 item {
-                    OutlinedTextField(
-                        value = startTime,
-                        onValueChange = {},
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
                                 showTimePicker(context) { time ->
                                     startTime = time
                                 }
-                            },
-                        label = { Text("Start Time") },
-                        readOnly = true
-                    )
+                            }
+                    ) {
+                        OutlinedTextField(
+                            value = startTime,
+                            onValueChange = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Start Time") },
+                            enabled = false,   // 🔴 IMPORTANT
+                            readOnly = true
+                        )
+                    }
                 }
 
 
+
                 item {
-                    OutlinedTextField(
-                        value = endTime,
-                        onValueChange = {},
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
                                 showTimePicker(context) { time ->
                                     endTime = time
                                 }
-                            },
-                        label = { Text("End Time") },
-                        readOnly = true
-                    )
+                            }
+                    ) {
+                        OutlinedTextField(
+                            value = endTime,
+                            onValueChange = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("End Time") },
+                            enabled = false,   // 🔴 IMPORTANT
+                            readOnly = true
+                        )
+                    }
                 }
+
 
 
                 item {
@@ -245,6 +261,16 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
                                 Toast.makeText(context, "Fill all fields", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
+
+                            if (!isEndTimeAfterStart(startTime, endTime)) {
+                                Toast.makeText(
+                                    context,
+                                    "End time must be after start time",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button
+                            }
+
 
                             val model = ScheduleModel(
                                 scheduleId = scheduleId ?: "",
@@ -327,11 +353,11 @@ fun showTimePicker(
     context: android.content.Context,
     onTimeSelected: (String) -> Unit
 ) {
-    val calendar = java.util.Calendar.getInstance()
-    val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
-    val minute = calendar.get(java.util.Calendar.MINUTE)
+    val calendar = Calendar.getInstance()
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+    val minute = calendar.get(Calendar.MINUTE)
 
-    android.app.TimePickerDialog(
+    TimePickerDialog(
         context,
         { _, h, m ->
             val time = String.format("%02d:%02d", h, m)
@@ -341,4 +367,18 @@ fun showTimePicker(
         minute,
         true
     ).show()
+}
+
+fun isEndTimeAfterStart(startTime: String, endTime: String): Boolean {
+    return try {
+        val start = startTime.split(":")
+        val end = endTime.split(":")
+
+        val startMinutes = start[0].toInt() * 60 + start[1].toInt()
+        val endMinutes = end[0].toInt() * 60 + end[1].toInt()
+
+        endMinutes > startMinutes
+    } catch (e: Exception) {
+        false
+    }
 }
