@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,7 +28,9 @@ import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.view.common.ContactSupportActivity
+import com.example.cleantrack.viewModel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 class SettingsActivity : ComponentActivity() {
@@ -145,6 +148,20 @@ fun SettingsBody() {
     var paymentAlerts by remember { mutableStateOf(true) }
     var wasteRatingNotifications by remember { mutableStateOf(true) }
     var municipalityAnnouncements by remember { mutableStateOf(true) }
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    val user = userViewModel.user.observeAsState(null)
+
+    var name by remember { mutableStateOf("") }
+
+    LaunchedEffect(user.value) {
+        user.value?.let {
+            name = it.fullname
+        }
+    }
+
+
+
 
     // 2. State variable for the "Toggle All" switch
     val allNotificationsChecked = truckNearAlerts && pickupReminder && paymentAlerts && wasteRatingNotifications && municipalityAnnouncements
@@ -264,7 +281,10 @@ fun SettingsBody() {
                             Box(modifier = Modifier.clickable() {
                                 val intent = Intent(context, ContactSupportActivity::class.java)
                                 // Pass user details if they exist
-                                intent.putExtra("USER_NAME", currentUser?.uid ?: "")
+                                if (currentUser?.uid != null){
+                                    userViewModel.getUserById(currentUser.uid)
+                                }
+                                intent.putExtra("USER_NAME", name ?: "")
                                 intent.putExtra("USER_EMAIL", currentUser?.email ?: "")
                                 intent.putExtra("IS_LOGGED_IN", true)
                                 context.startActivity(intent)

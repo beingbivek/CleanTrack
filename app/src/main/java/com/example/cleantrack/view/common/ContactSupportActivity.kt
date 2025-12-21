@@ -53,11 +53,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.viewModel.UserViewModel
 
 
 class ContactSupportActivity : ComponentActivity() {
@@ -85,6 +87,7 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
     var selectedOptionText by remember { mutableStateOf("Select Issues") }
     val options = listOf("Option 1", "Option 2", "Others")
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
+
 
 
     Scaffold { padding ->
