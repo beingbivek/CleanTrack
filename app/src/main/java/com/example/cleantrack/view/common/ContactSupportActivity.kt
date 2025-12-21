@@ -64,17 +64,22 @@ class ContactSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Retrieve data from Intent
+        val userName = intent.getStringExtra("USER_NAME") ?: ""
+        val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        val isLoggedIn = intent.getBooleanExtra("IS_LOGGED_IN", false)
+
         setContent {
-            ContactSupportBody()
+            ContactSupportBody(userName,userEmail,isLoggedIn)
         }
     }
 }
 
 
 @Composable
-fun ContactSupportBody() {
-    var fullname by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Boolean) {
+    var fullname by remember { mutableStateOf(initialName) }
+    var email by remember { mutableStateOf(initialEmail) }
     var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionText by remember { mutableStateOf("Select Issues") }
@@ -134,49 +139,37 @@ fun ContactSupportBody() {
 
             OutlinedTextField(
                 value = fullname,
-                onValueChange = { data ->
-                    fullname = data
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
+                onValueChange = { if (!isReadOnly) fullname = it },
+                readOnly = isReadOnly,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
                 shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Enter your full name")
-                },
+                placeholder = { Text("Enter your full name") },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = TextBoxColor,
                     unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
+                    focusedIndicatorColor = if (isReadOnly) Color.Transparent else Green,
                     unfocusedIndicatorColor = Color.Transparent
                 )
-
             )
+
 
             Spacer(modifier = Modifier.height(20.dp))
+
             OutlinedTextField(
                 value = email,
-                onValueChange = { data ->
-                    email = data
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
+                onValueChange = { if (!isReadOnly) email = it },
+                readOnly = isReadOnly,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
                 shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Enter your email")
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email
-                ),
+                placeholder = { Text("Enter your email") },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = TextBoxColor,
                     unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
+                    focusedIndicatorColor = if (isReadOnly) Color.Transparent else Green,
                     unfocusedIndicatorColor = Color.Transparent
                 )
-
             )
+
 
 
             Row(
@@ -305,8 +298,3 @@ fun ContactSupportBody() {
     }
 }
 
-@Preview
-@Composable
-fun ContactSupportPreview(){
-    ContactSupportBody()
-}
