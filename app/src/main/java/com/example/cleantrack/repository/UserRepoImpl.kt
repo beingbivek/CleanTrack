@@ -315,4 +315,12 @@ class UserRepoImpl : UserRepo{
             })
     }
 
+    override fun logout() {
+        auth.signOut()
+    }
+
+    override fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
 }

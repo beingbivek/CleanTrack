@@ -49,7 +49,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.cleantrack.model.VehicleModel
 import com.example.cleantrack.repository.VehicleRepoImpl
-import com.example.cleantrack.view.admin.ui.theme.CleanTrackTheme
+import com.example.cleantrack.ui.theme.CleanTrackTheme
+
 import com.example.cleantrack.viewmodel.VehicleViewModel
 
 class AdminVehicleListActivity : ComponentActivity() {
