@@ -26,7 +26,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -47,6 +50,7 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Transparent
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.view.auth.StartActivity
+import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.viewmodel.UserViewModel
 
 class DriverDashboardActivity : ComponentActivity() {
@@ -76,19 +80,17 @@ fun DriverDashboardScreen(
 
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    LogoutDialog(
+        showDialog = showLogoutDialog,
+        onDismiss = { showLogoutDialog = false },
+        viewModel = userViewModel
+    )
 
     Scaffold (floatingActionButton = {
         FloatingActionButton(onClick = {
-            // 1. Call Sign Out from ViewModel
-            userViewModel.logout()
-
-            // 2. Navigate back to StartActivity
-            val intent = Intent(context, StartActivity::class.java).apply {
-                // Clear the backstack so user can't go back
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            context.startActivity(intent)
-            activity.finish()
+           showLogoutDialog = true
         }) {
             Icon(
                 Icons.Default.Logout,

@@ -45,9 +45,12 @@ import com.example.cleantrack.R
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.viewmodel.UserViewModel
+import androidx.compose.material3.CircularProgressIndicator
 
 class StartActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -82,8 +85,24 @@ fun StartBody() {
 
     // 3. Conditional Rendering
     if (isCheckingSession) {
-        // Show nothing or a background color while checking to avoid flicker
-        Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF7F7F7)))
+        // ✅ THIS IS YOUR "CONTINUED SPLASH"
+        // It keeps the Splash look alive while the logic runs
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF7F7F7)),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Image(
+                    painter = painterResource(R.drawable.app_logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(150.dp)
+                )
+                Spacer(modifier = Modifier.size(50.dp))
+                CircularProgressIndicator(color = Color(0xFF4F96D8))
+            }
+        }
     } else {
 
         Scaffold { padding ->

@@ -28,8 +28,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +46,7 @@ import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.view.auth.StartActivity
+import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.viewmodel.UserViewModel
 
 class UserDashboardActivity : ComponentActivity() {
@@ -64,22 +67,20 @@ fun UserDashboardBody() {
     val activity = context as Activity
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    LogoutDialog(
+        showDialog = showLogoutDialog,
+        onDismiss = { showLogoutDialog = false },
+        viewModel = userViewModel
+    )
 
 //    val privacyText = getLatestPrivacyPolicyDesc()
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                // 1. Call Sign Out from ViewModel
-                userViewModel.logout()
-
-                // 2. Navigate back to StartActivity
-                val intent = Intent(context, StartActivity::class.java).apply {
-                    // Clear the backstack so user can't go back
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
-                context.startActivity(intent)
-                activity.finish()
+                showLogoutDialog = true
             }) {
                Icon(
                    Icons.Default.Logout,
