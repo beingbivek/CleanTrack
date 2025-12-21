@@ -17,7 +17,7 @@ fun LogoutDialog(
     viewModel: UserViewModel
 ) {
     val context = LocalContext.current
-    val activity = context as Activity
+    val activity = context as? Activity
 
     if (showDialog) {
         AlertDialog(
@@ -34,7 +34,7 @@ fun LogoutDialog(
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                     context.startActivity(intent)
-                    activity.finish()
+                    activity?.finish()
                 }) {
                     Text("Yes, Logout")
                 }
