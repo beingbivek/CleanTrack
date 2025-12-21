@@ -90,7 +90,7 @@ class UserRepoImpl : UserRepo{
                                         callback(true, null, userModel, null) // success, null, userModel (for pre-fill), null
                                     } else {
                                         // User exists and registration is complete -> Proceed to Login/Dashboard
-                                        callback(true, null, null, userModel.role) // success, null, null, role
+                                        callback(true, null, userModel  , userModel.role) // success, null, null, role
                                     }
                                 } else  {
 
@@ -106,7 +106,7 @@ class UserRepoImpl : UserRepo{
 
                                     ref.child(userId).setValue(userModel)
                                         .addOnSuccessListener {
-                                           callback (true, null,userModel, defaultRole)
+                                           callback (true, null,userModel, null)
                                         }
                                         .addOnFailureListener { dbError ->
                                             callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}",null, null)
@@ -283,4 +283,30 @@ class UserRepoImpl : UserRepo{
                 }
             }
     }
+
+    override fun getAllDrivers(
+        callback: (Boolean, String, List<UserModel>?) -> Unit
+    ) {
+        ref.orderByChild("role")
+            .equalTo("DRIVER")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+
+                    val list = mutableListOf<UserModel>()
+
+                    for (child in snapshot.children) {
+                        val user = child.getValue(UserModel::class.java)
+                        if (user != null) list.add(user)
+                    }
+
+                    callback(true, "Drivers fetched", list)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
+    }
+
 }

@@ -69,7 +69,7 @@ import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.view.common.ContactSupportActivity
 
-import com.example.cleantrack.viewModel.UserViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -371,8 +371,13 @@ fun LoginBody() {
             ) {
                 Button(
                     onClick = {
-                        val signIntent = googleSignInClient.signInIntent
-                        googleSignInLauncher.launch(signIntent)
+                        // 1. Sign out of the Google Client first
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            // 2. Once the sign-out is complete, get a fresh Intent
+                            val signIntent = googleSignInClient.signInIntent
+                            // 3. Launch the picker
+                            googleSignInLauncher.launch(signIntent)
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()

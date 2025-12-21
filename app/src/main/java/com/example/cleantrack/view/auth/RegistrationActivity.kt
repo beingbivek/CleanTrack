@@ -10,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,15 +19,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -37,9 +46,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -50,9 +62,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleantrack.R
 import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.UserRepoImpl
@@ -63,7 +76,8 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.viewModel.UserViewModel
+import com.example.cleantrack.viewmodel.UserAddressViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 
 
 class RegistrationActivity : ComponentActivity() {
@@ -94,6 +108,8 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
 
+    val addressVM: UserAddressViewModel = viewModel()
+
     val isGoogleSignInFlow = googleUserModel != null
 
     var fullname by remember { mutableStateOf(googleUserModel?.fullname?:"") }
@@ -105,6 +121,22 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
     var confirmpasswordvisibility by remember { mutableStateOf(false) }
     var terms by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    val provinces = addressVM.provinces
+    val districts = addressVM.districts
+    val municipalities = addressVM.municipalities
+    val wards = addressVM.wards
+
+    var provinceFieldSize by remember { mutableStateOf(Size.Zero) }
+    var districtFieldSize by remember { mutableStateOf(Size.Zero) }
+    var municipalityFieldSize by remember { mutableStateOf(Size.Zero) }
+    var wardFieldSize by remember { mutableStateOf(Size.Zero) }
+
+    val expandedProvince = remember { mutableStateOf(false) }
+    val expandedDistrict = remember { mutableStateOf(false) }
+    val expandedMunicipality = remember { mutableStateOf(false) }
+    val expandedWard = remember { mutableStateOf(false) }
+
 
     val activity = context as Activity
 
@@ -199,6 +231,9 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
     }
 
 
+    val scrollState = rememberScrollState()
+
+
 
 
 
@@ -208,6 +243,7 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(scrollState)
                 .background(White),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
@@ -326,6 +362,69 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
                 )
 
             )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            DropdownField(
+                label = addressVM.selectedProvinceName,
+                placeholder = "Select Province",
+                expanded = expandedProvince.value,
+                onExpand = { expandedProvince.value = true },
+                onDismiss = { expandedProvince.value = false },
+                items = provinces.map { it.name },
+                onItemSelectedText = {
+                    provinces.firstOrNull { p -> p.name == it }?.let(addressVM::onProvinceSelected)
+                    expandedProvince.value = false
+                },
+                fieldSize = provinceFieldSize,
+                onSizeChange = { provinceFieldSize = it }
+            )
+
+            DropdownField(
+                label = addressVM.selectedDistrictName,
+                placeholder = "Select District",
+                expanded = expandedDistrict.value,
+                onExpand = { expandedDistrict.value = true },
+                onDismiss = { expandedDistrict.value = false },
+                items = districts.map { it.name },
+                onItemSelectedText = {
+                    districts.firstOrNull { d -> d.name == it }?.let(addressVM::onDistrictSelected)
+                    expandedDistrict.value = false
+                },
+                fieldSize = districtFieldSize,
+                onSizeChange = { districtFieldSize = it }
+            )
+
+            DropdownField(
+                label = addressVM.selectedMunicipalityName,
+                placeholder = "Select Municipality",
+                expanded = expandedMunicipality.value,
+                onExpand = { expandedMunicipality.value = true },
+                onDismiss = { expandedMunicipality.value = false },
+                items = municipalities.map { it.name },
+                onItemSelectedText = {
+                    municipalities.firstOrNull { m -> m.name == it }?.let(addressVM::onMunicipalitySelected)
+                    expandedMunicipality.value = false
+                },
+                fieldSize = municipalityFieldSize,
+                onSizeChange = { municipalityFieldSize = it }
+            )
+
+            DropdownField(
+                label = addressVM.selectedWardName,
+                placeholder = "Select Ward",
+                expanded = expandedWard.value,
+                onExpand = { expandedWard.value = true },
+                onDismiss = { expandedWard.value = false },
+                items = wards,
+                onItemSelectedText = {
+                    addressVM.onWardSelected(it)
+                    expandedWard.value = false
+                },
+                fieldSize = wardFieldSize,
+                onSizeChange = { wardFieldSize = it }
+            )
+
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -487,8 +586,66 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
     }
 }
 
-@Preview
 @Composable
-fun RegisterPreview(){
-    RegisterBody()
+fun DropdownField(
+    label: String,
+    placeholder: String,
+    expanded: Boolean,
+    onExpand: () -> Unit,
+    onDismiss: () -> Unit,
+    items: List<String>,
+    onItemSelectedText: (String) -> Unit,
+    fieldSize: Size,
+    onSizeChange: (Size) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = {},
+            enabled = false,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { onSizeChange(it.size.toSize()) }
+                .clickable { onExpand() },
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = Green
+                )
+            },
+            textStyle = TextStyle(color = Green),
+            trailingIcon = {
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = Green
+                )
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledBorderColor = Green,
+                disabledTextColor = Green,
+                disabledPlaceholderColor = Green,
+                disabledTrailingIconColor = Green
+            )
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = onDismiss,
+            modifier = Modifier.width(
+                with(LocalDensity.current) { fieldSize.width.toDp() }
+            )
+        ) {
+            items.forEach {
+                DropdownMenuItem(
+                    text = { Text(it, color = Green) },
+                    onClick = { onItemSelectedText(it) }
+                )
+            }
+        }
+    }
 }

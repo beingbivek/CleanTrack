@@ -1,4 +1,4 @@
-package com.example.cleantrack.viewModel
+package com.example.cleantrack.viewmodel
 
 import android.app.Activity
 import android.content.Context
@@ -33,7 +33,7 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
         callback: (Boolean, String?) -> Unit // Simplified callback for UI success/failure message
     ){
         repo.signInWithGoogle(idToken) { success, errorMessage, userModel, role ->
-            if (success) {
+            if (success && userModel != null) {
                 if (role != null) {
                     // SCENARIO 1: FULL LOGIN SUCCESS (Existing user with complete profile)
                     // We use checkAndNavigateAfterLogin which handles the location check
@@ -106,6 +106,18 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
             _loading.postValue(false)
         }
 
+    }
+
+    private val _drivers = MutableLiveData<List<UserModel>?>()
+    val drivers: MutableLiveData<List<UserModel>?>
+        get() = _drivers
+
+    fun getAllDrivers() {
+        repo.getAllDrivers { success, _, data ->
+            if (success) {
+                _drivers.postValue(data)
+            }
+        }
     }
 
     fun getAllUsers(){
