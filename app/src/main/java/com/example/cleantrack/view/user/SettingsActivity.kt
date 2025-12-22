@@ -28,9 +28,10 @@ import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.R
+import android.util.Log
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.view.common.ContactSupportActivity
-import com.example.cleantrack.viewModel.UserViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 class SettingsActivity : ComponentActivity() {
@@ -148,19 +149,6 @@ fun SettingsBody() {
     var paymentAlerts by remember { mutableStateOf(true) }
     var wasteRatingNotifications by remember { mutableStateOf(true) }
     var municipalityAnnouncements by remember { mutableStateOf(true) }
-    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-
-    val user = userViewModel.user.observeAsState(null)
-
-    var name by remember { mutableStateOf("") }
-
-    LaunchedEffect(user.value) {
-        user.value?.let {
-            name = it.fullname
-        }
-    }
-
-
 
 
     // 2. State variable for the "Toggle All" switch
@@ -277,18 +265,13 @@ fun SettingsBody() {
                 SettingsCard(
                     items = listOf(
                         {
-                            // BOX wrapper to make the whole row clickable
-                            Box(modifier = Modifier.clickable() {
-                                val intent = Intent(context, ContactSupportActivity::class.java)
-                                // Pass user details if they exist
-                                if (currentUser?.uid != null){
-                                    userViewModel.getUserById(currentUser.uid)
+                            Box(
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(context, ContactSupportActivity::class.java)
+                                    intent.putExtra("USER_ID", currentUser?.uid)
+                                    context.startActivity(intent)
                                 }
-                                intent.putExtra("USER_NAME", name ?: "")
-                                intent.putExtra("USER_EMAIL", currentUser?.email ?: "")
-                                intent.putExtra("IS_LOGGED_IN", true)
-                                context.startActivity(intent)
-                            }) {
+                            ) {
                                 SettingListItem("Contact Support")
                             }
                         },
