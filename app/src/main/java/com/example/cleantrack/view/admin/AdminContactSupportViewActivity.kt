@@ -57,7 +57,7 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
 
     // Filter Logic
     val filteredIssues = issues.filter { issue ->
-        val matchesUserType = if (selectedUserType == "All") true else issue.userType == selectedUserType
+        val matchesUserType = if (selectedUserType == "All") true else issue.userType.trim().equals(selectedUserType, ignoreCase = true)
         val matchesCategory = if (selectedCategory == "All") true else issue.category == selectedCategory
         matchesUserType && matchesCategory
     }
