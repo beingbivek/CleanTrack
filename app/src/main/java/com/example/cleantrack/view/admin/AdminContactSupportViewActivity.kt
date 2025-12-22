@@ -34,6 +34,7 @@ import java.util.*
 class AdminContactSupportViewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Initialize ViewModel with the Repo
         val viewModel = ContactSupportViewModel(ContactSupportRepoImpl())
 
         setContent {
@@ -68,11 +69,11 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(White)
+                .background(Color(0xFFF8F9FA)) // Slight off-white for contrast
         ) {
             if (issues.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Green)
+                    Text("No support tickets found.", color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -83,9 +84,7 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
                     items(issues) { issue ->
                         AdminIssueCard(
                             issue = issue,
-                            onStatusUpdate = { newStatus ->
-                                viewModel.changeStatus(issue, newStatus)
-                            }
+                            viewModel = viewModel
                         )
                     }
                 }
@@ -95,15 +94,15 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
 }
 
 @Composable
-fun AdminIssueCard(issue: ContactSupportModel, onStatusUpdate: (String) -> Unit) {
+fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel) {
     var showReplyField by remember { mutableStateOf(false) }
     var replyText by remember { mutableStateOf("") }
     var statusExpanded by remember { mutableStateOf(false) }
 
     val statusColor = when (issue.status) {
-        "OPEN" -> Color(0xFFE65100) // Orange
-        "REPLIED" -> Color(0xFF0288D1) // Blue
-        "CLOSED" -> Color(0xFF388E3C) // Green
+        "OPEN" -> Color(0xFFE65100)
+        "REPLIED" -> Color(0xFF0288D1)
+        "CLOSED" -> Color(0xFF388E3C)
         else -> Color.Gray
     }
 
@@ -114,7 +113,7 @@ fun AdminIssueCard(issue: ContactSupportModel, onStatusUpdate: (String) -> Unit)
         colors = CardDefaults.cardColors(containerColor = White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header Row
+            // Header: User Details & Status Dropdown
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -125,7 +124,6 @@ fun AdminIssueCard(issue: ContactSupportModel, onStatusUpdate: (String) -> Unit)
                     Text(issue.email, fontSize = 12.sp, color = Color.Gray)
                 }
 
-                // Status Selector Badge
                 Box {
                     Surface(
                         color = statusColor.copy(alpha = 0.1f),
@@ -142,11 +140,18 @@ fun AdminIssueCard(issue: ContactSupportModel, onStatusUpdate: (String) -> Unit)
                     }
 
                     DropdownMenu(expanded = statusExpanded, onDismissRequest = { statusExpanded = false }) {
-                        listOf("OPEN", "REPLIED", "CLOSED").forEach { status ->
+                        // Status Lock Logic: If not OPEN, don't show OPEN as an option
+                        val availableStatuses = if (issue.status == "OPEN") {
+                            listOf("OPEN", "REPLIED", "CLOSED")
+                        } else {
+                            listOf("REPLIED", "CLOSED")
+                        }
+
+                        availableStatuses.forEach { status ->
                             DropdownMenuItem(
                                 text = { Text(status) },
                                 onClick = {
-                                    onStatusUpdate(status)
+                                    viewModel.changeStatus(issue, status)
                                     statusExpanded = false
                                 }
                             )
@@ -155,47 +160,60 @@ fun AdminIssueCard(issue: ContactSupportModel, onStatusUpdate: (String) -> Unit)
                 }
             }
 
-            Divider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp)
 
-            // Category and Message
+            // Issue Content
             Text("Category: ${issue.category}", color = Green, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(4.dp))
             Text(issue.message, fontSize = 14.sp, color = Black)
 
+            // Admin Reply Bubble (The "Where do I see it" part)
+            if (issue.adminReply.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp))
+                        .padding(10.dp)
+                ) {
+                    Text("Admin Reply:", fontWeight = FontWeight.Bold, color = Green, fontSize = 11.sp)
+                    Text(text = issue.adminReply, fontSize = 13.sp, color = Black)
+                }
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Footer
+            // Metadata: Time & UserType
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     text = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(issue.timestamp)),
-                    fontSize = 11.sp,
-                    color = Color.Gray
+                    fontSize = 11.sp, color = Color.Gray
                 )
-
                 Text(
                     text = issue.userType,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp, fontWeight = FontWeight.Bold,
                     color = if(issue.userType == "REGISTERED") Color(0xFF2E7D32) else Color.Gray
                 )
             }
 
-            // Reply UI
+            // Reply Interface
             if (showReplyField) {
                 OutlinedTextField(
                     value = replyText,
                     onValueChange = { replyText = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    placeholder = { Text("Type reply...") },
+                    placeholder = { Text("Type your response...") },
                     shape = RoundedCornerShape(8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = { showReplyField = false }) { Text("Cancel") }
                     Button(
                         onClick = {
-                            onStatusUpdate("REPLIED")
-                            showReplyField = false
-                            replyText = ""
+                            if (replyText.isNotBlank()) {
+                                viewModel.replyToTicket(issue, replyText)
+                                showReplyField = false
+                                replyText = ""
+                            }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Green)
                     ) {
@@ -203,12 +221,13 @@ fun AdminIssueCard(issue: ContactSupportModel, onStatusUpdate: (String) -> Unit)
                     }
                 }
             } else {
+                // If already replied, show "Edit Reply" or just "Reply"
                 TextButton(
                     onClick = { showReplyField = true },
                     modifier = Modifier.align(Alignment.End)
                 ) {
                     Icon(Icons.Default.Reply, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(" Reply")
+                    Text(if (issue.adminReply.isEmpty()) " Reply" else " Update Reply")
                 }
             }
         }
