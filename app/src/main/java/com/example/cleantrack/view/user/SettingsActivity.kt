@@ -28,7 +28,6 @@ import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.R
-import android.util.Log
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.view.common.ContactSupportActivity
 import com.example.cleantrack.viewmodel.UserViewModel
