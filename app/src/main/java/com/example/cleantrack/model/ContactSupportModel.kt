@@ -17,6 +17,7 @@ data class ContactSupportModel(
     val timestamp: Long = System.currentTimeMillis()
 ) : Parcelable {
 
+    @Exclude
     fun toMap(): Map<String, Any?> {
         return mapOf(
             "issueId" to issueId,
