@@ -11,6 +11,7 @@ data class ContactSupportModel(
     val email: String = "",
     val category: String = "",
     val message: String = "",
+    val adminReply: String = "",
     val attachmentUrl: String = "",
     val userType: String = "Guest",
     val status: String = "OPEN",
