@@ -62,6 +62,7 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
     val userVM = remember { UserViewModel(UserRepoImpl()) }
 
     val selectedSchedule by scheduleVM.schedule.observeAsState(null)
+    val schedules by scheduleVM.schedules.observeAsState(null)
     val loading by scheduleVM.loading.observeAsState(false)
 
     val routes by routeVM.routes.observeAsState(emptyList())
@@ -283,6 +284,14 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
                                 startTime = startTime,
                                 endTime = endTime
                             )
+
+                            val conflict = scheduleVM.hasScheduleConflict(model, schedules)
+
+                            if (conflict.first) {
+                                Toast.makeText(context, conflict.second, Toast.LENGTH_LONG).show()
+                                return@Button
+                            }
+
 
                             if (scheduleId == null) {
                                 scheduleVM.addSchedule(model) { success, msg ->
