@@ -49,7 +49,6 @@ fun AdminScheduleListScreen() {
     }
 
     val dVM = remember { UserViewModel(UserRepoImpl()) }
-    dVM.getAllDrivers()
     val drivers by dVM.drivers.observeAsState(emptyList())
 
     val schedules by vm.schedules.observeAsState(emptyList())
@@ -67,9 +66,25 @@ fun AdminScheduleListScreen() {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedScheduleId by remember { mutableStateOf("") }
 
+    val dayOrder = mapOf(
+        "Sunday" to 1,
+        "Monday" to 2,
+        "Tuesday" to 3,
+        "Wednesday" to 4,
+        "Thursday" to 5,
+        "Friday" to 6,
+        "Saturday" to 7
+    )
+
+    val groupedSchedules = schedules!!
+        .groupBy { it.dayOfWeek }
+        .toSortedMap(compareBy { dayOrder[it] ?: 99 })
+
+
     // SAME PATTERN AS ROUTES
     LaunchedEffect(Unit) {
         vm.getAllSchedules()
+        dVM.getAllDrivers()
     }
 
     Scaffold(
@@ -94,31 +109,72 @@ fun AdminScheduleListScreen() {
             ) {
                 CircularProgressIndicator()
             }
+        } else if (schedules!!.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "No schedules found",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Button(onClick = {
+                        context.startActivity(
+                            Intent(context, AdminScheduleSetupActivity::class.java)
+                        )
+                    }) {
+                        Text("Add Schedule")
+                    }
+                }
+            }
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
             ) {
+                groupedSchedules.forEach { (day, daySchedules) ->
 
-                // ✅ EXACT SAME items() USAGE AS ROUTES
-                items(schedules ?: emptyList()) { schedule ->
+                    // 🔹 DAY HEADER
+                    item {
+                        Text(
+                            text = day,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        )
+                    }
 
-                    ScheduleAdminCard(
-                        schedule = schedule,
-                        driverName = driverMap[schedule.driverId] ?: "Unknown",
-                        onEdit = {
-                            val intent =
-                                Intent(context, AdminScheduleSetupActivity::class.java)
-                            intent.putExtra("SCHEDULE_ID", schedule.scheduleId)
-                            context.startActivity(intent)
-                        },
-                        onDelete = {
-                            selectedScheduleId = schedule.scheduleId
-                            showDeleteDialog = true
-                        }
-                    )
+                    // 🔹 SORT BY TIME INSIDE DAY
+                    val sortedDaySchedules = daySchedules.sortedBy { it.startTime }
+
+                    items(sortedDaySchedules) { schedule ->
+                        ScheduleAdminCard(
+                            schedule = schedule,
+                            driverName = driverMap[schedule.driverId] ?: "Unknown",
+                            onEdit = {
+                                val intent = Intent(
+                                    context,
+                                    AdminScheduleSetupActivity::class.java
+                                )
+                                intent.putExtra("SCHEDULE_ID", schedule.scheduleId)
+                                context.startActivity(intent)
+                            },
+                            onDelete = {
+                                selectedScheduleId = schedule.scheduleId
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
                 }
+
             }
         }
     }
