@@ -32,7 +32,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,29 +61,55 @@ import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
-import com.example.cleantrack.viewModel.UserViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 
 
 class ContactSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Retrieve data from Intent
-        val userName = intent.getStringExtra("USER_NAME") ?: ""
-        val userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
-        val isLoggedIn = intent.getBooleanExtra("IS_LOGGED_IN", false)
+        val userId = intent.getStringExtra("USER_ID")
 
         setContent {
-            ContactSupportBody(userName,userEmail,isLoggedIn)
+            ContactSupportScreen(userId)
         }
     }
 }
 
+@Composable
+fun ContactSupportScreen(userId: String?) {
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val user = userViewModel.user.observeAsState(null)
+
+    // Fetch user ONCE
+    LaunchedEffect(userId) {
+        userId?.let {
+            userViewModel.getUserById(it)
+        }
+    }
+
+    val fullname = user.value?.fullname ?: ""
+    val email = user.value?.email ?: ""
+
+    ContactSupportBody(
+        initialName = fullname,
+        initialEmail = email,
+        isReadOnly = userId != null
+    )
+}
+
+
 
 @Composable
 fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Boolean) {
-    var fullname by remember { mutableStateOf(initialName) }
-    var email by remember { mutableStateOf(initialEmail) }
+    var fullname by remember(initialName) {
+        mutableStateOf(initialName)
+    }
+
+    var email by remember(initialEmail) {
+        mutableStateOf(initialEmail)
+    }
+
     var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionText by remember { mutableStateOf("Select Issues") }
