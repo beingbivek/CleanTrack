@@ -50,4 +50,11 @@ class ContactSupportRepoImpl : ContactSupportRepo {
         issuesRef.child(category).child(ticketId).child("status").setValue(newStatus)
             .addOnCompleteListener { callback(it.isSuccessful, if(it.isSuccessful) "Updated" else "Failed") }
     }
+
+    override fun sendAdminReply(model: ContactSupportModel, callback: (Boolean) -> Unit) {
+        issuesRef.child(model.category)
+            .child(model.ticketId)
+            .setValue(model)
+            .addOnCompleteListener { callback(it.isSuccessful) }
+    }
 }

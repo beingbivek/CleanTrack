@@ -16,6 +16,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
+            android:name=".view.admin.AdminContactSupportViewActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_contact_support_view"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.admin.AdminVehicleSetupActivity"
             android:exported="false"
             android:label="@string/title_activity_admin_vehicle_setup"

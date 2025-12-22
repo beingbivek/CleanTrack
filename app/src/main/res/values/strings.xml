@@ -24,4 +24,6 @@
     <string name="title_activity_admin_schedule_list">AdminScheduleListActivity</string>
     <string name="title_activity_admin_vehicle_list">AdminVehicleListActivity</string>
     <string name="title_activity_admin_vehicle_setup">AdminVehicleSetupActivity</string>
+    <string name="title_activity_admin_contact_support_view">AdminContactSupportViewActivity
+    </string>
 </resources>
