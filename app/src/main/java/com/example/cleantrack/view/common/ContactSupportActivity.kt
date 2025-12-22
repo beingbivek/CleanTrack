@@ -1,6 +1,8 @@
 package com.example.cleantrack.view.common
 
+import ContactSupportRepoImpl
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -44,6 +46,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -61,8 +64,8 @@ import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.viewmodel.ContactSupportViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
-
 
 class ContactSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,30 +81,39 @@ class ContactSupportActivity : ComponentActivity() {
 
 @Composable
 fun ContactSupportScreen(userId: String?) {
-    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-    val user = userViewModel.user.observeAsState(null)
+    val supportViewModel = remember { ContactSupportViewModel(ContactSupportRepoImpl()) }
+    val userData by supportViewModel.currentUserData.observeAsState()
 
-    // Fetch user ONCE
-    LaunchedEffect(userId) {
-        userId?.let {
-            userViewModel.getUserById(it)
-        }
+    LaunchedEffect(Unit) {
+        supportViewModel.fetchInitialData()
     }
 
-    val fullname = user.value?.fullname ?: ""
-    val email = user.value?.email ?: ""
+    val fullname = userData?.fullname ?: ""
+    val email = userData?.email ?: ""
+    val userType = userData?.userType ?: "GUEST"
 
     ContactSupportBody(
         initialName = fullname,
         initialEmail = email,
-        isReadOnly = userId != null
+        isReadOnly = userId != null,
+        userId = userId ?: "",
+        userType = userType,
+        viewModel = supportViewModel // Pass ViewModel to handle the submit action
     )
 }
 
 
 
 @Composable
-fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Boolean) {
+fun ContactSupportBody(
+    initialName: String,
+    initialEmail: String,
+    isReadOnly: Boolean,
+    userId: String,
+    userType: String,
+    viewModel: ContactSupportViewModel
+) {
+    val context = LocalContext.current
     var fullname by remember(initialName) {
         mutableStateOf(initialName)
     }
@@ -113,7 +125,15 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
     var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionText by remember { mutableStateOf("Select Issues") }
-    val options = listOf("Option 1", "Option 2", "Others")
+    val issueCategories = listOf(
+        "App & Technical Issues",
+        "Login & Technical Issues",
+        "Service-Related Issues",
+        "Payments & Billing",
+        "Account & Profile",
+        "Location & Map",
+        "Feedback & Others"
+    )
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
 
@@ -236,11 +256,11 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
                         modifier = Modifier
                             .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
                     ) {
-                        options.forEach { option ->
+                        issueCategories.forEach { issueCategories ->
                             DropdownMenuItem(
-                                text = { Text(option) },
+                                text = { Text(issueCategories) },
                                 onClick = {
-                                    selectedOptionText = option
+                                    selectedOptionText = issueCategories
                                     expanded = false
                                 }
                             )
@@ -305,7 +325,25 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                        if (selectedOptionText == "Select Issues" || message.isEmpty()) {
+                            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                        } else {
+                            viewModel.submitTicket(
+                                fullname = fullname,
+                                email = email,
+                                category = selectedOptionText,
+                                message = message,
+                                userId = userId,
+                                userType = userType
+                            ) { success, msg ->
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                if (success) {
+                                    message = ""
+                                }
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)

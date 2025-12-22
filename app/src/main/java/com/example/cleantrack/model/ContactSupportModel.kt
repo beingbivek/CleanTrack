@@ -1,0 +1,18 @@
+package com.example.cleantrack.model
+
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+data class ContactSupportModel(
+    val ticketId: String = "",
+    val userId: String = "",
+    val fullname: String = "",
+    val email: String = "",
+    val category: String = "",
+    val message: String = "",
+    val attachmentUrl: String = "",
+    val userType: String = "Guest",
+    val status: String = "OPEN",
+    val timestamp: Long = System.currentTimeMillis()
+) : Parcelable
