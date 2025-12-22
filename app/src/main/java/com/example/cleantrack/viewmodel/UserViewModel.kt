@@ -260,5 +260,15 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
                 AppUtil.showToast(context, "Login succeeded but failed to fetch user profile: $message")
             }
         }
+
+
+    }
+
+    fun logout(){
+        repo.logout()
+    }
+
+    fun getCurrentUserId(): String?{
+        return repo.getCurrentUserId()
     }
 }

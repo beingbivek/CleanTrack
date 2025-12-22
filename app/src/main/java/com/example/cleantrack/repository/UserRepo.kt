@@ -27,4 +27,8 @@ interface UserRepo {
     fun getAllDrivers(
         callback: (Boolean, String, List<UserModel>?) -> Unit
     )
+
+    fun logout()
+
+    fun getCurrentUserId(): String?
 }
