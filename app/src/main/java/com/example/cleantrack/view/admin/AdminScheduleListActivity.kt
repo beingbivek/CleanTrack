@@ -25,7 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.ScheduleRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.viewmodel.ScheduleViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
+import kotlin.text.get
 
 class AdminScheduleListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,9 +48,21 @@ fun AdminScheduleListScreen() {
         ScheduleViewModel(ScheduleRepoImpl())
     }
 
+    val dVM = remember { UserViewModel(UserRepoImpl()) }
+    dVM.getAllDrivers()
+    val drivers by dVM.drivers.observeAsState(emptyList())
+
     val schedules by vm.schedules.observeAsState(emptyList())
     val loading by vm.loading.observeAsState(false)
     val context = LocalContext.current
+
+    val driverMap = remember(drivers) {
+        drivers!!.associateBy(
+            keySelector = { it.userId },
+            valueTransform = { it.fullname }
+        )
+    }
+
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedScheduleId by remember { mutableStateOf("") }
@@ -91,6 +106,7 @@ fun AdminScheduleListScreen() {
 
                     ScheduleAdminCard(
                         schedule = schedule,
+                        driverName = driverMap[schedule.driverId] ?: "Unknown",
                         onEdit = {
                             val intent =
                                 Intent(context, AdminScheduleSetupActivity::class.java)
@@ -138,6 +154,7 @@ fun AdminScheduleListScreen() {
 @Composable
 fun ScheduleAdminCard(
     schedule: ScheduleModel,
+    driverName: String,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -157,7 +174,7 @@ fun ScheduleAdminCard(
 
             Spacer(Modifier.height(6.dp))
 
-            Text("Driver: ${schedule.driverId}")
+            Text("Driver: " + driverName)
             Text("Vehicle: ${schedule.vehicleNumber}")
             Text("${schedule.dayOfWeek} | ${schedule.startTime} - ${schedule.endTime}")
 
