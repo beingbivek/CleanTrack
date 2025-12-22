@@ -5,14 +5,14 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class ContactSupportModel(
-    val issueId: String = "",
+    val ticketId: String = "",
     val userId: String = "",
-    val userType: String = "GUEST",
     val fullname: String = "",
     val email: String = "",
     val category: String = "",
     val message: String = "",
     val attachmentUrl: String = "",
+    val userType: String = "Guest",
+    val status: String = "OPEN",
     val timestamp: Long = System.currentTimeMillis()
-) : Parcelable {
-}
+) : Parcelable
