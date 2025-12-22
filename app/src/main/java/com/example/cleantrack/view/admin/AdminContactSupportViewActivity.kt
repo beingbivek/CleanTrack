@@ -48,7 +48,7 @@ class AdminContactSupportViewActivity : ComponentActivity() {
 fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit) {
     val issues by viewModel.allIssues.observeAsState(emptyList())
 
-    // --- FILTER STATES ---
+    // Filter State
     var selectedUserType by remember { mutableStateOf("All") }
     var selectedCategory by remember { mutableStateOf("All") }
 
@@ -117,7 +117,7 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
                 }
             }
 
-            // --- LIST SECTION ---
+            //Ticket List
             if (filteredIssues.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No tickets found for selected filters.", color = Color.Gray)
