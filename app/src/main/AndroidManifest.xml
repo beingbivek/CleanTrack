@@ -2,8 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Internet Permission -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Location Permission -->
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- Location Permission -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -16,6 +15,51 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
+        <activity
+            android:name=".view.admin.AdminVehicleSetupActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_vehicle_setup"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminVehicleListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_vehicle_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminScheduleListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_schedule_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.UserManagementActivity"
+            android:exported="false"
+            android:label="@string/title_activity_user_management"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminRouteListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_route_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminScheduleSetupActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_schedule_setup"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.driver.DriverRoutineActivity"
+            android:exported="false"
+            android:label="@string/title_activity_driver_routine"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminPrivacyPolicyActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_privacy_policy"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.PrivacyPolicyActivity"
+            android:exported="false"
+            android:label="@string/title_activity_privacy_policy"
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"
@@ -33,9 +77,9 @@
             android:label="@string/title_activity_error"
             android:theme="@style/Theme.CleanTrack" />
         <activity
-            android:name=".view.auth.UserAddressActivtiy"
+            android:name=".view.user.SettingsActivity"
             android:exported="true"
-            android:label="@string/title_activity_user_address_activtiy"
+            android:label="@string/title_activity_settings"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

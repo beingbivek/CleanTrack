@@ -32,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,6 +67,8 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.view.common.ContactSupportActivity
+
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -125,22 +128,19 @@ fun LoginBody() {
                 val idToken = account.idToken
                 if (idToken != null){
 
-                    userViewModel.signInWithGoogle(idToken ){
-                        Success, errorMessage, role ->
-                        if (Success){
-
-                            val userId = account.id
-                            if (userId != null) {
-                                userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
-                            } else {
-                                AppUtil.showToast(context, "Google Sign-In successful, but Firebase UID is missing.")
+                    // --- UPDATED CALL HERE ---
+                    userViewModel.signInWithGoogle(idToken, context, activity) { success, errorMessage ->
+                        if (success) {
+                            // If successful, the ViewModel handles navigation (either to Dashboard or Registration).
+                            if (errorMessage != null && errorMessage != "Login successful!") {
+                                AppUtil.showToast(context, errorMessage)
                             }
-
-                        }else{
-                            AppUtil.showToast(context, errorMessage ?: "Google Sign-In failed.")
-
+                        } else {
+                            // Failure to sign in or failure in repo logic
+                            AppUtil.showToast(context, errorMessage ?: "Google Sign-In process failed.")
                         }
                     }
+                    // --- END UPDATED CALL ---
 
                 }else{
                     AppUtil.showToast(context  ,"Google Sign-In token missing.")
@@ -371,8 +371,13 @@ fun LoginBody() {
             ) {
                 Button(
                     onClick = {
-                        val signIntent = googleSignInClient.signInIntent
-                        googleSignInLauncher.launch(signIntent)
+                        // 1. Sign out of the Google Client first
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            // 2. Once the sign-out is complete, get a fresh Intent
+                            val signIntent = googleSignInClient.signInIntent
+                            // 3. Launch the picker
+                            googleSignInLauncher.launch(signIntent)
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -406,7 +411,37 @@ fun LoginBody() {
                 }
             }
 
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // --- NAVIGATION TO CONTACT SUPPORT ---
+            TextButton(
+                onClick = {
+                    val intent = Intent(context, ContactSupportActivity::class.java)
+                    intent.putExtra("IS_LOGGED_IN", false) // Since user is at Login, they aren't logged in
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.padding(bottom = 20.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_help_24),
+                        contentDescription = null,
+                        tint = Color(0xFF4F96D8),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Need help? Contact Support",
+                        color = Color(0xFF4F96D8),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+
         }
+
 
         if (showForgotPasswordDialog){
             ForgotPasswordDialog(
