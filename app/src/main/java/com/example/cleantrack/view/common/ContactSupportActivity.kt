@@ -113,7 +113,15 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
     var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionText by remember { mutableStateOf("Select Issues") }
-    val options = listOf("Option 1", "Option 2", "Others")
+    val issueCategories = listOf(
+        "App & Technical Issues",
+        "Login & Technical Issues",
+        "Service-Related Issues",
+        "Payments & Billing",
+        "Account & Profile",
+        "Location & Map",
+        "Feedback & Others"
+    )
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
 
@@ -236,11 +244,11 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
                         modifier = Modifier
                             .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
                     ) {
-                        options.forEach { option ->
+                        issueCategories.forEach { issueCategories ->
                             DropdownMenuItem(
-                                text = { Text(option) },
+                                text = { Text(issueCategories) },
                                 onClick = {
-                                    selectedOptionText = option
+                                    selectedOptionText = issueCategories
                                     expanded = false
                                 }
                             )
