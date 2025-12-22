@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,7 +35,6 @@ import java.util.*
 class AdminContactSupportViewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Initialize ViewModel with the Repo
         val viewModel = ContactSupportViewModel(ContactSupportRepoImpl())
 
         setContent {
@@ -47,6 +47,20 @@ class AdminContactSupportViewActivity : ComponentActivity() {
 @Composable
 fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit) {
     val issues by viewModel.allIssues.observeAsState(emptyList())
+
+    // --- FILTER STATES ---
+    var selectedUserType by remember { mutableStateOf("All") }
+    var selectedCategory by remember { mutableStateOf("All") }
+
+    val categories = listOf("All", "App & Technical Issues", "Login & Technical Issues", "Service-Related Issues", "Payments & Billing", "Account & Profile", "Location & Map", "Feedback & Others")
+    val userTypes = listOf("All", "REGISTERED", "GUEST")
+
+    // Filter Logic
+    val filteredIssues = issues.filter { issue ->
+        val matchesUserType = if (selectedUserType == "All") true else issue.userType == selectedUserType
+        val matchesCategory = if (selectedCategory == "All") true else issue.category == selectedCategory
+        matchesUserType && matchesCategory
+    }
 
     LaunchedEffect(Unit) {
         viewModel.fetchAllTickets()
@@ -69,11 +83,44 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF8F9FA)) // Slight off-white for contrast
+                .background(Color(0xFFF8F9FA))
         ) {
-            if (issues.isEmpty()) {
+            // --- FILTER CHIPS SECTION ---
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(White)
+                    .padding(vertical = 12.dp, horizontal = 16.dp)
+            ) {
+                Text("Filter User Type", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    userTypes.forEach { type ->
+                        FilterChip(
+                            selected = selectedUserType == type,
+                            onClick = { selectedUserType = type },
+                            label = { Text(type) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text("Filter Category", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(categories) { category ->
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick = { selectedCategory = category },
+                            label = { Text(category) }
+                        )
+                    }
+                }
+            }
+
+            // --- LIST SECTION ---
+            if (filteredIssues.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No support tickets found.", color = Color.Gray)
+                    Text("No tickets found for selected filters.", color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -81,11 +128,8 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(issues) { issue ->
-                        AdminIssueCard(
-                            issue = issue,
-                            viewModel = viewModel
-                        )
+                    items(filteredIssues) { issue ->
+                        AdminIssueCard(issue = issue, viewModel = viewModel)
                     }
                 }
             }
@@ -113,13 +157,12 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
         colors = CardDefaults.cardColors(containerColor = White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header: User Details & Status Dropdown
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(issue.fullname, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text(issue.email, fontSize = 12.sp, color = Color.Gray)
                 }
@@ -130,23 +173,15 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.clickable { statusExpanded = true }
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)) {
                             Text(issue.status, color = statusColor, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             Icon(Icons.Default.ArrowDropDown, null, tint = statusColor)
                         }
                     }
 
                     DropdownMenu(expanded = statusExpanded, onDismissRequest = { statusExpanded = false }) {
-                        // Status Lock Logic: If not OPEN, don't show OPEN as an option
-                        val availableStatuses = if (issue.status == "OPEN") {
-                            listOf("OPEN", "REPLIED", "CLOSED")
-                        } else {
-                            listOf("REPLIED", "CLOSED")
-                        }
-
+                        // STATUS LOCK: If already replied, cannot go back to OPEN
+                        val availableStatuses = if (issue.status == "OPEN") listOf("OPEN", "REPLIED", "CLOSED") else listOf("REPLIED", "CLOSED")
                         availableStatuses.forEach { status ->
                             DropdownMenuItem(
                                 text = { Text(status) },
@@ -162,12 +197,11 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp)
 
-            // Issue Content
             Text("Category: ${issue.category}", color = Green, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(4.dp))
             Text(issue.message, fontSize = 14.sp, color = Black)
 
-            // Admin Reply Bubble (The "Where do I see it" part)
+            // ADMIN REPLY BUBBLE
             if (issue.adminReply.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Column(
@@ -183,10 +217,9 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Metadata: Time & UserType
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    text = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(issue.timestamp)),
+                    text = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(issue.timestamp)),
                     fontSize = 11.sp, color = Color.Gray
                 )
                 Text(
@@ -196,13 +229,12 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
                 )
             }
 
-            // Reply Interface
             if (showReplyField) {
                 OutlinedTextField(
                     value = replyText,
                     onValueChange = { replyText = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    placeholder = { Text("Type your response...") },
+                    placeholder = { Text("Write your response...") },
                     shape = RoundedCornerShape(8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -221,7 +253,6 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
                     }
                 }
             } else {
-                // If already replied, show "Edit Reply" or just "Reply"
                 TextButton(
                     onClick = { showReplyField = true },
                     modifier = Modifier.align(Alignment.End)
