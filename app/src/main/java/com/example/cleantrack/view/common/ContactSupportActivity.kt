@@ -1,11 +1,14 @@
 package com.example.cleantrack.view.common
 
 import ContactSupportRepoImpl
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,10 +23,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -45,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -66,6 +73,7 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.viewmodel.ContactSupportViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
+import coil.compose.AsyncImage
 
 class ContactSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,6 +95,8 @@ fun ContactSupportScreen(userId: String?) {
     LaunchedEffect(Unit) {
         supportViewModel.fetchInitialData()
     }
+
+
 
     val fullname = userData?.fullname ?: ""
     val email = userData?.email ?: ""
@@ -114,6 +124,16 @@ fun ContactSupportBody(
     viewModel: ContactSupportViewModel
 ) {
     val context = LocalContext.current
+
+    // --- NEW IMAGE PICKER LOGIC ---
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
+
     var fullname by remember(initialName) {
         mutableStateOf(initialName)
     }
@@ -143,7 +163,8 @@ fun ContactSupportBody(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(White),
+                .background(White)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
@@ -298,7 +319,7 @@ fun ContactSupportBody(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {launcher.launch("image/*")},
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
@@ -316,6 +337,39 @@ fun ContactSupportBody(
                 }
 
             }
+
+            // --- DISPLAY SELECTED IMAGE ---
+            if (selectedImageUri != null) {
+                Spacer(modifier = Modifier.height(15.dp))
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 15.dp)
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(TextBoxColor, RoundedCornerShape(15.dp))
+                ) {
+                    AsyncImage(
+                        model = selectedImageUri,
+                        contentDescription = "Selected Attachment",
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    // Simple "X" button to remove image
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Remove",
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clickable { selectedImageUri = null }
+                            .background(Color.Black.copy(0.4f), RoundedCornerShape(50))
+                            .padding(4.dp),
+                        tint = Color.White
+                    )
+                }
+            }
+            // ------------------------------
 
             Spacer(modifier = Modifier.height(20.dp))
 
