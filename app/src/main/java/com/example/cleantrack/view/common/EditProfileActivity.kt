@@ -107,15 +107,23 @@ fun EditProfileScreen() {
     val context = LocalContext.current
     val activity = context as? android.app.Activity
 
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
     // 1. Get UserId from Intent
-    val userId = activity?.intent?.getStringExtra("userId") ?: ""
+    val userIdFromIntent = activity?.intent?.getStringExtra("userId") ?: ""
+
+
+    // If Intent is empty, try to get it from the Repo directly
+    val userId = remember {
+        userIdFromIntent.ifEmpty { userViewModel.getCurrentUserId() ?: "" }
+    }
 
 
 
     val addressVM: UserAddressViewModel = viewModel()
     // Ensure this matches your actual ViewModel/Repo name
     val commonImageViewModel = remember { CommonImageViewModel(CommonImageRepoImpl()) }
-    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
 
     val userData by userViewModel.user.observeAsState(null)
 
@@ -146,6 +154,7 @@ fun EditProfileScreen() {
 
     // 3. React when the userData LiveData changes
     LaunchedEffect(userData) {
+
         userData?.let { user ->
             fullname = user.fullname
             email = user.email
@@ -191,7 +200,7 @@ fun EditProfileScreen() {
                     contentAlignment = Alignment.BottomEnd
                 ) {
                     AsyncImage(
-                        model = profileImageUri ?: R.drawable.user_logo,
+                        model = profileImageUri ?: if(profileImageUriString.isNotEmpty()) profileImageUriString else R.drawable.user_logo,
                         contentDescription = "Profile Picture",
                         modifier = Modifier
                             .fillMaxSize()
