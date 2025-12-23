@@ -92,5 +92,14 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    //    Cloudinary to store image and picasso to fetch image
+
+    implementation("com.cloudinary:cloudinary-android:2.1.0")
+    implementation("com.squareup.picasso:picasso:2.8")
+//Coil instaed of picasso
+    // Change from 3.3.0 to 3.2.0 or 3.0.0
+    // Coil 2.x includes the network engine by default
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
 
 }
