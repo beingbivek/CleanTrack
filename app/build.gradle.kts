@@ -89,6 +89,7 @@ dependencies {
 
     implementation("androidx.compose.runtime:runtime-livedata:<compose_version>")
     implementation(libs.androidx.ui)
+    implementation(libs.androidx.material3)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 
