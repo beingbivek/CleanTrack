@@ -243,6 +243,32 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
             Spacer(modifier = Modifier.height(4.dp))
             Text(issue.message, fontSize = 14.sp, color = Black)
 
+            // --- ATTACHMENT SECTION ---
+            if (issue.attachmentUrl.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Attachment:", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clickable { /* Optional: Add logic to open full screen */ },
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.LightGray)
+                ) {
+                    coil.compose.AsyncImage(
+                        model = issue.attachmentUrl,
+                        contentDescription = "Support Attachment",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        // You can use your existing placeholder logic here
+                        placeholder = androidx.compose.ui.res.painterResource(com.example.cleantrack.R.drawable.contact_support_logo),
+                        error = androidx.compose.ui.res.painterResource(com.example.cleantrack.R.drawable.contact_support_logo)
+                    )
+                }
+            }
+
             if (issue.adminReply.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Column(
