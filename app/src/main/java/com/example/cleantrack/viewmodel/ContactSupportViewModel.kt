@@ -31,4 +31,16 @@ class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
     fun changeStatus(ticket: ContactSupportModel, newStatus: String) {
         repo.updateTicketStatus(ticket.ticketId, ticket.category, newStatus) { s, m -> adminMessage.postValue(m) }
     }
+
+    fun replyToTicket(issue: ContactSupportModel, replyText: String) {
+        val updatedIssue = issue.copy(
+            adminReply = replyText,
+            status = "REPLIED"
+        )
+
+        repo.sendAdminReply(updatedIssue) { success ->
+            if (success) {
+            }
+        }
+    }
 }
