@@ -2,9 +2,11 @@ package com.example.cleantrack.view.admin
 
 import ContactSupportRepoImpl
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,16 +15,13 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Reply
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,7 +35,6 @@ class AdminContactSupportViewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val viewModel = ContactSupportViewModel(ContactSupportRepoImpl())
-
         setContent {
             AdminDashboardScreen(viewModel) { finish() }
         }
@@ -48,18 +46,28 @@ class AdminContactSupportViewActivity : ComponentActivity() {
 fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit) {
     val issues by viewModel.allIssues.observeAsState(emptyList())
 
-    // Filter State
+    // --- STATES ---
+    var showFilters by remember { mutableStateOf(false) } // Toggle for filter panel
     var selectedUserType by remember { mutableStateOf("All") }
     var selectedCategory by remember { mutableStateOf("All") }
+    var selectedStatus by remember { mutableStateOf("All") }
 
     val categories = listOf("All", "App & Technical Issues", "Login & Technical Issues", "Service-Related Issues", "Payments & Billing", "Account & Profile", "Location & Map", "Feedback & Others")
-    val userTypes = listOf("All", "REGISTERED", "GUEST")
+    val userTypes = listOf("All", "Registered", "Guest")
+    val statuses = listOf("All", "OPEN", "REPLIED", "CLOSED")
 
     // Filter Logic
     val filteredIssues = issues.filter { issue ->
-        val matchesUserType = if (selectedUserType == "All") true else issue.userType.trim().equals(selectedUserType, ignoreCase = true)
-        val matchesCategory = if (selectedCategory == "All") true else issue.category == selectedCategory
-        matchesUserType && matchesCategory
+        val matchesUserType = if (selectedUserType == "All") true
+        else issue.userType.trim().equals(selectedUserType, ignoreCase = true)
+
+        val matchesCategory = if (selectedCategory == "All") true
+        else issue.category == selectedCategory
+
+        val matchesStatus = if (selectedStatus == "All") true
+        else issue.status.uppercase() == selectedStatus.uppercase()
+
+        matchesUserType && matchesCategory && matchesStatus
     }
 
     LaunchedEffect(Unit) {
@@ -75,6 +83,16 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
                         Icon(Icons.Default.ArrowBack, contentDescription = null, tint = White)
                     }
                 },
+                actions = {
+                    // Filter Toggle Button
+                    IconButton(onClick = { showFilters = !showFilters }) {
+                        Icon(
+                            imageVector = if (showFilters) Icons.Default.FilterListOff else Icons.Default.FilterList,
+                            contentDescription = "Filter",
+                            tint = White
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Green)
             )
         }
@@ -85,42 +103,67 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
                 .padding(padding)
                 .background(Color(0xFFF8F9FA))
         ) {
-            // --- FILTER CHIPS SECTION ---
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(White)
-                    .padding(vertical = 12.dp, horizontal = 16.dp)
+            // --- EXPANDABLE FILTER PANEL ---
+            AnimatedVisibility(
+                visible = showFilters,
+                enter = expandVertically(),
+                exit = shrinkVertically()
             ) {
-                Text("Filter User Type", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    userTypes.forEach { type ->
-                        FilterChip(
-                            selected = selectedUserType == type,
-                            onClick = { selectedUserType = type },
-                            label = { Text(type) }
-                        )
-                    }
-                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(White)
+                        .padding(bottom = 12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        // Status Row
+                        Text("Status", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(statuses) { status ->
+                                FilterChip(
+                                    selected = selectedStatus == status,
+                                    onClick = { selectedStatus = status },
+                                    label = { Text(status, fontSize = 12.sp) }
+                                )
+                            }
+                        }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                Text("Filter Category", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(categories) { category ->
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { selectedCategory = category },
-                            label = { Text(category) }
-                        )
+                        // User Type Row
+                        Text("User Type", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            userTypes.forEach { type ->
+                                FilterChip(
+                                    selected = selectedUserType == type,
+                                    onClick = { selectedUserType = type },
+                                    label = { Text(type, fontSize = 12.sp) }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Category Row
+                        Text("Category", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(categories) { category ->
+                                FilterChip(
+                                    selected = selectedCategory == category,
+                                    onClick = { selectedCategory = category },
+                                    label = { Text(category, fontSize = 12.sp) }
+                                )
+                            }
+                        }
                     }
+                    HorizontalDivider(thickness = 1.dp, color = Color.LightGray.copy(alpha = 0.3f))
                 }
             }
 
-            //Ticket List
+            // --- LIST SECTION ---
             if (filteredIssues.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No tickets found for selected filters.", color = Color.Gray)
+                    Text("No tickets found.", color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -143,7 +186,7 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
     var replyText by remember { mutableStateOf("") }
     var statusExpanded by remember { mutableStateOf(false) }
 
-    val statusColor = when (issue.status) {
+    val statusColor = when (issue.status.uppercase()) {
         "OPEN" -> Color(0xFFE65100)
         "REPLIED" -> Color(0xFF0288D1)
         "CLOSED" -> Color(0xFF388E3C)
@@ -174,14 +217,13 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
                         modifier = Modifier.clickable { statusExpanded = true }
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)) {
-                            Text(issue.status, color = statusColor, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(issue.status.uppercase(), color = statusColor, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             Icon(Icons.Default.ArrowDropDown, null, tint = statusColor)
                         }
                     }
 
                     DropdownMenu(expanded = statusExpanded, onDismissRequest = { statusExpanded = false }) {
-                        // STATUS LOCK: If already replied, cannot go back to OPEN
-                        val availableStatuses = if (issue.status == "OPEN") listOf("OPEN", "REPLIED", "CLOSED") else listOf("REPLIED", "CLOSED")
+                        val availableStatuses = if (issue.status.uppercase() == "OPEN") listOf("OPEN", "REPLIED", "CLOSED") else listOf("REPLIED", "CLOSED")
                         availableStatuses.forEach { status ->
                             DropdownMenuItem(
                                 text = { Text(status) },
@@ -201,14 +243,10 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
             Spacer(modifier = Modifier.height(4.dp))
             Text(issue.message, fontSize = 14.sp, color = Black)
 
-            // ADMIN REPLY BUBBLE
             if (issue.adminReply.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp))
-                        .padding(10.dp)
+                    modifier = Modifier.fillMaxWidth().background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp)).padding(10.dp)
                 ) {
                     Text("Admin Reply:", fontWeight = FontWeight.Bold, color = Green, fontSize = 11.sp)
                     Text(text = issue.adminReply, fontSize = 13.sp, color = Black)
@@ -225,7 +263,7 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
                 Text(
                     text = issue.userType,
                     fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                    color = if(issue.userType == "REGISTERED") Color(0xFF2E7D32) else Color.Gray
+                    color = if(issue.userType.equals("Registered", ignoreCase = true)) Color(0xFF2E7D32) else Color.Gray
                 )
             }
 
