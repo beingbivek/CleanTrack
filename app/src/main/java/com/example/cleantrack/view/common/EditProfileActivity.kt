@@ -62,6 +62,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextFieldDefaults
 
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -80,12 +82,14 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.view.auth.DropdownField
+import com.example.cleantrack.viewmodel.UserViewModel
 
 
 class EditProfileActivity : ComponentActivity() {
@@ -101,13 +105,24 @@ class EditProfileActivity : ComponentActivity() {
 @Composable
 fun EditProfileScreen() {
     val context = LocalContext.current
+    val activity = context as? android.app.Activity
+
+    // 1. Get UserId from Intent
+    val userId = activity?.intent?.getStringExtra("userId") ?: ""
+
+
+
     val addressVM: UserAddressViewModel = viewModel()
     // Ensure this matches your actual ViewModel/Repo name
     val commonImageViewModel = remember { CommonImageViewModel(CommonImageRepoImpl()) }
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    val userData by userViewModel.user.observeAsState(null)
 
     var fullname by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var number by remember { mutableStateOf("") }
+    var profileImageUriString by remember { mutableStateOf("") }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
 
     // Dropdown states
@@ -121,6 +136,33 @@ fun EditProfileScreen() {
     var districtFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
     var municipalityFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
     var wardFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
+
+    // 2. Trigger the fetch once when userId is available
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            userViewModel.getUserById(userId)
+        }
+    }
+
+    // 3. React when the userData LiveData changes
+    LaunchedEffect(userData) {
+        userData?.let { user ->
+            fullname = user.fullname
+            email = user.email
+            number = user.number
+            profileImageUriString = user.profileImageUrl ?: ""
+
+            // Pre-fill the address dropdowns
+            addressVM.initializeAddress(
+                user.province,
+                user.district,
+                user.municipality,
+                user.ward
+            )
+        }
+    }
+
+
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -286,6 +328,8 @@ fun EditProfileScreen() {
         }
     }
 }
+
+
 
 @Composable
 fun ProfileInput(value: String, onValueChange: (String) -> Unit, placeholder: String, keyboardType: KeyboardType = KeyboardType.Text) {
