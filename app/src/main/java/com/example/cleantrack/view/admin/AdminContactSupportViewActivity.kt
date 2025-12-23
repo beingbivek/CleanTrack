@@ -4,6 +4,9 @@ import ContactSupportRepoImpl
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,9 +15,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Reply
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -45,16 +46,17 @@ class AdminContactSupportViewActivity : ComponentActivity() {
 fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit) {
     val issues by viewModel.allIssues.observeAsState(emptyList())
 
-    // --- FILTER STATES ---
+    // --- STATES ---
+    var showFilters by remember { mutableStateOf(false) } // Toggle for filter panel
     var selectedUserType by remember { mutableStateOf("All") }
     var selectedCategory by remember { mutableStateOf("All") }
-    var selectedStatus by remember { mutableStateOf("All") } // New status state
+    var selectedStatus by remember { mutableStateOf("All") }
 
     val categories = listOf("All", "App & Technical Issues", "Login & Technical Issues", "Service-Related Issues", "Payments & Billing", "Account & Profile", "Location & Map", "Feedback & Others")
     val userTypes = listOf("All", "Registered", "Guest")
     val statuses = listOf("All", "OPEN", "REPLIED", "CLOSED")
 
-    // Multi-Layer Filter Logic
+    // Filter Logic
     val filteredIssues = issues.filter { issue ->
         val matchesUserType = if (selectedUserType == "All") true
         else issue.userType.trim().equals(selectedUserType, ignoreCase = true)
@@ -81,6 +83,16 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
                         Icon(Icons.Default.ArrowBack, contentDescription = null, tint = White)
                     }
                 },
+                actions = {
+                    // Filter Toggle Button
+                    IconButton(onClick = { showFilters = !showFilters }) {
+                        Icon(
+                            imageVector = if (showFilters) Icons.Default.FilterListOff else Icons.Default.FilterList,
+                            contentDescription = "Filter",
+                            tint = White
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Green)
             )
         }
@@ -91,58 +103,67 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
                 .padding(padding)
                 .background(Color(0xFFF8F9FA))
         ) {
-            // --- UPDATED FILTER SECTION ---
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(White)
-                    .padding(vertical = 12.dp, horizontal = 16.dp)
+            // --- EXPANDABLE FILTER PANEL ---
+            AnimatedVisibility(
+                visible = showFilters,
+                enter = expandVertically(),
+                exit = shrinkVertically()
             ) {
-                // 1. Status Row
-                Text("Ticket Status", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    statuses.forEach { status ->
-                        FilterChip(
-                            selected = selectedStatus == status,
-                            onClick = { selectedStatus = status },
-                            label = { Text(status, fontSize = 12.sp) }
-                        )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(White)
+                        .padding(bottom = 12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        // Status Row
+                        Text("Status", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(statuses) { status ->
+                                FilterChip(
+                                    selected = selectedStatus == status,
+                                    onClick = { selectedStatus = status },
+                                    label = { Text(status, fontSize = 12.sp) }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // User Type Row
+                        Text("User Type", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            userTypes.forEach { type ->
+                                FilterChip(
+                                    selected = selectedUserType == type,
+                                    onClick = { selectedUserType = type },
+                                    label = { Text(type, fontSize = 12.sp) }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Category Row
+                        Text("Category", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(categories) { category ->
+                                FilterChip(
+                                    selected = selectedCategory == category,
+                                    onClick = { selectedCategory = category },
+                                    label = { Text(category, fontSize = 12.sp) }
+                                )
+                            }
+                        }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 2. User Type Row
-                Text("User Type", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    userTypes.forEach { type ->
-                        FilterChip(
-                            selected = selectedUserType == type,
-                            onClick = { selectedUserType = type },
-                            label = { Text(type, fontSize = 12.sp) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 3. Category Row
-                Text("Category", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(categories) { category ->
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { selectedCategory = category },
-                            label = { Text(category, fontSize = 12.sp) }
-                        )
-                    }
+                    HorizontalDivider(thickness = 1.dp, color = Color.LightGray.copy(alpha = 0.3f))
                 }
             }
 
             // --- LIST SECTION ---
             if (filteredIssues.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No tickets match these filters.", color = Color.Gray)
+                    Text("No tickets found.", color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -225,10 +246,7 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
             if (issue.adminReply.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp))
-                        .padding(10.dp)
+                    modifier = Modifier.fillMaxWidth().background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp)).padding(10.dp)
                 ) {
                     Text("Admin Reply:", fontWeight = FontWeight.Bold, color = Green, fontSize = 11.sp)
                     Text(text = issue.adminReply, fontSize = 13.sp, color = Black)
