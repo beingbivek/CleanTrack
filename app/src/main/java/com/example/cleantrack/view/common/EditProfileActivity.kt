@@ -16,21 +16,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
+
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleantrack.repository.CommonImageRepoImpl
 
 import com.example.cleantrack.viewmodel.CommonImageViewModel
 import com.example.cleantrack.viewmodel.UserAddressViewModel
-import android.util.Size
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -47,17 +48,24 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
+
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
+
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.setValue
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -69,6 +77,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.example.cleantrack.R
 import com.example.cleantrack.ui.theme.Black
@@ -175,70 +184,83 @@ fun EditProfileScreen() {
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // 3. Address Dropdowns
+
+// --- ADDRESS SECTION WITH Z-INDEX FIX ---
+
             item {
-                DropdownField(
-                    label = addressVM.selectedProvinceName,
-                    placeholder = "Select Province",
-                    expanded = expandedProvince.value,
-                    onExpand = { expandedProvince.value = true },
-                    onDismiss = { expandedProvince.value = false },
-                    items = addressVM.provinces.map { it.name },
-                    onItemSelectedText = {
-                        addressVM.provinces.firstOrNull { p -> p.name == it }?.let(addressVM::onProvinceSelected)
-                        expandedProvince.value = false
-                    },
-                    fieldSize = provinceFieldSize,
-                    onSizeChange = { provinceFieldSize = it }
-                )
+                Box(modifier = Modifier.zIndex(if (expandedProvince.value) 1f else 0f)) {
+                    DropdownField(
+                        label = addressVM.selectedProvinceName,
+                        placeholder = "Select Province",
+                        expanded = expandedProvince.value,
+                        onExpand = { expandedProvince.value = true },
+                        onDismiss = { expandedProvince.value = false },
+                        items = addressVM.provinces.map { it.name },
+                        onItemSelectedText = {
+                            addressVM.provinces.firstOrNull { p -> p.name == it }?.let(addressVM::onProvinceSelected)
+                            expandedProvince.value = false
+                        },
+                        fieldSize = provinceFieldSize,
+                        onSizeChange = { provinceFieldSize = it }
+                    )
+                }
             }
+
             item {
-                DropdownField(
-                    label = addressVM.selectedDistrictName,
-                    placeholder = "Select District",
-                    expanded = expandedDistrict.value,
-                    onExpand = { expandedDistrict.value = true },
-                    onDismiss = { expandedDistrict.value = false },
-                    items = addressVM.districts.map { it.name },
-                    onItemSelectedText = {
-                        addressVM.districts.firstOrNull { d -> d.name == it }?.let(addressVM::onDistrictSelected)
-                        expandedDistrict.value = false
-                    },
-                    fieldSize = districtFieldSize,
-                    onSizeChange = { districtFieldSize = it }
-                )
+                Box(modifier = Modifier.zIndex(if (expandedDistrict.value) 1f else 0f)) {
+                    DropdownField(
+                        label = addressVM.selectedDistrictName,
+                        placeholder = "Select District",
+                        expanded = expandedDistrict.value,
+                        onExpand = { expandedDistrict.value = true },
+                        onDismiss = { expandedDistrict.value = false },
+                        items = addressVM.districts.map { it.name },
+                        onItemSelectedText = {
+                            addressVM.districts.firstOrNull { d -> d.name == it }?.let(addressVM::onDistrictSelected)
+                            expandedDistrict.value = false
+                        },
+                        fieldSize = districtFieldSize,
+                        onSizeChange = { districtFieldSize = it }
+                    )
+                }
             }
+
             item {
-                DropdownField(
-                    label = addressVM.selectedMunicipalityName,
-                    placeholder = "Select Municipality",
-                    expanded = expandedMunicipality.value,
-                    onExpand = { expandedMunicipality.value = true },
-                    onDismiss = { expandedMunicipality.value = false },
-                    items = addressVM.municipalities.map { it.name },
-                    onItemSelectedText = {
-                        addressVM.municipalities.firstOrNull { m -> m.name == it }?.let(addressVM::onMunicipalitySelected)
-                        expandedMunicipality.value = false
-                    },
-                    fieldSize = municipalityFieldSize,
-                    onSizeChange = { municipalityFieldSize = it }
-                )
+                Box(modifier = Modifier.zIndex(if (expandedMunicipality.value) 1f else 0f)) {
+                    DropdownField(
+                        label = addressVM.selectedMunicipalityName,
+                        placeholder = "Select Municipality",
+                        expanded = expandedMunicipality.value,
+                        onExpand = { expandedMunicipality.value = true },
+                        onDismiss = { expandedMunicipality.value = false },
+                        items = addressVM.municipalities.map { it.name },
+                        onItemSelectedText = {
+                            addressVM.municipalities.firstOrNull { m -> m.name == it }?.let(addressVM::onMunicipalitySelected)
+                            expandedMunicipality.value = false
+                        },
+                        fieldSize = municipalityFieldSize,
+                        onSizeChange = { municipalityFieldSize = it }
+                    )
+                }
             }
+
             item {
-                DropdownField(
-                    label = addressVM.selectedWardName,
-                    placeholder = "Select Ward",
-                    expanded = expandedWard.value,
-                    onExpand = { expandedWard.value = true },
-                    onDismiss = { expandedWard.value = false },
-                    items = addressVM.wards,
-                    onItemSelectedText = {
-                        addressVM.onWardSelected(it)
-                        expandedWard.value = false
-                    },
-                    fieldSize = wardFieldSize,
-                    onSizeChange = { wardFieldSize = it }
-                )
+                Box(modifier = Modifier.zIndex(if (expandedWard.value) 1f else 0f)) {
+                    DropdownField(
+                        label = addressVM.selectedWardName,
+                        placeholder = "Select Ward",
+                        expanded = expandedWard.value,
+                        onExpand = { expandedWard.value = true },
+                        onDismiss = { expandedWard.value = false },
+                        items = addressVM.wards,
+                        onItemSelectedText = {
+                            addressVM.onWardSelected(it)
+                            expandedWard.value = false
+                        },
+                        fieldSize = wardFieldSize,
+                        onSizeChange = { wardFieldSize = it }
+                    )
+                }
                 Spacer(modifier = Modifier.height(30.dp))
             }
 
@@ -282,4 +304,56 @@ fun ProfileInput(value: String, onValueChange: (String) -> Unit, placeholder: St
         )
     )
 }
+// Exactly like your Registration Dropdown
+@Composable
+fun DropdownField(
+    label: String,
+    placeholder: String,
+    expanded: Boolean,
+    onExpand: () -> Unit,
+    onDismiss: () -> Unit,
+    items: List<String>,
+    onItemSelectedText: (String) -> Unit,
+    fieldSize: androidx.compose.ui.geometry.Size,
+    onSizeChange: (androidx.compose.ui.geometry.Size) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = {},
+            enabled = false,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { onSizeChange(it.size.toSize()) }
+                .clickable { onExpand() },
+            placeholder = { Text(text = placeholder, color = Green) },
+            textStyle = TextStyle(color = Green),
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Green) },
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledBorderColor = Green,
+                disabledTextColor = Green,
+                disabledPlaceholderColor = Green,
+                disabledTrailingIconColor = Green
+            )
+        )
 
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = onDismiss,
+            modifier = Modifier
+                .width(with(LocalDensity.current) { fieldSize.width.toDp() })
+                .background(White)
+        ) {
+            items.forEach { item ->
+                DropdownMenuItem(
+                    text = { Text(item, color = Green) },
+                    onClick = { onItemSelectedText(item) }
+                )
+            }
+        }
+    }
+}
