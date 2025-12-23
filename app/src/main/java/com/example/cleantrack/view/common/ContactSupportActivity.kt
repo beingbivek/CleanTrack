@@ -74,6 +74,9 @@ import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.viewmodel.ContactSupportViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import coil.compose.AsyncImage
+import com.example.cleantrack.model.ContactSupportModel
+import com.example.cleantrack.repository.CommonImageRepoImpl
+import com.example.cleantrack.viewmodel.CommonImageViewModel
 
 class ContactSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,6 +127,8 @@ fun ContactSupportBody(
     viewModel: ContactSupportViewModel
 ) {
     val context = LocalContext.current
+
+    val commonImageViewModel = remember { CommonImageViewModel(CommonImageRepoImpl()) }
 
     // --- NEW IMAGE PICKER LOGIC ---
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -383,17 +388,31 @@ fun ContactSupportBody(
                         if (selectedOptionText == "Select Issues" || message.isEmpty()) {
                             Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                         } else {
-                            viewModel.submitTicket(
-                                fullname = fullname,
-                                email = email,
-                                category = selectedOptionText,
-                                message = message,
-                                userId = userId,
-                                userType = userType
-                            ) { success, msg ->
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                if (success) {
-                                    message = ""
+                            if (selectedImageUri != null) {
+                                // Step 1: Upload image
+                                commonImageViewModel.uploadImage(context, selectedImageUri!!) { uploadedUrl ->
+                                    if (uploadedUrl != null) {
+                                        // Step 2: Submit with the cloud URL
+                                        viewModel.submitTicket(
+                                            fullname, email, selectedOptionText, message, userId, userType, uploadedUrl
+                                        ) { success, msg ->
+                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                            if (success) {
+                                                message = ""
+                                                selectedImageUri = null
+                                            }
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } else {
+                                // Submit without an image (empty string for URL)
+                                viewModel.submitTicket(
+                                    fullname, email, selectedOptionText, message, userId, userType, ""
+                                ) { success, msg ->
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    if (success) message = ""
                                 }
                             }
                         }
