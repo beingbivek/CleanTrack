@@ -98,6 +98,7 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
         repo.getUserById(userId){
             success, message, data->
+
             if (success){
                 _user.postValue(data)
                 _loading.postValue(false)

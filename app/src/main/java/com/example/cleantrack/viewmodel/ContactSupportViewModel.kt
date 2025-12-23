@@ -19,10 +19,13 @@ class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
         }
     }
 
-    fun submitTicket(fullname: String, email: String, category: String, message: String, userId: String, userType: String, callback: (Boolean, String) -> Unit) {
+    fun submitTicket(fullname: String, email: String, category: String, message: String, userId: String, userType: String,
+                     attachmentUrl: String, callback: (Boolean, String) -> Unit) {
         if (category == "Select Issue" || message.isBlank()) return callback(false, "Complete all fields")
         loading.value = true
-        val ticket = ContactSupportModel(fullname = fullname, email = email, category = category, message = message, userId = userId, userType = userType)
+        val ticket = ContactSupportModel(fullname = fullname, email = email, category = category, message = message, userId = userId,
+            userType = userType,
+            attachmentUrl = attachmentUrl)
         repo.submitIssue(ticket) { s, m -> loading.value = false; callback(s, m) }
     }
 

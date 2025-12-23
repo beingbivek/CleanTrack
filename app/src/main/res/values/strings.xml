@@ -26,4 +26,5 @@
     <string name="title_activity_admin_vehicle_setup">AdminVehicleSetupActivity</string>
     <string name="title_activity_admin_contact_support_view">AdminContactSupportViewActivity
     </string>
+    <string name="title_activity_edit_profile">EditProfileActivity</string>
 </resources>

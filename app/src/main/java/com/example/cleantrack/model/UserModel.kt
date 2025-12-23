@@ -24,6 +24,8 @@ data class UserModel(
     val latitude : Double? = null,
     val longitude : Double? = null,
 
+    val profileImageUrl: String = "",
+
 ) : Parcelable{
 
     @Exclude
@@ -40,7 +42,8 @@ data class UserModel(
             "municipality" to municipality,
             "ward" to ward,
             "latitude" to latitude,
-            "longitude" to longitude
+            "longitude" to longitude,
+            "profileImageUrl" to profileImageUrl
         )
 
     }
