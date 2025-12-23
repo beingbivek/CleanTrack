@@ -82,12 +82,14 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.example.cleantrack.R
+import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.view.auth.DropdownField
 import com.example.cleantrack.viewmodel.UserViewModel
 
@@ -325,7 +327,49 @@ fun EditProfileScreen() {
                         .background(brush = Brush.horizontalGradient(colors = ButtonColor), shape = RoundedCornerShape(15.dp))
                 ) {
                     Button(
-                        onClick = { /* TODO: Save Logic */ },
+                        onClick = { if (userId.isEmpty()) {
+                            AppUtil.showToast(context, "User ID not found")
+                            return@Button
+                        }
+
+                            // Helper function to save user data to Firebase
+                            val saveUserData: (String) -> Unit = { uploadedImageUrl ->
+                                val updatedUser = UserModel(
+                                    userId = userId,
+                                    fullname = fullname,
+                                    email = email,
+                                    number = number,
+                                    province = addressVM.selectedProvinceName,
+                                    district = addressVM.selectedDistrictName,
+                                    municipality = addressVM.selectedMunicipalityName,
+                                    ward = addressVM.selectedWardName,
+                                    profileImageUrl = uploadedImageUrl, // Use the new or existing URL
+                                    role = userData?.role ?: "USER", // Keep existing role
+                                    latitude = userData?.latitude,   // Keep existing location
+                                    longitude = userData?.longitude
+                                )
+
+                                userViewModel.editUserProfile(userId, updatedUser) { success, message ->
+                                    AppUtil.showToast(context, message)
+                                    if (success) {
+                                        activity?.finish() // Go back after success
+                                    }
+                                }
+                            }
+
+                            // Logic: Upload image first if a new one was picked
+                            if (profileImageUri != null) {
+                                commonImageViewModel.uploadImage(context, profileImageUri!!) { imageUrl ->
+                                    if (imageUrl != null) {
+                                        saveUserData(imageUrl)
+                                    } else {
+                                        AppUtil.showToast(context, "Image upload failed")
+                                    }
+                                }
+                            } else {
+                                // No new image picked, use the existing URL from the database
+                                saveUserData(profileImageUriString)
+                            } },
                         modifier = Modifier.fillMaxSize(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
