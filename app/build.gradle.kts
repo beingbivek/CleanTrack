@@ -72,6 +72,10 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-config-ktx:21.6.0")
+
+    // QR
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.0.0")
@@ -92,6 +96,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.appcompat)
 
     // Tests
     testImplementation("junit:junit:4.13.2")
