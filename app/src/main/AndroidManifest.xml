@@ -2,11 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- Location Permission -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- Location Permission -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -20,6 +18,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
+        <activity
+            android:name=".view.common.EditProfileActivity"
+            android:exported="true"
+            android:label="@string/title_activity_edit_profile"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".view.admin.AdminContactSupportViewActivity"
             android:exported="true"
