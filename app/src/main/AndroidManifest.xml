@@ -16,6 +16,27 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
+            android:name=".view.driver.DriverScanBinActivity"
+            android:exported="false"
+            android:label="@string/title_activity_driver_scan_bin"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.user.UserBinListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_user_bin_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.user.PaymentActivity"
+            android:exported="true"
+            android:label="@string/title_activity_payment"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.admin.AdminVehicleSetupActivity"
             android:exported="false"
             android:label="@string/title_activity_admin_vehicle_setup"
