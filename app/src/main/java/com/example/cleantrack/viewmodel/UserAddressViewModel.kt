@@ -158,6 +158,53 @@ class UserAddressViewModel(
         selectedWardName = wardName
     }
 
+
+    fun initializeAddress(pName: String, dName: String, mName: String, wName: String) {
+        viewModelScope.launch {
+            loading = true
+            try {
+                // 1. Load Provinces and find match
+                if (provinces.isEmpty()) {
+                    provinces = api.getProvinces()
+                }
+                val province = provinces.find { it.name == pName }
+
+                if (province != null) {
+                    selectedProvinceId = province.id
+                    selectedProvinceName = province.name
+
+                    // 2. Load Districts and find match
+                    districts = api.getDistricts(province.id)
+                    val district = districts.find { it.name == dName }
+
+                    if (district != null) {
+                        selectedDistrictId = district.id
+                        selectedDistrictName = district.name
+
+                        // 3. Load Municipalities and find match
+                        municipalities = api.getMunicipalities(district.id)
+                        val municipality = municipalities.find { it.name == mName }
+
+                        if (municipality != null) {
+                            selectedMunicipalityId = municipality.id
+                            selectedMunicipalityName = municipality.name
+
+                            // 4. Load Wards
+                            val detail = api.getMunicipalityDetail(municipality.id)
+                            val count = detail.ward_count.coerceAtLeast(0)
+                            wards = (1..count).map { "Ward $it" }
+                            selectedWardName = wName
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                errorMessage = "Failed to initialize address: ${e.message}"
+            } finally {
+                loading = false
+            }
+        }
+    }
+
     // optional: helper to get currently-selected ids/names for submission
     fun currentSelection(): Map<String, Any?> = mapOf(
         "provinceId" to selectedProvinceId,
@@ -169,3 +216,4 @@ class UserAddressViewModel(
         "wardName" to selectedWardName
     )
 }
+
