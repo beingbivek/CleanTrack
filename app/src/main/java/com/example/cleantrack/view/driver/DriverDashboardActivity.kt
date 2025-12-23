@@ -1,5 +1,6 @@
 package com.example.cleantrack.view.driver
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +60,7 @@ fun DriverDashboardScreen(
     onStartRoute: () -> Unit = {},
     onViewRoute: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -221,6 +224,27 @@ fun DriverDashboardScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
+            Button(
+                onClick = { context.startActivity(
+                    Intent(
+                        context,
+                        DriverScanBinActivity::class.java
+                    )
+                ) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(Green, RoundedCornerShape(18.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Transparent),
+            ) {
+                Text(
+                    text = "Scan Bin QR",
+                    fontSize = 20.sp,
+                    color = White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
 
         }
     }
