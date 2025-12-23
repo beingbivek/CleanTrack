@@ -24,4 +24,7 @@
     <string name="title_activity_admin_schedule_list">AdminScheduleListActivity</string>
     <string name="title_activity_admin_vehicle_list">AdminVehicleListActivity</string>
     <string name="title_activity_admin_vehicle_setup">AdminVehicleSetupActivity</string>
+    <string name="title_activity_payment">PaymentActivity</string>
+    <string name="title_activity_user_bin_list">UserBinListActivity</string>
+    <string name="title_activity_driver_scan_bin">DriverScanBinActivity</string>
 </resources>
