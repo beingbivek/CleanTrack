@@ -16,6 +16,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack">
         <activity
+            android:name=".view.user.UserLiveTrackingActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_live_tracking"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.driver.DriverScanBinActivity"
             android:exported="false"
             android:label="@string/title_activity_driver_scan_bin"
@@ -67,7 +78,7 @@
             android:label="@string/title_activity_admin_schedule_setup"
             android:theme="@style/Theme.CleanTrack" />
         <activity
-            android:name=".view.DriverRoutineActivity"
+            android:name=".view.driver.DriverRoutineActivity"
             android:exported="false"
             android:label="@string/title_activity_driver_routine"
             android:theme="@style/Theme.CleanTrack" />
