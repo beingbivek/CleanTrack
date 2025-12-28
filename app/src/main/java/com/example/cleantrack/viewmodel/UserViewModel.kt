@@ -98,6 +98,7 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
         repo.getUserById(userId){
             success, message, data->
+
             if (success){
                 _user.postValue(data)
                 _loading.postValue(false)
@@ -260,5 +261,15 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
                 AppUtil.showToast(context, "Login succeeded but failed to fetch user profile: $message")
             }
         }
+
+
+    }
+
+    fun logout(){
+        repo.logout()
+    }
+
+    fun getCurrentUserId(): String?{
+        return repo.getCurrentUserId()
     }
 }

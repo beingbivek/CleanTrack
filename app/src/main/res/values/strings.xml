@@ -30,4 +30,7 @@
     <string name="title_activity_user_live_tracking">UserLiveTrackingActivity</string>
     <string name="title_activity_admin_points_rule_list">AdminPointsRuleListActivity</string>
     <string name="title_activity_admin_points_rule_setup">AdminPointsRuleSetupActivity</string>
+    <string name="title_activity_admin_contact_support_view">AdminContactSupportViewActivity
+    </string>
+    <string name="title_activity_edit_profile">EditProfileActivity</string>
 </resources>

@@ -15,10 +15,18 @@ data class UserModel(
     var points: Int = 0,
     val userId : String = "",
 
+    // Added Address Fields
+    val province: String = "",
+    val district: String = "",
+    val municipality: String = "",
+    val ward: String = "",
+
 //    location model updated
 
     val latitude : Double? = null,
     val longitude : Double? = null,
+
+    val profileImageUrl: String = "",
 
 ) : Parcelable{
 
@@ -33,8 +41,13 @@ data class UserModel(
             "isSubscribed" to isSubscribed,
             "points" to points,
             "userId" to userId,
+            "province" to province,
+            "district" to district,
+            "municipality" to municipality,
+            "ward" to ward,
             "latitude" to latitude,
-            "longitude" to longitude
+            "longitude" to longitude,
+            "profileImageUrl" to profileImageUrl
         )
 
     }

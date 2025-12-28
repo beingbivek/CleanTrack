@@ -13,6 +13,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,8 +25,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.auth.StartActivity
+import com.example.cleantrack.view.common.LogoutDialog
+import com.example.cleantrack.viewmodel.UserViewModel
 
 class AdminDashboardActivity : ComponentActivity() {
 
@@ -43,7 +51,28 @@ fun AdminDashboardScreen() {
     val context = LocalContext.current
     val activity = context as Activity
 
+
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    LogoutDialog(
+        showDialog = showLogoutDialog,
+        onDismiss = { showLogoutDialog = false },
+        viewModel = userViewModel
+    )
+
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+               showLogoutDialog = true
+            }) {
+                Icon(
+                    Icons.Default.Logout,
+                    contentDescription = "Logout",
+                    tint = Red
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Admin Dashboard") },

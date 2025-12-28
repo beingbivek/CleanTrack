@@ -149,6 +149,16 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
             return@myValidationCheck // <-- 2. Use the label to exit the lambda
         }
 
+        // 2. NEW: Address Selection Validation
+        // Ensures the user selected something from the Nepal Location API dropdowns
+        if (addressVM.selectedProvinceName.isEmpty() ||
+            addressVM.selectedDistrictName.isEmpty() ||
+            addressVM.selectedMunicipalityName.isEmpty() ||
+            addressVM.selectedWardName.isEmpty()) {
+            AppUtil.showToast(context, "Please select your complete address (Province, District, Municipality, and Ward).")
+            return@myValidationCheck
+        }
+
         if (!isGoogleSignInFlow) {
             // Standard registration requires password validation
             if (password.isEmpty() || confirmpassword.isEmpty()) {
@@ -173,8 +183,13 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
             val updatedModel = googleUserModel.copy(
                 fullname = fullname,
                 email = email,
-                number = number // This completes the profile required field
-                // Role remains "USER"
+                number = number ,// This completes the profile required field
+                // Role remains "USER" // PULLING DATA FROM UserAddressViewModel
+
+                province = addressVM.selectedProvinceName,
+                district = addressVM.selectedDistrictName,
+                municipality = addressVM.selectedMunicipalityName,
+                ward = addressVM.selectedWardName
             )
 
             userViewModel.addUserToDatabase(userId, updatedModel) { success, message ->
@@ -203,7 +218,12 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
                         email = email,
                         fullname = fullname,
                         number = number,
-                        role = "USER"
+                        role = "USER",
+                        // PULLING DATA FROM UserAddressViewModel
+                        province = addressVM.selectedProvinceName,
+                        district = addressVM.selectedDistrictName,
+                        municipality = addressVM.selectedMunicipalityName,
+                        ward = addressVM.selectedWardName
                     )
 
                     userViewModel.addUserToDatabase(userId, model) { addSuccess, addMessage ->

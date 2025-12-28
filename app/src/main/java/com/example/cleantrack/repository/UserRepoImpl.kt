@@ -102,6 +102,12 @@ class UserRepoImpl : UserRepo{
                                         number = "",
                                         role = defaultRole,
                                         userId = userId
+                                        ,
+                                        // Initialize with empty strings so the keys exist in the DB
+                                        province = "",
+                                        district = "",
+                                        municipality = "",
+                                        ward = ""
                                     )
 
                                     ref.child(userId).setValue(userModel)
@@ -307,6 +313,14 @@ class UserRepoImpl : UserRepo{
                     callback(false, error.message, null)
                 }
             })
+    }
+
+    override fun logout() {
+        auth.signOut()
+    }
+
+    override fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
     }
 
 }

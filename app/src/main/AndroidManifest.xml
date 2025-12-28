@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
-    <!-- Internet Permission -->
-    <uses-permission android:name="android.permission.INTERNET" /> <!-- Location Permission -->
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- Location Permission -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -14,7 +16,30 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CleanTrack" >
+        android:theme="@style/Theme.CleanTrack"
+        tools:replace="android:fullBackupContent">
+        <activity
+            android:name=".view.common.EditProfileActivity"
+            android:exported="true"
+            android:label="@string/title_activity_edit_profile"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.admin.AdminContactSupportViewActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_contact_support_view"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".view.admin.AdminPointsRuleSetupActivity"
             android:exported="false"
@@ -106,7 +131,7 @@
             android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_route_setup"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -119,10 +144,21 @@
             android:label="@string/title_activity_error"
             android:theme="@style/Theme.CleanTrack" />
         <activity
+            android:name=".view.user.SettingsActivity"
+            android:exported="true"
+            android:label="@string/title_activity_settings"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.driver.DriverLocationMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_location_map"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -133,7 +169,7 @@
             android:name=".view.auth.UserLocationMapActivity"
             android:exported="true"
             android:label="@string/title_activity_map"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -144,7 +180,7 @@
             android:name=".view.driver.DriverDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_dashboard"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -155,7 +191,7 @@
             android:name=".view.user.UserDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_user_dashboard"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -166,7 +202,7 @@
             android:name=".view.admin.AdminDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_dashboard"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -177,7 +213,7 @@
             android:name=".view.common.TermsAndConditionActivity"
             android:exported="true"
             android:label="@string/title_activity_privacy_policy"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -188,7 +224,7 @@
             android:name=".view.auth.SplashActivity"
             android:exported="true"
             android:label="@string/title_activity_splash"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -199,7 +235,7 @@
             android:name=".view.common.ContactSupportActivity"
             android:exported="true"
             android:label="@string/title_activity_contact_support"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -210,7 +246,7 @@
             android:name=".view.auth.StartActivity"
             android:exported="true"
             android:label="@string/title_activity_start"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -221,7 +257,7 @@
             android:name=".view.auth.LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -232,7 +268,7 @@
             android:name=".view.auth.RegistrationActivity"
             android:exported="true"
             android:label="@string/title_activity_registration"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -243,7 +279,7 @@
             android:name=".view.auth.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -253,7 +289,7 @@
 
         <service
             android:name=".util.FCMNotificationService"
-            android:exported="false" >
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>

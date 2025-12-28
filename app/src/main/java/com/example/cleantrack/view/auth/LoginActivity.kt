@@ -32,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,6 +67,7 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.view.common.ContactSupportActivity
 
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -409,7 +411,37 @@ fun LoginBody() {
                 }
             }
 
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // --- NAVIGATION TO CONTACT SUPPORT ---
+            TextButton(
+                onClick = {
+                    val intent = Intent(context, ContactSupportActivity::class.java)
+                    intent.putExtra("IS_LOGGED_IN", false) // Since user is at Login, they aren't logged in
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.padding(bottom = 20.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_help_24),
+                        contentDescription = null,
+                        tint = Color(0xFF4F96D8),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Need help? Contact Support",
+                        color = Color(0xFF4F96D8),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+
         }
+
 
         if (showForgotPasswordDialog){
             ForgotPasswordDialog(
