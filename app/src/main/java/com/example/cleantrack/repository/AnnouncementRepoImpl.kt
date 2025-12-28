@@ -45,6 +45,8 @@ class AnnouncementRepoImpl : AnnouncementRepo {
         id: String,
         callback: (Boolean, String) -> Unit
     ) {
-        TODO("Not yet implemented")
+        ref.child(id).removeValue().addOnCompleteListener {
+            if (it.isSuccessful) callback(true, "Deleted") else callback(false, "Failed")
+        }
     }
 }
