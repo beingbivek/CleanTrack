@@ -53,9 +53,40 @@ fun AdminAnnouncementListScreen() {
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
     val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
 
+    var announcementIdToDelete by remember { mutableStateOf<String?>(null) }
+
     // Load announcements on entry
     LaunchedEffect(Unit) {
         announcementVM.getAllAnnouncements { _, _, _ -> }
+    }
+
+    // --- ALERT DIALOG LOGIC ---
+    if (announcementIdToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { announcementIdToDelete = null },
+            title = { Text("Delete Announcement") },
+            text = { Text("Are you sure you want to delete this announcement? This cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Safe call using the stored ID
+                        announcementIdToDelete?.let { id ->
+                            announcementVM.deleteAnnouncement(id) { success, msg ->
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        announcementIdToDelete = null // Hide dialog
+                    }
+                ) {
+                    Text("Delete", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { announcementIdToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -105,9 +136,7 @@ fun AdminAnnouncementListScreen() {
                             context.startActivity(intent)
                         },
                         onDelete = {
-                            announcementVM.deleteAnnouncement(announcement.id) { success, msg ->
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            }
+                            announcementIdToDelete = announcement.id
                         }
                     )
                 }
