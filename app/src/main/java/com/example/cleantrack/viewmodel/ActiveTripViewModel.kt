@@ -1,5 +1,6 @@
 package com.example.cleantrack.viewmodel
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.ActiveTripModel
@@ -11,7 +12,9 @@ import com.example.cleantrack.repository.BinRepoImpl
 
 class ActiveTripViewModel(val repo: ActiveTripRepo) : ViewModel() {
     // Existing LiveData for active trip
-    val activeTrip = MutableLiveData<ActiveTripModel>()
+//    val activeTrip = MutableLiveData<ActiveTripModel>()
+    private val _activeTrip = MutableLiveData<ActiveTripModel?>()
+    val activeTrip: LiveData<ActiveTripModel?> get() = _activeTrip
 
     // New LiveData for bin details
     val binDetails = MutableLiveData<BinModel?>()
@@ -32,6 +35,18 @@ class ActiveTripViewModel(val repo: ActiveTripRepo) : ViewModel() {
         val binCollectionRepo = BinCollectionRepoImpl()
         binCollectionRepo.addBinCollection(collectionModel) { success, message ->
             callback(success, message)
+        }
+    }
+
+    fun observeTrip(tripId: String) {
+        repo.observeActiveTrip(tripId) {
+            _activeTrip.postValue(it)
+        }
+    }
+
+    fun observeActiveTripByRoute(routeId: String) {
+        repo.observeActiveTripByRoute(routeId) {
+            _activeTrip.postValue(it)
         }
     }
 

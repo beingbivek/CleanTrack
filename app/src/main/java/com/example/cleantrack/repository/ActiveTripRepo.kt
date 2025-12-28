@@ -16,4 +16,14 @@ interface ActiveTripRepo {
     )
 
     fun endTrip(tripId: String, callback: (Boolean, String) -> Unit)
+
+    fun observeActiveTrip(
+        tripId: String,
+        callback: (ActiveTripModel?) -> Unit
+    )
+
+    fun observeActiveTripByRoute(
+        routeId: String,
+        callback: (ActiveTripModel?) -> Unit
+    )
 }
