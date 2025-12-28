@@ -238,9 +238,10 @@ fun UserDashboardBody() {
                 DashboardCard(
                     title = "Announcement",
                     icon = Icons.Default.Announcement
-                ) {// This could lead to a 'History' list of all announcements
-                    // For now, let's just re-show the latest one if clicked
-                    showAnnouncement = true
+                ) {
+                    context.startActivity(
+                    Intent(context, UserAnnouncementListActivity::class.java)
+                )
                 }
 
             }
