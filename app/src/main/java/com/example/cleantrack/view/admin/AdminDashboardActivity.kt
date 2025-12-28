@@ -138,6 +138,15 @@ fun AdminDashboardScreen() {
                         Intent(context, PrivacyPolicyActivity::class.java)
                     )
                 }
+
+                DashboardCard(
+                    title = "Points Rule",
+                    icon = Icons.Default.Policy
+                ) {
+                    context.startActivity(
+                        Intent(context, AdminPointsRuleListActivity::class.java)
+                    )
+                }
             }
         }
     }
