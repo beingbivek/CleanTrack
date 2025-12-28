@@ -95,13 +95,19 @@ fun UserDashboardBody() {
 
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // 3. Fetch announcements when dashboard opens
+    // 2. Trigger the fetch once
     LaunchedEffect(Unit) {
-        announcementVM.getAllAnnouncements { success, _, data ->
-            if (success && data.isNotEmpty()) {
-                latestAnnouncement = data.first() // Get the newest one
-                showAnnouncement = true
-            }
+        announcementVM.getAllAnnouncements { _, _, _ -> }
+    }
+
+// 3. React to DATA changes (This is the "Pop-up" trigger)
+    LaunchedEffect(announcements) {
+        // Add a log here to see if data is actually arriving
+        android.util.Log.d("ANNOUNCEMENT_DEBUG", "List Size: ${announcements?.size}")
+
+        if (!announcements.isNullOrEmpty()) {
+            latestAnnouncement = announcements!!.first()
+            showAnnouncement = true
         }
     }
 
@@ -165,15 +171,15 @@ fun UserDashboardBody() {
                 )
             }
         }
-    ) { padding ->
+    ) { innerpadding ->
 
         // We use a Box so the announcement can overlap or sit at the top
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier.fillMaxSize().padding(innerpadding)) {
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+
                     .background(White),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
