@@ -46,7 +46,7 @@ class AnnouncementRepoImpl : AnnouncementRepo {
         callback: (Boolean, String) -> Unit
     ) {
         ref.child(id).removeValue().addOnCompleteListener {
-            if (it.isSuccessful) callback(true, "Deleted") else callback(false, "Failed")
+            if (it.isSuccessful) callback(true, "Announcement Deleted") else callback(false, "Failed")
         }
     }
 
@@ -58,7 +58,7 @@ class AnnouncementRepoImpl : AnnouncementRepo {
         ref.child(id).updateChildren(model.toMap())
             .addOnCompleteListener {
                 if (it.isSuccessful){
-                    callback(true, "User Account updated")
+                    callback(true, "Announcement updated")
                 }else{
                     callback(false, "${it.exception?.message}")
                 }
