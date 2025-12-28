@@ -65,7 +65,6 @@ class DriverDashboardActivity : ComponentActivity() {
 
 @Composable
 fun DriverDashboardScreen(
-
     driverName: String = "Ishan",
     routeName: String = "Route A - Ward 5",
     completed: Int = 12,
@@ -261,6 +260,27 @@ fun DriverDashboardScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
+            Button(
+                onClick = { context.startActivity(
+                    Intent(
+                        context,
+                        DriverScanBinActivity::class.java
+                    )
+                ) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(Green, RoundedCornerShape(18.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Transparent),
+            ) {
+                Text(
+                    text = "Scan Bin QR",
+                    fontSize = 20.sp,
+                    color = White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
 
         }
     }

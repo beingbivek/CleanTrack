@@ -72,6 +72,10 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-config-ktx:21.6.0")
+
+    // QR
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.0.0")
@@ -87,10 +91,31 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    implementation("androidx.compose.runtime:runtime-livedata:<compose_version>")
+    // IMPORTANT if you use Tasks.await() anywhere
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.appcompat)
+
+    // Tests
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    //    Cloudinary to store image and picasso to fetch image
+
+    implementation("com.cloudinary:cloudinary-android:2.1.0")
+    implementation("com.squareup.picasso:picasso:2.8")
+//Coil instaed of picasso
+    // Change from 3.3.0 to 3.2.0 or 3.0.0
+    // Coil 2.x includes the network engine by default
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
 
 }

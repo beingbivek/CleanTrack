@@ -24,4 +24,13 @@
     <string name="title_activity_admin_schedule_list">AdminScheduleListActivity</string>
     <string name="title_activity_admin_vehicle_list">AdminVehicleListActivity</string>
     <string name="title_activity_admin_vehicle_setup">AdminVehicleSetupActivity</string>
+    <string name="title_activity_payment">PaymentActivity</string>
+    <string name="title_activity_user_bin_list">UserBinListActivity</string>
+    <string name="title_activity_driver_scan_bin">DriverScanBinActivity</string>
+    <string name="title_activity_user_live_tracking">UserLiveTrackingActivity</string>
+    <string name="title_activity_admin_points_rule_list">AdminPointsRuleListActivity</string>
+    <string name="title_activity_admin_points_rule_setup">AdminPointsRuleSetupActivity</string>
+    <string name="title_activity_admin_contact_support_view">AdminContactSupportViewActivity
+    </string>
+    <string name="title_activity_edit_profile">EditProfileActivity</string>
 </resources>

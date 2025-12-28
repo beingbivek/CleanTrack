@@ -1,9 +1,14 @@
 package com.example.cleantrack.view.common
 
+import ContactSupportRepoImpl
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,10 +23,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -43,7 +51,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -61,8 +71,12 @@ import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.viewmodel.ContactSupportViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
-
+import coil.compose.AsyncImage
+import com.example.cleantrack.model.ContactSupportModel
+import com.example.cleantrack.repository.CommonImageRepoImpl
+import com.example.cleantrack.viewmodel.CommonImageViewModel
 
 class ContactSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,30 +92,53 @@ class ContactSupportActivity : ComponentActivity() {
 
 @Composable
 fun ContactSupportScreen(userId: String?) {
-    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-    val user = userViewModel.user.observeAsState(null)
+    val supportViewModel = remember { ContactSupportViewModel(ContactSupportRepoImpl()) }
+    val userData by supportViewModel.currentUserData.observeAsState()
 
-    // Fetch user ONCE
-    LaunchedEffect(userId) {
-        userId?.let {
-            userViewModel.getUserById(it)
-        }
+    LaunchedEffect(Unit) {
+        supportViewModel.fetchInitialData()
     }
 
-    val fullname = user.value?.fullname ?: ""
-    val email = user.value?.email ?: ""
+
+
+    val fullname = userData?.fullname ?: ""
+    val email = userData?.email ?: ""
+    val userType = userData?.userType ?: "GUEST"
 
     ContactSupportBody(
         initialName = fullname,
         initialEmail = email,
-        isReadOnly = userId != null
+        isReadOnly = userId != null,
+        userId = userId ?: "",
+        userType = userType,
+        viewModel = supportViewModel // Pass ViewModel to handle the submit action
     )
 }
 
 
 
 @Composable
-fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Boolean) {
+fun ContactSupportBody(
+    initialName: String,
+    initialEmail: String,
+    isReadOnly: Boolean,
+    userId: String,
+    userType: String,
+    viewModel: ContactSupportViewModel
+) {
+    val context = LocalContext.current
+
+    val commonImageViewModel = remember { CommonImageViewModel(CommonImageRepoImpl()) }
+
+    // --- NEW IMAGE PICKER LOGIC ---
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
+
     var fullname by remember(initialName) {
         mutableStateOf(initialName)
     }
@@ -113,7 +150,15 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
     var message by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionText by remember { mutableStateOf("Select Issues") }
-    val options = listOf("Option 1", "Option 2", "Others")
+    val issueCategories = listOf(
+        "App & Technical Issues",
+        "Login & Technical Issues",
+        "Service-Related Issues",
+        "Payments & Billing",
+        "Account & Profile",
+        "Location & Map",
+        "Feedback & Others"
+    )
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
 
@@ -123,7 +168,8 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(White),
+                .background(White)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
@@ -236,11 +282,11 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
                         modifier = Modifier
                             .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
                     ) {
-                        options.forEach { option ->
+                        issueCategories.forEach { issueCategories ->
                             DropdownMenuItem(
-                                text = { Text(option) },
+                                text = { Text(issueCategories) },
                                 onClick = {
-                                    selectedOptionText = option
+                                    selectedOptionText = issueCategories
                                     expanded = false
                                 }
                             )
@@ -278,7 +324,7 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {launcher.launch("image/*")},
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
@@ -297,6 +343,39 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
 
             }
 
+            // --- DISPLAY SELECTED IMAGE ---
+            if (selectedImageUri != null) {
+                Spacer(modifier = Modifier.height(15.dp))
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 15.dp)
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(TextBoxColor, RoundedCornerShape(15.dp))
+                ) {
+                    AsyncImage(
+                        model = selectedImageUri,
+                        contentDescription = "Selected Attachment",
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    // Simple "X" button to remove image
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Remove",
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clickable { selectedImageUri = null }
+                            .background(Color.Black.copy(0.4f), RoundedCornerShape(50))
+                            .padding(4.dp),
+                        tint = Color.White
+                    )
+                }
+            }
+            // ------------------------------
+
             Spacer(modifier = Modifier.height(20.dp))
 
 
@@ -305,7 +384,39 @@ fun ContactSupportBody(initialName: String, initialEmail: String, isReadOnly: Bo
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                        if (selectedOptionText == "Select Issues" || message.isEmpty()) {
+                            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                        } else {
+                            if (selectedImageUri != null) {
+                                // Step 1: Upload image
+                                commonImageViewModel.uploadImage(context, selectedImageUri!!) { uploadedUrl ->
+                                    if (uploadedUrl != null) {
+                                        // Step 2: Submit with the cloud URL
+                                        viewModel.submitTicket(
+                                            fullname, email, selectedOptionText, message, userId, userType, uploadedUrl
+                                        ) { success, msg ->
+                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                            if (success) {
+                                                message = ""
+                                                selectedImageUri = null
+                                            }
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } else {
+                                // Submit without an image (empty string for URL)
+                                viewModel.submitTicket(
+                                    fullname, email, selectedOptionText, message, userId, userType, ""
+                                ) { success, msg ->
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    if (success) message = ""
+                                }
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
