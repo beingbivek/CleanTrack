@@ -58,9 +58,9 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
     // 1. Load data if in Edit mode
     LaunchedEffect(Unit) {
         if (announcementId != null) {
-            isLoading = false
+
             announcementVM.getAllAnnouncements { _, _, _ ->
-                isLoading = false
+
             }
         }
     }
