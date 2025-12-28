@@ -74,33 +74,6 @@ fun UserDashboardBody() {
     }
 }
 
-
-//@Composable
-//fun getLatestPrivacyPolicyDesc(): String {
-//    val firestore = Firebase.firestore
-//    val description = remember { mutableStateOf("Loading...") }
-//
-//    LaunchedEffect(Unit) {
-//        firestore.collection("privacy_policy")
-//            .orderBy("date", Query.Direction.DESCENDING)
-//            .limit(1)  // Get only the latest document
-//            .get()
-//            .addOnSuccessListener { result ->
-//                if (!result.isEmpty) {
-//                    val doc = result.documents[0]
-//                    description.value = doc.getString("description") ?: "No description found"
-//                } else {
-//                    description.value = "No documents found"
-//                }
-//            }
-//            .addOnFailureListener {
-//                description.value = "Failed to load data"
-//            }
-//    }
-
-//    return description.value
-//}
-
 @Preview
 @Composable
 fun UserDashboardPreview(){
