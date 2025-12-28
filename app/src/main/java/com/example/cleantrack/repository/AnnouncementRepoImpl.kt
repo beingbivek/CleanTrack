@@ -1,8 +1,11 @@
 package com.example.cleantrack.repository
 
 import com.example.cleantrack.model.AnnouncementModel
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class AnnouncementRepoImpl : AnnouncementRepo {
 
@@ -25,7 +28,17 @@ class AnnouncementRepoImpl : AnnouncementRepo {
     }
 
     override fun getAllAnnouncements(callback: (Boolean, String, List<AnnouncementModel>) -> Unit) {
-        TODO("Not yet implemented")
+        ref.addValueEventListener(object : ValueEventListener{
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = mutableListOf<AnnouncementModel>()
+                snapshot.children.forEach { list.add(it.getValue(AnnouncementModel::class.java)!!) }
+                callback(true, "Success", list.reversed()) // Newest first
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, emptyList())
+            }
+        })
     }
 
     override fun deleteAnnouncement(
