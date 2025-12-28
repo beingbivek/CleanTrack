@@ -6,4 +6,14 @@ data class AnnouncementModel(
     val message: String = "",
     val category: String = "General",
     val timestamp: Long = System.currentTimeMillis()
-)
+){
+    fun toMap(): Map<String, Any> {
+        return mapOf(
+            "id" to id,
+            "title" to title,
+            "message" to message,
+            "category" to category,
+            "timestamp" to timestamp
+        )
+    }
+}
