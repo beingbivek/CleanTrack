@@ -78,7 +78,7 @@ fun AdminDashboardScreen() {
                 title = { Text("Admin Dashboard") },
                 actions = {
                     IconButton(onClick = {
-                        // Simple logout navigation
+                        userViewModel.logout()
                         activity.startActivity(
                             Intent(context, StartActivity::class.java)
                         )
@@ -167,10 +167,23 @@ fun AdminDashboardScreen() {
                         Intent(context, PrivacyPolicyActivity::class.java)
                     )
                 }
+            }
 
+            item{
                 DashboardCard(
                     title = "Points Rule",
                     icon = Icons.Default.Policy
+                ) {
+                    context.startActivity(
+                        Intent(context, AdminPointsRuleListActivity::class.java)
+                    )
+                }
+            }
+
+            item{
+                DashboardCard(
+                    title = "Announcement",
+                    icon = Icons.Default.Announcement
                 ) {
                     context.startActivity(
                         Intent(context, AdminPointsRuleListActivity::class.java)
