@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Red
-import com.example.cleantrack.view.admin.ui.theme.AdminAnnouncementListActivity
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.auth.StartActivity
 import com.example.cleantrack.view.common.LogoutDialog

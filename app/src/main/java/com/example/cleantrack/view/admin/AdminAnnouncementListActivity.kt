@@ -1,4 +1,4 @@
-package com.example.cleantrack.view.admin.ui.theme
+package com.example.cleantrack.view.admin
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,7 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,7 +31,6 @@ import com.example.cleantrack.model.AnnouncementModel
 import com.example.cleantrack.repository.AnnouncementRepoImpl
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.White
-import com.example.cleantrack.view.admin.AdminAnnouncementSetupActivity
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 
 class AdminAnnouncementListActivity : ComponentActivity() {
