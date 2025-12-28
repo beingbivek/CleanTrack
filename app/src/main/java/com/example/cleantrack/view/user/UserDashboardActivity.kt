@@ -60,6 +60,11 @@ import com.example.cleantrack.view.auth.StartActivity
 import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.viewmodel.UserViewModel
+import androidx.compose.runtime.livedata.observeAsState
+import com.example.cleantrack.model.AnnouncementModel
+import com.example.cleantrack.repository.AnnouncementRepoImpl
+import com.example.cleantrack.view.common.AnnouncementBanner // Import the banner we designed earlier
+import com.example.cleantrack.viewmodel.AnnouncementViewModel
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,7 +84,26 @@ fun UserDashboardBody() {
     val activity = context as Activity
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    // 1. Initialize Announcement ViewModel
+    val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
+
+    // 2. State for the Popup/Banner
+    val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
+    var showAnnouncement by remember { mutableStateOf(false) }
+    var latestAnnouncement by remember { mutableStateOf<AnnouncementModel?>(null) }
+
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // 3. Fetch announcements when dashboard opens
+    LaunchedEffect(Unit) {
+        announcementVM.getAllAnnouncements { success, _, data ->
+            if (success && data.isNotEmpty()) {
+                latestAnnouncement = data.first() // Get the newest one
+                showAnnouncement = true
+            }
+        }
+    }
 
     LogoutDialog(
         showDialog = showLogoutDialog,
@@ -121,7 +145,7 @@ fun UserDashboardBody() {
                         }
                     ) {
                         Icon(
-                            Icons.Default.Settings,null
+                            Icons.Default.Settings, null
                         )
                     }
                 },
@@ -143,64 +167,77 @@ fun UserDashboardBody() {
         }
     ) { padding ->
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(White),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top,
-        ) {
+        // We use a Box so the announcement can overlap or sit at the top
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
 
-            Text(
-                "User Dashboard",
-                style = TextStyle(
-                    textAlign = TextAlign.Center,
-                    color = Black,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 30.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(50.dp))
-
-            DashboardCard(
-                title = "Manage Bins",
-                icon = Icons.Default.Delete
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(White),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top,
             ) {
-                context.startActivity(
-                    Intent(context, UserBinListActivity::class.java)
-                )
-            }
+                // 4. ANNOUNCEMENT BANNER POSITION
+                // This will appear right at the top of the dashboard content if active
+                if (showAnnouncement && latestAnnouncement != null) {
+                    AnnouncementBanner(
+                        announcement = latestAnnouncement!!,
+                        onDismiss = { showAnnouncement = false }
+                    )
+                }
 
-            DashboardCard(
-                title = "See Live Truck",
-                icon = Icons.Default.Map
-            ) {
-                context.startActivity(
-                    Intent(context, UserLiveTrackingActivity::class.java)
-                )
-            }
+                Spacer(modifier = Modifier.height(20.dp))
 
-            DashboardCard(
-                title = "Payments",
-                icon = Icons.Default.Payments
-            ) {
-                context.startActivity(
-                    Intent(context, PaymentActivity::class.java)
+                Text(
+                    "User Dashboard",
+                    style = TextStyle(
+                        textAlign = TextAlign.Center,
+                        color = Black,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 30.sp
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
 
-            DashboardCard(
-                title = "Announcement",
-                icon = Icons.Default.Announcement
-            ) {
-                context.startActivity(
-                    Intent(context, PaymentActivity::class.java)
-                )
-            }
+                Spacer(modifier = Modifier.height(50.dp))
 
+                DashboardCard(
+                    title = "Manage Bins",
+                    icon = Icons.Default.Delete
+                ) {
+                    context.startActivity(
+                        Intent(context, UserBinListActivity::class.java)
+                    )
+                }
+
+                DashboardCard(
+                    title = "See Live Truck",
+                    icon = Icons.Default.Map
+                ) {
+                    context.startActivity(
+                        Intent(context, UserLiveTrackingActivity::class.java)
+                    )
+                }
+
+                DashboardCard(
+                    title = "Payments",
+                    icon = Icons.Default.Payments
+                ) {
+                    context.startActivity(
+                        Intent(context, PaymentActivity::class.java)
+                    )
+                }
+
+                DashboardCard(
+                    title = "Announcement",
+                    icon = Icons.Default.Announcement
+                ) {// This could lead to a 'History' list of all announcements
+                    // For now, let's just re-show the latest one if clicked
+                    showAnnouncement = true
+                }
+
+            }
         }
     }
 }
