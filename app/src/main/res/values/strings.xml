@@ -34,4 +34,5 @@
     </string>
     <string name="title_activity_edit_profile">EditProfileActivity</string>
     <string name="title_activity_admin_announcement_setup">AdminAnnouncementSetupActivity</string>
+    <string name="title_activity_admin_announcement_list">AdminAnnouncementListActivity</string>
 </resources>
