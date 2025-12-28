@@ -49,4 +49,19 @@ class AnnouncementRepoImpl : AnnouncementRepo {
             if (it.isSuccessful) callback(true, "Deleted") else callback(false, "Failed")
         }
     }
+
+    override fun editAnnouncement(
+        id: String,
+        model: AnnouncementModel,
+        callback: (Boolean, String) -> Unit
+    ) {
+        ref.child(id).updateChildren(model.toMap())
+            .addOnCompleteListener {
+                if (it.isSuccessful){
+                    callback(true, "User Account updated")
+                }else{
+                    callback(false, "${it.exception?.message}")
+                }
+            }
+    }
 }
