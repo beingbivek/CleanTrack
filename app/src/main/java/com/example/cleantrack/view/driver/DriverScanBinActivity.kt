@@ -8,15 +8,19 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import com.example.cleantrack.model.BinCollectionModel
 import com.example.cleantrack.model.BinModel
+import com.example.cleantrack.model.PointsRuleModel
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.repository.ActiveTripRepoImpl
+import com.example.cleantrack.repository.PointsRepoImpl
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 
 class DriverScanBinActivity : ComponentActivity() {
     private lateinit var activeTripViewModel: ActiveTripViewModel
+    val pointsRepo = PointsRepoImpl()
 
     @SuppressLint("ViewModelConstructorInComposable")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,6 +80,22 @@ class DriverScanBinActivity : ComponentActivity() {
         // Save the rating and points
         activeTripViewModel.addBinCollection(collectionModel) { success, message ->
             if (success) {
+                pointsRepo.calculatePoints(
+                    binType = bin.category,
+                    segregatedCorrectly = segregatedCorrectly
+                ) { calculatedPoints ->
+
+//                    val updatedCollection = collectionModel.copy(
+//                        pointsAwarded = calculatedPoints
+//                    )
+//
+//                    binCollectionRepo.save(updatedCollection)
+
+                    pointsRepo.addPointsToUser(
+                        userId = bin.ownerUserId,
+                        points = calculatedPoints
+                    )
+                }
                 Toast.makeText(this, "Bin rated successfully", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
