@@ -16,7 +16,7 @@ class AnnouncementViewModel(val repo : AnnouncementRepo) : ViewModel() {
     }
 
     private val _allAnnouncements = MutableLiveData<List<AnnouncementModel>?>()
-    val allUsers : MutableLiveData<List<AnnouncementModel>?>
+    val allAnnouncements : MutableLiveData<List<AnnouncementModel>?>
         get() = _allAnnouncements
 
     fun getAllAnnouncements(callback: (Boolean, String, List<AnnouncementModel>) -> Unit){
@@ -42,6 +42,10 @@ class AnnouncementViewModel(val repo : AnnouncementRepo) : ViewModel() {
     fun deleteAnnouncement(id: String, callback: (Boolean, String) -> Unit){
         repo.deleteAnnouncement(id, callback)
 
+    }
+
+    fun editAnnouncement(id : String, model : AnnouncementModel, callback: (Boolean, String) -> Unit){
+        repo.editAnnouncement(id, model, callback)
     }
 
 }
