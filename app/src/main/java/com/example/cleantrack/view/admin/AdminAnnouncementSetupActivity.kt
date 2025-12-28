@@ -48,6 +48,8 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
     var category by remember { mutableStateOf("General") }
     var isLoading by remember { mutableStateOf(false) }
 
+
+
     val categories = listOf("General", "Urgent", "Schedule", "Holiday")
 
     // Observe all announcements to find the one we need to edit
@@ -74,6 +76,7 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
             }
         }
     }
+
 
     Scaffold(
         topBar = {
@@ -160,10 +163,13 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
                     ) {
                         Text(if (announcementId == null) "Post Announcement" else "Save Changes")
                     }
+
                 }
             }
         }
     }
+
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
