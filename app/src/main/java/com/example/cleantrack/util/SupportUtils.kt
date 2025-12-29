@@ -18,21 +18,22 @@ fun StylizedConversation(message: String) {
             val trimmedLine = line.trim()
 
             when {
-                trimmedLine.startsWith("[User @") -> {
-                    withStyle(style = SpanStyle(color = Color(0xFF0D47A1), fontWeight = FontWeight.Bold)) {
-                        append(line.substringBefore("]:") + "]:")
-                    }
-                    append(line.substringAfter("]:"))
-                }
+                // If it's an Admin message, keep it Green
                 trimmedLine.startsWith("[Admin @") -> {
                     withStyle(style = SpanStyle(color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)) {
                         append(line.substringBefore("]:") + "]:")
                     }
                     append(line.substringAfter("]:"))
                 }
-                else -> {
-                    append(line)
+
+                // If the line starts with '[' and contains ' @', assume it's the User's name
+                trimmedLine.startsWith("[") && trimmedLine.contains(" @") -> {
+                    withStyle(style = SpanStyle(color = Color(0xFF0D47A1), fontWeight = FontWeight.Bold)) {
+                        append(line.substringBefore("]:") + "]:")
+                    }
+                    append(line.substringAfter("]:"))
                 }
+                else -> append(line)
             }
             if (index < lines.size - 1) append("\n")
         }
@@ -40,10 +41,6 @@ fun StylizedConversation(message: String) {
 
     Text(
         text = annotatedString,
-        style = TextStyle(
-            fontSize = 14.sp,
-            color = Color.Black,
-            lineHeight = 20.sp
-        )
+        style = TextStyle(fontSize = 14.sp, color = Color.Black, lineHeight = 20.sp)
     )
 }
