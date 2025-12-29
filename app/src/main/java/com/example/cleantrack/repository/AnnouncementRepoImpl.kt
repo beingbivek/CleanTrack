@@ -64,4 +64,9 @@ class AnnouncementRepoImpl : AnnouncementRepo {
                 }
             }
     }
+
+    override fun markAsSeen(id: String, userId: String) {
+        // We update only the specific child to avoid overwriting other data
+        ref.child(id).child("seenBy").child(userId).setValue(true)
+    }
 }
