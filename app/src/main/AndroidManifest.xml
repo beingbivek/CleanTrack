@@ -19,7 +19,7 @@
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
         <activity
-            android:name=".view.user.IssuesViewActivity"
+            android:name=".view.common.IssuesViewActivity"
             android:exported="true"
             android:label="@string/title_activity_issues_view"
             android:theme="@style/Theme.CleanTrack">
