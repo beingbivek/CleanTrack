@@ -1,4 +1,4 @@
-package com.example.cleantrack.view.user
+package com.example.cleantrack.view.common
 
 import ContactSupportRepoImpl
 import android.os.Bundle
@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.ContactSupportModel
 import com.example.cleantrack.ui.theme.*
+import com.example.cleantrack.util.StylizedConversation
 import com.example.cleantrack.viewmodel.ContactSupportViewModel
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
@@ -97,9 +98,9 @@ fun UserIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel
     val context = LocalContext.current
 
     val statusColor = when (issue.status.uppercase()) {
-        "OPEN" -> Color(0xFFE65100)      // Deep Orange
-        "REPLIED" -> Color(0xFF0288D1)   // Light Blue
-        "CLOSED" -> Color(0xFF388E3C)    // Material Green
+        "OPEN" -> Color(0xFFE65100)
+        "REPLIED" -> Color(0xFF0288D1)
+        "CLOSED" -> Color(0xFF388E3C)
         else -> Color.Gray
     }
 
@@ -112,7 +113,7 @@ fun UserIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            // --- HEADER: Category & Status ---
+            // --- HEADER ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -120,12 +121,7 @@ fun UserIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel
             ) {
                 Text(
                     text = issue.category.uppercase(),
-                    style = TextStyle(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                        color = Green
-                    )
+                    style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Green)
                 )
 
                 Surface(
@@ -135,75 +131,46 @@ fun UserIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel
                     Text(
                         text = issue.status,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = TextStyle(
-                            color = statusColor,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
+                        style = TextStyle(color = statusColor, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- MESSAGE BODY ---
             Text(
-                text = "My Message:",
+                text = "Conversation History:",
                 style = TextStyle(fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = issue.message,
-                style = TextStyle(fontSize = 15.sp, color = Black, lineHeight = 20.sp)
-            )
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // --- ADMIN REPLY SECTION (If exists) ---
-            if (issue.adminReply.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFF1F8E9), RoundedCornerShape(12.dp)) // Very light green
-                        .padding(12.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = Green
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            "Support Response",
-                            style = TextStyle(fontWeight = FontWeight.Bold, color = Green, fontSize = 12.sp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = issue.adminReply, fontSize = 14.sp, color = Black)
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            ) {
+                StylizedConversation(message = issue.message)
             }
 
+
             Spacer(modifier = Modifier.height(16.dp))
-            Divider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 0.5.dp)
+            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f), thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // --- FOOTER: Date & Reply Button ---
+            // --- FOOTER ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Updated: " + SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(issue.timestamp)),
+                    text = "Last Activity: " + SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(issue.timestamp)),
                     style = TextStyle(fontSize = 11.sp, color = Color.Gray)
                 )
 
                 if (issue.status != "CLOSED") {
-                    TextButton(
-                        onClick = { showReplyField = !showReplyField },
-                        contentPadding = PaddingValues(horizontal = 8.dp)
-                    ) {
+                    TextButton(onClick = { showReplyField = !showReplyField }) {
                         Icon(Icons.Default.Reply, null, modifier = Modifier.size(16.dp), tint = Green)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Reply Back", color = Green, fontWeight = FontWeight.Bold)
@@ -211,14 +178,14 @@ fun UserIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel
                 }
             }
 
-            // --- EXPANDABLE REPLY FIELD ---
+            // --- REPLY FIELD ---
             if (showReplyField) {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = userReplyText,
                     onValueChange = { userReplyText = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Add more details...", fontSize = 14.sp) },
+                    placeholder = { Text("Write your message...", fontSize = 14.sp) },
                     shape = RoundedCornerShape(12.dp),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = TextBoxColor,
@@ -233,14 +200,13 @@ fun UserIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel
                                 if (success) {
                                     userReplyText = ""
                                     showReplyField = false
-                                    Toast.makeText(context, "Update sent!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Reply Sent!", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
                     },
                     modifier = Modifier.align(Alignment.End).padding(top = 8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Green),
-                    shape = RoundedCornerShape(8.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = Green)
                 ) {
                     Text("Send", color = White)
                 }
