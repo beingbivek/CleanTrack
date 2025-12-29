@@ -5,7 +5,8 @@ data class AnnouncementModel(
     val title: String = "",
     val message: String = "",
     val category: String = "General",
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val seenBy: Map<String, Boolean> = emptyMap() // Map of UserID to SeenStatus
 ){
     fun toMap(): Map<String, Any> {
         return mapOf(

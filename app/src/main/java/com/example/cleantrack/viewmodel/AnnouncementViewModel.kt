@@ -48,4 +48,8 @@ class AnnouncementViewModel(val repo : AnnouncementRepo) : ViewModel() {
         repo.editAnnouncement(id, model, callback)
     }
 
+    fun markAsSeen(id: String, userId: String) {
+        repo.markAsSeen(id, userId)
+    }
+
 }
