@@ -52,6 +52,17 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".view.user.BinSetupActivity"
+            android:exported="true"
+            android:label="BinSetupActivity"
+            android:theme="@style/Theme.CleanTrack" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.common.EditProfileActivity"
             android:exported="true"
             android:label="@string/title_activity_edit_profile"
