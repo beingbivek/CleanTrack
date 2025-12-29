@@ -12,5 +12,7 @@ interface AnnouncementRepo {
 
     fun editAnnouncement(id : String, model : AnnouncementModel, callback: (Boolean, String) -> Unit)
 
+    fun markAsSeen(id: String, userId: String)
+
 
 }
