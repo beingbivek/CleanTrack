@@ -1,5 +1,6 @@
 package com.example.cleantrack.view.user
 
+import android.app.Activity
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -19,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.cleantrack.model.map.RouteModel
 import com.example.cleantrack.repository.RouteRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.util.ApiTokenUtil
 import com.example.cleantrack.viewmodel.RouteViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 import org.maplibre.android.MapLibre
 import org.maplibre.android.annotations.Polyline
 import org.maplibre.android.annotations.PolylineOptions
@@ -46,50 +49,63 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
     val context = LocalContext.current
     MapLibre.getInstance(context.applicationContext)
 
+    // ViewModels
     val routeVM = remember { RouteViewModel(RouteRepoImpl()) }
-    val routes by routeVM.routes.observeAsState(emptyList())
+    val userVM = remember { UserViewModel(UserRepoImpl()) }
 
-    // UI States
+    // Observers
+    val routes by routeVM.routes.observeAsState(emptyList())
+    val userProfile by userVM.user.observeAsState()
+
+    // UI & Map States
     var expanded by remember { mutableStateOf(false) }
     var selectedRoute by remember { mutableStateOf<RouteModel?>(null) }
-
-    // Map States
-    val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
     val mapView = remember { MapView(context).apply { onCreate(savedInstanceState) } }
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var currentPolyline by remember { mutableStateOf<Polyline?>(null) }
 
-    // Mock User Location (In a real app, fetch this from UserProfile or GPS)
-    val userLat = 27.7007
-    val userLon = 85.3001
-
-    // 1. Fetch Routes
+    // 1. Fetch User Data and Routes
     LaunchedEffect(Unit) {
         routeVM.loadRoutes()
-    }
-
-    // 2. Recommendation Logic: Find closest route to user
-    LaunchedEffect(routes) {
-        if (routes.isNotEmpty() && selectedRoute == null) {
-            selectedRoute = routes.minByOrNull { route ->
-                route.points.minOf { pt ->
-                    calculateDistance(userLat, userLon, pt.lat, pt.lon)
-                }
-            }
-            Toast.makeText(context, "Recommended: ${selectedRoute?.name}", Toast.LENGTH_SHORT).show()
+        userVM.getCurrentUserId()?.let { uid ->
+            userVM.getUserById(uid)
         }
     }
 
-    // 3. Update Map when route changes
+    // 2. Recommendation Logic: Compare User Location vs Route Points
+    LaunchedEffect(routes, userProfile) {
+        val uLat = userProfile?.latitude
+        val uLon = userProfile?.longitude
+
+        if (routes.isNotEmpty() && uLat != null && uLon != null && selectedRoute == null) {
+            // Find the route that has the closest single point to the user's home
+            val recommended = routes.minByOrNull { route ->
+                route.points.minOf { pt ->
+                    calculateDistance(uLat, uLon, pt.lat, pt.lon)
+                }
+            }
+
+            selectedRoute = recommended
+            recommended?.let {
+                Toast.makeText(context, "Recommended Route: ${it.name}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    // 3. Update Map Graphics
     LaunchedEffect(selectedRoute, mapInstance) {
         mapInstance?.let { m ->
             currentPolyline?.let { m.removePolyline(it) }
             selectedRoute?.let { route ->
                 val latLngs = route.points.map { LatLng(it.lat, it.lon) }
                 if (latLngs.isNotEmpty()) {
-                    currentPolyline = m.addPolyline(PolylineOptions().addAll(latLngs).width(5f))
-                    // Zoom to the first point of the route
-                    m.animateCamera(CameraUpdateFactory.newLatLngZoom(latLngs[0], 14.0))
+                    currentPolyline = m.addPolyline(PolylineOptions()
+                        .addAll(latLngs)
+                        .color(android.graphics.Color.parseColor("#4CAF50"))
+                        .width(6f))
+
+                    // Zoom to show the route
+                    m.animateCamera(CameraUpdateFactory.newLatLngZoom(latLngs[0], 13.0))
                 }
             }
         }
@@ -100,7 +116,7 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
             TopAppBar(
                 title = { Text("Live Tracking", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { (context as? ComponentActivity)?.finish() }) {
+                    IconButton(onClick = { (context as? Activity)?.finish() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = null)
                     }
                 }
@@ -109,7 +125,22 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
     ) { pad ->
         Column(modifier = Modifier.fillMaxSize().padding(pad)) {
 
-            // DROPDOWN SELECTOR
+            // RECOMMENDATION INFO HEADER
+            if (userProfile?.latitude != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Showing routes near your saved location",
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            // DROPDOWN
             Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 ExposedDropdownMenuBox(
                     expanded = expanded,
@@ -119,7 +150,7 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
                         value = selectedRoute?.name ?: "Select a Route",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Active Waste Collection Route") },
+                        label = { Text("Waste Collection Route") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
@@ -140,14 +171,15 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
                 }
             }
 
-            // MAP VIEW
+            // MAP
             Box(modifier = Modifier.fillMaxSize().weight(1f)) {
                 AndroidView(
                     factory = { mapView },
                     modifier = Modifier.fillMaxSize()
-                ) {
-                    it.getMapAsync { m ->
+                ) { view ->
+                    view.getMapAsync { m ->
                         mapInstance = m
+                        val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
                         m.setStyle(styleUrl)
                     }
                 }
