@@ -4,6 +4,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.ContactSupportModel
 import com.example.cleantrack.repository.ContactSupportRepo
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
     val loading = MutableLiveData<Boolean>()
@@ -35,15 +38,30 @@ class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
         repo.updateTicketStatus(ticket.ticketId, ticket.category, newStatus) { s, m -> adminMessage.postValue(m) }
     }
 
-    fun replyToTicket(issue: ContactSupportModel, replyText: String) {
+    fun userReplyToTicket(issue: ContactSupportModel, userReply: String, callback: (Boolean) -> Unit) {
+        val timestamp = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date())
+        val updatedMessage = "${issue.message}\n\n[User @ $timestamp]: $userReply"
+
+        val updatedIssue = issue.copy(message = updatedMessage, status = "OPEN")
+
+        repo.updateIssueThread(updatedIssue) { success ->
+            if (success) fetchAllTickets()
+            callback(success)
+        }
+    }
+
+    fun adminReplyToTicket(issue: ContactSupportModel, adminReply: String) {
+        val timestamp = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date())
+        val updatedThread = "${issue.message}\n\n[Admin @ $timestamp]: $adminReply"
         val updatedIssue = issue.copy(
-            adminReply = replyText,
-            status = "REPLIED"
+            message = updatedThread,
+            adminReply = "",
+            status = "REPLIED",
+            timestamp = System.currentTimeMillis()
         )
 
         repo.sendAdminReply(updatedIssue) { success ->
-            if (success) {
-            }
+            if (success) fetchAllTickets()
         }
     }
 }

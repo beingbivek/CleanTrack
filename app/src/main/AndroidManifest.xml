@@ -19,6 +19,50 @@
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.user.IssuesViewActivity"
+            android:exported="true"
+            android:label="@string/title_activity_issues_view"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.user.UserAnnouncementListActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_announcement_list"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.admin.AdminAnnouncementListActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_announcement_list"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.admin.AdminAnnouncementSetupActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_announcement_setup"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.common.EditProfileActivity"
             android:exported="true"
             android:label="@string/title_activity_edit_profile"
@@ -54,7 +98,7 @@
             android:name=".view.user.UserLiveTrackingActivity"
             android:exported="true"
             android:label="@string/title_activity_user_live_tracking"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -75,7 +119,7 @@
             android:name=".view.user.PaymentActivity"
             android:exported="true"
             android:label="@string/title_activity_payment"
-            android:theme="@style/Theme.CleanTrack" >
+            android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
