@@ -85,13 +85,15 @@ fun UserDashboardBody() {
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
 
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
+
     // 1. Initialize Announcement ViewModel
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
 
     // 2. State for the Popup/Banner
     val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
     var showAnnouncement by remember { mutableStateOf(false) }
-    var latestAnnouncement by remember { mutableStateOf<AnnouncementModel?>(null) }
+    var latestUnseenAnnouncement by remember { mutableStateOf<AnnouncementModel?>(null) }
 
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -100,14 +102,19 @@ fun UserDashboardBody() {
         announcementVM.getAllAnnouncements { _, _, _ -> }
     }
 
-// 3. React to DATA changes (This is the "Pop-up" trigger)
+// Filter Logic: Find the latest announcement where currentUserId is NOT in 'seenBy'
     LaunchedEffect(announcements) {
-        // Add a log here to see if data is actually arriving
-        android.util.Log.d("ANNOUNCEMENT_DEBUG", "List Size: ${announcements?.size}")
-
         if (!announcements.isNullOrEmpty()) {
-            latestAnnouncement = announcements!!.first()
-            showAnnouncement = true
+            val unseen = announcements!!.firstOrNull { announcement ->
+                // Check if our ID exists in the seenBy map
+                val isSeen = announcement.seenBy[currentUserId] ?: false
+                !isSeen
+            }
+
+            if (unseen != null) {
+                latestUnseenAnnouncement = unseen
+                showAnnouncement = true
+            }
         }
     }
 
@@ -184,12 +191,15 @@ fun UserDashboardBody() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
             ) {
-                // 4. ANNOUNCEMENT BANNER POSITION
-                // This will appear right at the top of the dashboard content if active
-                if (showAnnouncement && latestAnnouncement != null) {
+                if (showAnnouncement && latestUnseenAnnouncement != null) {
                     AnnouncementBanner(
-                        announcement = latestAnnouncement!!,
-                        onDismiss = { showAnnouncement = false }
+                        announcement = latestUnseenAnnouncement!!,
+                        onDismiss = {
+                            // 1. Hide from UI
+                            showAnnouncement = false
+                            // 2. Update Firebase so it never pops up again for this user
+                            announcementVM.markAsSeen(latestUnseenAnnouncement!!.id, currentUserId)
+                        }
                     )
                 }
 
