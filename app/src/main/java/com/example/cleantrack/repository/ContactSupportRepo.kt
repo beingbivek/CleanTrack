@@ -9,5 +9,7 @@ interface ContactSupportRepo {
     fun getCurrentUserDetails(callback: (UserModel?) -> Unit)
     fun getAllIssues(callback: (Boolean, String, List<ContactSupportModel>) -> Unit)
     fun updateTicketStatus(ticketId: String, category: String, newStatus: String, callback: (Boolean, String) -> Unit)
-    fun sendAdminReply(model: ContactSupportModel, callback: (Boolean) -> Unit)}
+    fun sendAdminReply(model: ContactSupportModel, callback: (Boolean) -> Unit)
+
+    fun updateIssueThread(issue: ContactSupportModel, callback: (Boolean) -> Unit)}
 

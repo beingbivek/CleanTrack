@@ -57,4 +57,12 @@ class ContactSupportRepoImpl : ContactSupportRepo {
             .setValue(model)
             .addOnCompleteListener { callback(it.isSuccessful) }
     }
+
+    override fun updateIssueThread(issue: ContactSupportModel, callback: (Boolean) -> Unit) {
+        issuesRef.child(issue.category).child(issue.ticketId)
+            .setValue(issue)
+            .addOnCompleteListener { task ->
+                callback(task.isSuccessful)
+            }
+    }
 }
