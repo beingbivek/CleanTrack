@@ -73,7 +73,7 @@ import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.viewmodel.ContactSupportViewModel
 import coil.compose.AsyncImage
 import com.example.cleantrack.repository.CommonImageRepoImpl
-import com.example.cleantrack.view.user.IssuesViewActivity
+import com.example.cleantrack.view.common.IssuesViewActivity
 import com.example.cleantrack.viewmodel.CommonImageViewModel
 
 class ContactSupportActivity : ComponentActivity() {
@@ -171,30 +171,24 @@ fun ContactSupportBody(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            Spacer(modifier = Modifier.height(50.dp))
 
-            Text(
-                "Contact Support",
-                style = TextStyle(
-                    textAlign = TextAlign.Center,
-                    color = Black,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 30.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            IconButton(
-                onClick = {
-                    context.startActivity(Intent(context, IssuesViewActivity::class.java))
-                },
-                modifier = Modifier.background(TextBoxColor, RoundedCornerShape(12.dp)).size(45.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = "My Tickets",
-                    tint = Green
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Contact Support",
+                    style = TextStyle(textAlign = TextAlign.Center, color = Black, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 50.dp)
                 )
+
+                IconButton(
+                    onClick = { context.startActivity(Intent(context, IssuesViewActivity::class.java)) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 50.dp, end = 15.dp)
+                        .background(TextBoxColor, RoundedCornerShape(12.dp))
+                        .size(45.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Email, contentDescription = "My Tickets", tint = Green)
+                }
             }
 
             Spacer(modifier = Modifier.size(15.dp))
@@ -399,13 +393,16 @@ fun ContactSupportBody(
                         if (selectedOptionText == "Select Issues" || message.isEmpty()) {
                             Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                         } else {
+                            // --- NEW: Format the message with the User's Name and Date ---
+                            val timestamp = java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+                            val formattedFirstMessage = "[$fullname @ $timestamp]: $message"
+
                             if (selectedImageUri != null) {
-                                // Step 1: Upload image
                                 commonImageViewModel.uploadImage(context, selectedImageUri!!) { uploadedUrl ->
                                     if (uploadedUrl != null) {
-                                        // Step 2: Submit with the cloud URL
+                                        // Pass formattedFirstMessage instead of just message
                                         viewModel.submitTicket(
-                                            fullname, email, selectedOptionText, message, userId, userType, uploadedUrl
+                                            fullname, email, selectedOptionText, formattedFirstMessage, userId, userType, uploadedUrl
                                         ) { success, msg ->
                                             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                             if (success) {
@@ -418,9 +415,9 @@ fun ContactSupportBody(
                                     }
                                 }
                             } else {
-                                // Submit without an image (empty string for URL)
+                                // Pass formattedFirstMessage instead of just message
                                 viewModel.submitTicket(
-                                    fullname, email, selectedOptionText, message, userId, userType, ""
+                                    fullname, email, selectedOptionText, formattedFirstMessage, userId, userType, ""
                                 ) { success, msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     if (success) message = ""

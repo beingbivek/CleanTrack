@@ -204,14 +204,12 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            // Header with User Name and Status Toggle
+            // Header
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text(issue.fullname, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text(issue.email, fontSize = 12.sp, color = Color.Gray)
                 }
-
-                // Status Picker
                 Box {
                     Text(
                         text = issue.status,
@@ -235,23 +233,19 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
 
             Spacer(modifier = Modifier.height(12.dp))
             Text("CATEGORY: ${issue.category}", fontSize = 11.sp, color = Green, fontWeight = FontWeight.Bold)
-
             Spacer(modifier = Modifier.height(8.dp))
 
-            // --- CONVERSATION THREAD (The "Instagram Comment" Style) ---
+            // --- STYLIZED CONVERSATION BOX ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
                     .padding(12.dp)
             ) {
-                Text(
-                    text = issue.message,
-                    style = TextStyle(fontSize = 14.sp, color = Black, lineHeight = 20.sp)
-                )
+                // CALLING YOUR UTIL HERE
+                com.example.cleantrack.util.StylizedConversation(message = issue.message)
             }
 
-            // Image attachment if it exists
             if (issue.attachmentUrl.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 AsyncImage(
@@ -264,13 +258,12 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Reply Section
             if (showReplyField) {
                 OutlinedTextField(
                     value = adminReplyText,
                     onValueChange = { adminReplyText = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Write a reply to the user...") },
+                    placeholder = { Text("Write a reply...") },
                     shape = RoundedCornerShape(12.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -284,9 +277,7 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Green)
-                    ) {
-                        Text("Send Reply", color = White)
-                    }
+                    ) { Text("Send Reply", color = White) }
                 }
             } else {
                 Button(
