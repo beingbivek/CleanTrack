@@ -12,14 +12,9 @@ data class ContactSupportModel(
     val email: String = "",
     val category: String = "",
     val message: String = "",
-    val adminReply: String = "",
     val attachmentUrl: String = "",
     val userType: String = "Guest",
     val status: String = "OPEN",
     val timestamp: Long = System.currentTimeMillis()
 ) : Parcelable {
-
-    fun createReply(text: String): ContactSupportModel {
-        return this.copy(adminReply = text, status = "REPLIED")
-    }
 }
