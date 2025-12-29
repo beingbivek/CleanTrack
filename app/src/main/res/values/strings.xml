@@ -37,4 +37,5 @@
     <string name="title_activity_admin_announcement_list">AdminAnnouncementListActivity</string>
     <string name="title_activity_user_announcement_list">UserAnnouncementListActivity</string>
     <string name="title_activity_issues_view">IssuesViewActivity</string>
+    <string name="title_activity_user_route_live_tracking">UserRouteLiveTrackingActivity</string>
 </resources>
