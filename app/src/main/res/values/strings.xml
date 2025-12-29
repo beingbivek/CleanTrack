@@ -33,4 +33,7 @@
     <string name="title_activity_admin_contact_support_view">AdminContactSupportViewActivity
     </string>
     <string name="title_activity_edit_profile">EditProfileActivity</string>
+    <string name="title_activity_admin_announcement_setup">AdminAnnouncementSetupActivity</string>
+    <string name="title_activity_admin_announcement_list">AdminAnnouncementListActivity</string>
+    <string name="title_activity_user_announcement_list">UserAnnouncementListActivity</string>
 </resources>

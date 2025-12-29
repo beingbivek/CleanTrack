@@ -186,7 +186,7 @@ fun AdminDashboardScreen() {
                     icon = Icons.Default.Announcement
                 ) {
                     context.startActivity(
-                        Intent(context, AdminPointsRuleListActivity::class.java)
+                        Intent(context, AdminAnnouncementListActivity::class.java)
                     )
                 }
             }
