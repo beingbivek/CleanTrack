@@ -73,7 +73,7 @@ import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.viewmodel.ContactSupportViewModel
 import coil.compose.AsyncImage
 import com.example.cleantrack.repository.CommonImageRepoImpl
-import com.example.cleantrack.view.user.IssuesViewActivity
+import com.example.cleantrack.view.common.IssuesViewActivity
 import com.example.cleantrack.viewmodel.CommonImageViewModel
 
 class ContactSupportActivity : ComponentActivity() {
@@ -171,30 +171,24 @@ fun ContactSupportBody(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            Spacer(modifier = Modifier.height(50.dp))
 
-            Text(
-                "Contact Support",
-                style = TextStyle(
-                    textAlign = TextAlign.Center,
-                    color = Black,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 30.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            IconButton(
-                onClick = {
-                    context.startActivity(Intent(context, IssuesViewActivity::class.java))
-                },
-                modifier = Modifier.background(TextBoxColor, RoundedCornerShape(12.dp)).size(45.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = "My Tickets",
-                    tint = Green
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Contact Support",
+                    style = TextStyle(textAlign = TextAlign.Center, color = Black, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 50.dp)
                 )
+
+                IconButton(
+                    onClick = { context.startActivity(Intent(context, IssuesViewActivity::class.java)) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 50.dp, end = 15.dp)
+                        .background(TextBoxColor, RoundedCornerShape(12.dp))
+                        .size(45.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Email, contentDescription = "My Tickets", tint = Green)
+                }
             }
 
             Spacer(modifier = Modifier.size(15.dp))
