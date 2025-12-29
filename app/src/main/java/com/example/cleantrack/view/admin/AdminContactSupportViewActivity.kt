@@ -21,15 +21,18 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.cleantrack.model.ContactSupportModel
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.viewmodel.ContactSupportViewModel
-import java.text.SimpleDateFormat
-import java.util.*
 
 class AdminContactSupportViewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -183,8 +186,9 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
 @Composable
 fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel) {
     var showReplyField by remember { mutableStateOf(false) }
-    var replyText by remember { mutableStateOf("") }
-    var statusExpanded by remember { mutableStateOf(false) }
+    var adminReplyText by remember { mutableStateOf("") }
+    var expandedStatus by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val statusColor = when (issue.status.uppercase()) {
         "OPEN" -> Color(0xFFE65100)
@@ -194,135 +198,106 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        colors = CardDefaults.cardColors(containerColor = White)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = White),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header with User Name and Status Toggle
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
                     Text(issue.fullname, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text(issue.email, fontSize = 12.sp, color = Color.Gray)
                 }
 
+                // Status Picker
                 Box {
-                    Surface(
-                        color = statusColor.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.clickable { statusExpanded = true }
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)) {
-                            Text(issue.status.uppercase(), color = statusColor, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            Icon(Icons.Default.ArrowDropDown, null, tint = statusColor)
-                        }
-                    }
-
-                    DropdownMenu(expanded = statusExpanded, onDismissRequest = { statusExpanded = false }) {
-                        val availableStatuses = if (issue.status.uppercase() == "OPEN") listOf("OPEN", "REPLIED", "CLOSED") else listOf("REPLIED", "CLOSED")
-                        availableStatuses.forEach { status ->
-                            DropdownMenuItem(
-                                text = { Text(status) },
-                                onClick = {
-                                    viewModel.changeStatus(issue, status)
-                                    statusExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp)
-
-            Text("Category: ${issue.category}", color = Green, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(issue.message, fontSize = 14.sp, color = Black)
-
-            // --- ATTACHMENT SECTION ---
-            if (issue.attachmentUrl.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Attachment:", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Gray)
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clickable { /* Optional: Add logic to open full screen */ },
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.LightGray)
-                ) {
-                    coil.compose.AsyncImage(
-                        model = issue.attachmentUrl,
-                        contentDescription = "Support Attachment",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        // You can use your existing placeholder logic here
-                        placeholder = androidx.compose.ui.res.painterResource(com.example.cleantrack.R.drawable.contact_support_logo),
-                        error = androidx.compose.ui.res.painterResource(com.example.cleantrack.R.drawable.contact_support_logo)
+                    Text(
+                        text = issue.status,
+                        color = statusColor,
+                        modifier = Modifier
+                            .background(statusColor.copy(0.1f), RoundedCornerShape(8.dp))
+                            .clickable { expandedStatus = true }
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     )
-                }
-            }
-
-            if (issue.adminReply.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Column(
-                    modifier = Modifier.fillMaxWidth().background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp)).padding(10.dp)
-                ) {
-                    Text("Admin Reply:", fontWeight = FontWeight.Bold, color = Green, fontSize = 11.sp)
-                    Text(text = issue.adminReply, fontSize = 13.sp, color = Black)
+                    DropdownMenu(expanded = expandedStatus, onDismissRequest = { expandedStatus = false }) {
+                        listOf("OPEN", "REPLIED", "CLOSED").forEach { s ->
+                            DropdownMenuItem(text = { Text(s) }, onClick = {
+                                viewModel.changeStatus(issue, s)
+                                expandedStatus = false
+                            })
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+            Text("CATEGORY: ${issue.category}", fontSize = 11.sp, color = Green, fontWeight = FontWeight.Bold)
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // --- CONVERSATION THREAD (The "Instagram Comment" Style) ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            ) {
                 Text(
-                    text = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date(issue.timestamp)),
-                    fontSize = 11.sp, color = Color.Gray
-                )
-                Text(
-                    text = issue.userType,
-                    fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                    color = if(issue.userType.equals("Registered", ignoreCase = true)) Color(0xFF2E7D32) else Color.Gray
+                    text = issue.message,
+                    style = TextStyle(fontSize = 14.sp, color = Black, lineHeight = 20.sp)
                 )
             }
 
+            // Image attachment if it exists
+            if (issue.attachmentUrl.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                AsyncImage(
+                    model = issue.attachmentUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Reply Section
             if (showReplyField) {
                 OutlinedTextField(
-                    value = replyText,
-                    onValueChange = { replyText = it },
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    placeholder = { Text("Write your response...") },
-                    shape = RoundedCornerShape(8.dp)
+                    value = adminReplyText,
+                    onValueChange = { adminReplyText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Write a reply to the user...") },
+                    shape = RoundedCornerShape(12.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = { showReplyField = false }) { Text("Cancel") }
                     Button(
                         onClick = {
-                            if (replyText.isNotBlank()) {
-                                viewModel.replyToTicket(issue, replyText)
+                            if (adminReplyText.isNotBlank()) {
+                                viewModel.adminReplyToTicket(issue, adminReplyText)
+                                adminReplyText = ""
                                 showReplyField = false
-                                replyText = ""
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Green)
                     ) {
-                        Text("Send", color = White)
+                        Text("Send Reply", color = White)
                     }
                 }
             } else {
-                TextButton(
+                Button(
                     onClick = { showReplyField = true },
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Green),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.Reply, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(if (issue.adminReply.isEmpty()) " Reply" else " Update Reply")
+                    Icon(Icons.Default.Reply, null, tint = White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reply to Conversation", color = White)
                 }
             }
         }
