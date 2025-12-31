@@ -9,7 +9,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -71,7 +70,7 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
             vehicleNumber = it.vehicleNumber
             type = it.type
             capacity = it.capacity
-            isActive = it.isActive
+            isActive = it.active
         }
     }
 
@@ -198,7 +197,7 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                                 vehicleNumber = vehicleNumber,
                                 type = type,
                                 capacity = capacity,
-                                isActive = isActive
+                                active = isActive
                             )
 
                             if (vehicleId == null) {
