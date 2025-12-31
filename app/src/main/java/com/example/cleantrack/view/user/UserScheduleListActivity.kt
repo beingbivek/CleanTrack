@@ -48,27 +48,33 @@ class UserScheduleListActivity : ComponentActivity() {
 fun UserScheduleListScreen() {
     val context = LocalContext.current
 
-    // Initializing ViewModels with Repositories
     val scheduleVM = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     val userVM = remember { UserViewModel(UserRepoImpl()) }
 
-    // Observing State
+    // 1. Observe Drivers to get their names
     val allSchedules by scheduleVM.schedules.observeAsState(emptyList())
+    val drivers by userVM.drivers.observeAsState(emptyList()) // Added this
     val userProfile by userVM.user.observeAsState()
     val loading by scheduleVM.loading.observeAsState(false)
 
-    // --- State for Floating Detail Card ---
+    // 2. Create the Driver Name Map
+    val driverMap = remember(drivers) {
+        drivers?.associateBy(
+            keySelector = { it.userId },
+            valueTransform = { it.fullname }
+        ) ?: emptyMap()
+    }
+
     var selectedScheduleForDetail by remember { mutableStateOf<ScheduleModel?>(null) }
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
 
-    // Fetch data when screen opens
     LaunchedEffect(Unit) {
         scheduleVM.getAllSchedules()
+        userVM.getAllDrivers() // Fetch drivers so we have the names
         userVM.getCurrentUserId()?.let { userVM.getUserById(it) }
     }
 
-    // Filter schedules that match user's activeRouteId
     val mySchedules = remember(allSchedules, userProfile) {
         allSchedules?.filter {
             it.routeId == userProfile?.activeRouteId && it.active
@@ -94,37 +100,36 @@ fun UserScheduleListScreen() {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 userProfile?.activeRouteId.isNullOrEmpty() -> {
-                    // State: User has not selected a route yet
                     EmptyStateView(
                         title = "No Route Selected",
-                        description = "Please go to 'Live Tracking' and confirm your neighborhood route to see when the truck arrives."
+                        description = "Please go to 'Live Tracking' and confirm your neighborhood route."
                     )
                 }
                 mySchedules.isEmpty() -> {
-                    // State: Route selected but no schedules added by Admin for it
                     EmptyStateView(
                         title = "No Upcoming Pickups",
-                        description = "There are currently no active schedules for ${userProfile?.activeRouteId}. Check back later!"
+                        description = "There are currently no active schedules for your route."
                     )
                 }
                 else -> {
-                    // State: Success, show the list
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {items(mySchedules) { schedule ->
-                        // PASS THE CLICK ACTION HERE
-                        UserScheduleCard(
-                            schedule = schedule,
-                            onClick = {
-                                selectedScheduleForDetail = schedule
-                                showSheet = true
-                            }
-                        )
-                    }
+                    ) {
+                        items(mySchedules) { schedule ->
+                            UserScheduleCard(
+                                schedule = schedule,
+                                // 3. Pass Driver Name to the Card
+                                driverName = driverMap[schedule.driverId] ?: "Assigned Driver",
+                                onClick = {
+                                    selectedScheduleForDetail = schedule
+                                    showSheet = true
+                                }
+                            )
                         }
-                    // --- THE FLOATING DETAIL CARD (ModalBottomSheet) ---
+                    }
+
                     if (showSheet && selectedScheduleForDetail != null) {
                         ModalBottomSheet(
                             onDismissRequest = { showSheet = false },
@@ -132,21 +137,23 @@ fun UserScheduleListScreen() {
                             containerColor = White,
                             dragHandle = { BottomSheetDefaults.DragHandle() }
                         ) {
-                            ScheduleDetailContent(selectedScheduleForDetail!!)
+                            // 4. Pass Driver Name to the Detail Content
+                            ScheduleDetailContent(
+                                schedule = selectedScheduleForDetail!!,
+                                driverName = driverMap[selectedScheduleForDetail!!.driverId] ?: "Unknown Driver"
+                            )
                         }
                     }
                 }
             }
         }
-        }
     }
-
+}
 
 @Composable
-fun UserScheduleCard(schedule: ScheduleModel, onClick: () -> Unit) {
+fun UserScheduleCard(schedule: ScheduleModel, driverName: String, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = White),
         elevation = CardDefaults.cardElevation(2.dp),
         border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
@@ -163,40 +170,30 @@ fun UserScheduleCard(schedule: ScheduleModel, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = schedule.routeName,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                Text(text = schedule.routeName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(
                     text = "${schedule.dayOfWeek} | ${schedule.startTime} - ${schedule.endTime}",
                     color = Color.Gray,
                     fontSize = 14.sp
                 )
+                // Optional: Show driver name briefly on card
+                Text(text = "Driver: $driverName", fontSize = 12.sp, color = Color(0xFF4CAF50))
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Truck",
-                    fontSize = 10.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = schedule.vehicleNumber,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
+                Text(text = "Truck", fontSize = 10.sp, color = Color.Gray)
+                Text(text = schedule.vehicleNumber, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
     }
 }
 
 @Composable
-fun ScheduleDetailContent(schedule: ScheduleModel) {
+fun ScheduleDetailContent(schedule: ScheduleModel, driverName: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 16.dp)
-            .padding(bottom = 32.dp) // Extra padding for the bottom
+            .padding(bottom = 32.dp)
     ) {
         Text(
             text = "Schedule Details",
@@ -210,12 +207,12 @@ fun ScheduleDetailContent(schedule: ScheduleModel) {
         DetailRow(label = "Day of Week", value = schedule.dayOfWeek)
         DetailRow(label = "Time Slot", value = "${schedule.startTime} - ${schedule.endTime}")
         DetailRow(label = "Vehicle No", value = schedule.vehicleNumber)
-        DetailRow(label = "Vehicle ID", value = schedule.vehicleId)
-        DetailRow(label = "Driver ID", value = schedule.driverId)
+
+        // 🔹 Driver Name added, Vehicle/Driver IDs removed as requested
+        DetailRow(label = "Driver Name", value = driverName)
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Status Badge
         Surface(
             color = if (schedule.active) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
             shape = MaterialTheme.shapes.small
