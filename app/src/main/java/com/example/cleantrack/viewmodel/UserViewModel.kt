@@ -272,4 +272,12 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
     fun getCurrentUserId(): String?{
         return repo.getCurrentUserId()
     }
+
+    fun updateActiveRoute(userId: String, routeId: String) {
+        repo.updateActiveRoute(userId, routeId) { success, message ->
+            if (!success) {
+                Log.e("UserVM", "Error saving route: $message")
+            }
+        }
+    }
 }
