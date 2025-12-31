@@ -31,4 +31,6 @@ interface UserRepo {
     fun logout()
 
     fun getCurrentUserId(): String?
+
+    fun updateActiveRoute(userId: String, routeId: String, callback: (Boolean, String) -> Unit)
 }
