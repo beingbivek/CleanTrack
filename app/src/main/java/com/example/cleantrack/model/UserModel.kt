@@ -21,6 +21,8 @@ data class UserModel(
     val municipality: String = "",
     val ward: String = "",
 
+    val activeRouteId: String = "",
+
 //    location model updated
 
     val latitude : Double? = null,
@@ -45,6 +47,7 @@ data class UserModel(
             "district" to district,
             "municipality" to municipality,
             "ward" to ward,
+            "activeRouteId" to activeRouteId,
             "latitude" to latitude,
             "longitude" to longitude,
             "profileImageUrl" to profileImageUrl
