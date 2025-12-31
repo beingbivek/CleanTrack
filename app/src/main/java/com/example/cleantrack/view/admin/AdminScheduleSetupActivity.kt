@@ -2,7 +2,6 @@ package com.example.cleantrack.view.admin
 
 import android.app.Activity
 import android.app.TimePickerDialog
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -12,10 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -28,7 +24,6 @@ import com.example.cleantrack.repository.RouteRepoImpl
 import com.example.cleantrack.repository.ScheduleRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.repository.VehicleRepoImpl
-import com.example.cleantrack.view.auth.DropdownField
 import com.example.cleantrack.viewmodel.RouteViewModel
 import com.example.cleantrack.viewmodel.ScheduleViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
@@ -158,7 +153,7 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
 
                 // 🔽 VEHICLE DROPDOWN (ACTIVE ONLY)
                 item {
-                    val activeVehicles = vehicles.filter { it.isActive }
+                    val activeVehicles = vehicles.filter { it.active }
 
                     DropdownField(
                         label = "Vehicle",
