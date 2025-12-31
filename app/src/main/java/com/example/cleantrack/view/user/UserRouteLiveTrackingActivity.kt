@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.cleantrack.model.map.RouteModel
 import com.example.cleantrack.repository.RouteRepoImpl
@@ -72,22 +73,26 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
         }
     }
 
-    // 2. Recommendation Logic: Compare User Location vs Route Points
+    // 2. Logic: Load saved route OR use Recommendation Logic
     LaunchedEffect(routes, userProfile) {
         val uLat = userProfile?.latitude
         val uLon = userProfile?.longitude
+        val savedRouteId = userProfile?.activeRouteId // Get saved route from profile
 
-        if (routes.isNotEmpty() && uLat != null && uLon != null && selectedRoute == null) {
-            // Find the route that has the closest single point to the user's home
-            val recommended = routes.minByOrNull { route ->
-                route.points.minOf { pt ->
-                    calculateDistance(uLat, uLon, pt.lat, pt.lon)
+        if (routes.isNotEmpty() && selectedRoute == null) {
+            // Priority 1: Use the route the user saved previously
+            val savedRoute = routes.find { it.routeId == savedRouteId }
+
+            if (savedRoute != null) {
+                selectedRoute = savedRoute
+            } else if (uLat != null && uLon != null) {
+                // Priority 2: Use recommendation based on distance
+                selectedRoute = routes.minByOrNull { route ->
+                    route.points.minOf { pt ->
+                        calculateDistance(uLat, uLon, pt.lat, pt.lon)
+                    }
                 }
-            }
-
-            selectedRoute = recommended
-            recommended?.let {
-                Toast.makeText(context, "Recommended Route: ${it.name}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Recommended: ${selectedRoute?.name}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -104,7 +109,6 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
                         .color(android.graphics.Color.parseColor("#4CAF50"))
                         .width(6f))
 
-                    // Zoom to show the route
                     m.animateCamera(CameraUpdateFactory.newLatLngZoom(latLngs[0], 13.0))
                 }
             }
@@ -123,65 +127,90 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
             )
         }
     ) { pad ->
-        Column(modifier = Modifier.fillMaxSize().padding(pad)) {
+        // Box allows us to stack the Confirm Button over the Map
+        Box(modifier = Modifier.fillMaxSize().padding(pad)) {
+            Column(modifier = Modifier.fillMaxSize()) {
 
-            // RECOMMENDATION INFO HEADER
-            if (userProfile?.latitude != null) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Showing routes near your saved location",
-                        modifier = Modifier.padding(8.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-
-            // DROPDOWN
-            Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
-                    OutlinedTextField(
-                        value = selectedRoute?.name ?: "Select a Route",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Waste Collection Route") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                // RECOMMENDATION INFO HEADER
+                if (userProfile?.latitude != null) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        routes.forEach { route ->
-                            DropdownMenuItem(
-                                text = { Text(route.name) },
-                                onClick = {
-                                    selectedRoute = route
-                                    expanded = false
-                                }
-                            )
+                        Text(
+                            text = "Showing routes near your saved location",
+                            modifier = Modifier.padding(8.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                // DROPDOWN
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedRoute?.name ?: "Select a Route",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Waste Collection Route") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            routes.forEach { route ->
+                                DropdownMenuItem(
+                                    text = { Text(route.name) },
+                                    onClick = {
+                                        selectedRoute = route
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // MAP
+                Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+                    AndroidView(
+                        factory = { mapView },
+                        modifier = Modifier.fillMaxSize()
+                    ) { view ->
+                        view.getMapAsync { m ->
+                            mapInstance = m
+                            val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
+                            m.setStyle(styleUrl)
                         }
                     }
                 }
             }
 
-            // MAP
-            Box(modifier = Modifier.fillMaxSize().weight(1f)) {
-                AndroidView(
-                    factory = { mapView },
-                    modifier = Modifier.fillMaxSize()
-                ) { view ->
-                    view.getMapAsync { m ->
-                        mapInstance = m
-                        val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
-                        m.setStyle(styleUrl)
-                    }
+            // --- CONFIRMATION BUTTON ---
+            if (selectedRoute != null) {
+                Button(
+                    onClick = {
+                        val uid = userVM.getCurrentUserId()
+                        if (uid != null) {
+                            userVM.updateActiveRoute(uid, selectedRoute!!.routeId)
+                            Toast.makeText(context, "Route confirmed and saved!", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 32.dp)
+                        .fillMaxWidth(0.8f)
+                        .height(56.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+                    elevation = ButtonDefaults.buttonElevation(8.dp)
+                ) {
+                    Text("Confirm Route", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
