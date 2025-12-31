@@ -200,6 +200,7 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
                         if (uid != null) {
                             userVM.updateActiveRoute(uid, selectedRoute!!.routeId)
                             Toast.makeText(context, "Route confirmed and saved!", Toast.LENGTH_SHORT).show()
+                            (context as? Activity)?.finish()
                         }
                     },
                     modifier = Modifier
