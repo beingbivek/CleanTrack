@@ -253,6 +253,22 @@ fun UserDashboardBody() {
                     Intent(context, UserAnnouncementListActivity::class.java)
                 )
                 }
+                DashboardCard(
+                    title = "Routes",
+                    icon = Icons.Default.Announcement
+                ) {
+                    context.startActivity(
+                        Intent(context, UserRouteLiveTrackingActivity::class.java)
+                    )
+                }
+                DashboardCard(
+                    title = "Schedule",
+                    icon = Icons.Default.Announcement
+                ) {
+                    context.startActivity(
+                        Intent(context, UserScheduleListActivity::class.java)
+                    )
+                }
 
             }
         }

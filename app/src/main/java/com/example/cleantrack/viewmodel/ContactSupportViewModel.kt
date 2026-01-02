@@ -1,5 +1,6 @@
 package com.example.cleantrack.viewmodel
 
+import ContactSupportRepoImpl
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.ContactSupportModel
@@ -40,11 +41,12 @@ class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
 
     fun userReplyToTicket(issue: ContactSupportModel, userReply: String, callback: (Boolean) -> Unit) {
         val timestamp = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date())
-        val updatedMessage = "${issue.message}\n\n[User @ $timestamp]: $userReply"
 
-        val updatedIssue = issue.copy(message = updatedMessage, status = "OPEN")
+        val updatedThread = "${issue.message}\n\n[${issue.fullname} @ $timestamp]: $userReply"
 
-        repo.updateIssueThread(updatedIssue) { success ->
+        val updatedIssue = issue.copy(message = updatedThread, status = "OPEN")
+
+        (repo as ContactSupportRepoImpl).updateIssueThread(updatedIssue) { success ->
             if (success) fetchAllTickets()
             callback(success)
         }
@@ -55,7 +57,6 @@ class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
         val updatedThread = "${issue.message}\n\n[Admin @ $timestamp]: $adminReply"
         val updatedIssue = issue.copy(
             message = updatedThread,
-            adminReply = "",
             status = "REPLIED",
             timestamp = System.currentTimeMillis()
         )

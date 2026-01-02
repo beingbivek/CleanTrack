@@ -45,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.cleantrack.model.VehicleModel
 import com.example.cleantrack.repository.VehicleRepoImpl
@@ -167,7 +166,7 @@ fun VehicleAdminCard(
             Text(vehicle.vehicleNumber, fontWeight = FontWeight.Bold)
             Text("Type: ${vehicle.type}")
             Text("Capacity: ${vehicle.capacity}")
-            Text("Status: ${vehicle.isActive}")
+            Text("Status: ${vehicle.active}")
 
             Spacer(Modifier.height(10.dp))
 
