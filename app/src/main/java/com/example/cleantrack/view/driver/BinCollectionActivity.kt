@@ -19,9 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.BinCollectionModel
+import com.example.cleantrack.repository.ActiveTripRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.BinRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.viewmodel.BinViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 
 class BinCollectionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +46,9 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
     // 🔹 Use BinViewModel to fetch bin details
     val binVM = remember { BinViewModel(BinRepoImpl()) }
     val collectionRepo = remember { BinCollectionRepoImpl() }
+    val userViewModel  = remember { UserViewModel(UserRepoImpl()) }
+    val activeTripViewModel = remember { ActiveTripViewModel(ActiveTripRepoImpl()) }
+
 
     val binDetails by binVM.bin.observeAsState()
     val loading by binVM.loading.observeAsState(false)
@@ -125,7 +132,7 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                         val model = BinCollectionModel(
                             binId = binId,
                             userId = binDetails?.ownerUserId ?: "",
-                            driverId = "CURRENT_DRIVER_ID", // TODO: Get from shared preferences or auth
+                            driverId = "", // TODO: Get from shared preferences or auth
                             tripId = "CURRENT_TRIP_ID",     // TODO: Pass from previous activity
                             rating = rating,
                             remarks = remarks,
