@@ -38,6 +38,8 @@ fun BinSetupScreen(binId: String?) {
     var label by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("ORGANIC") }
 
+    var expanded by remember { mutableStateOf(false) }
+
     val categories = listOf("ORGANIC", "INORGANIC", "TOXIC", "MIXED")
 
     LaunchedEffect(binId) {
@@ -70,22 +72,35 @@ fun BinSetupScreen(binId: String?) {
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // 2. Wrap in the correct MenuBox logic
             ExposedDropdownMenuBox(
-                expanded = false,
-                onExpandedChange = {}
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded } // 3. Toggle state
             ) {
                 OutlinedTextField(
                     value = category,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Category") },
-                    modifier = Modifier.fillMaxWidth()
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor() // 4. VERY IMPORTANT: Anchors menu to field
                 )
-                DropdownMenu(expanded = false, onDismissRequest = {}) {
-                    categories.forEach {
+
+                ExposedDropdownMenu( // 5. Use ExposedDropdownMenu instead of DropdownMenu
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    categories.forEach { item ->
                         DropdownMenuItem(
-                            text = { Text(it) },
-                            onClick = { category = it }
+                            text = { Text(item) },
+                            onClick = {
+                                category = item
+                                expanded = false // 6. Close menu after selection
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                         )
                     }
                 }

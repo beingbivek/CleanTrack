@@ -9,6 +9,6 @@ data class RouteModel(
     var routeId: String = "",
     val name: String = "",
     val points: List<LatLngPoint> = emptyList(),
-    val isActive: Boolean = true,
+    val active: Boolean = true,
     val createdAt: Long = 0L
 )

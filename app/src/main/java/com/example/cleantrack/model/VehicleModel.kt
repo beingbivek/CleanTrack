@@ -5,7 +5,7 @@ data class VehicleModel(
     val vehicleNumber: String = "",
     val type: String = "TRUCK",
     val capacity: String = "",
-    val isActive: Boolean = true
+    val active: Boolean = true
 ) {
     fun toMap(): Map<String, Any?> {
         return mapOf(
@@ -13,7 +13,7 @@ data class VehicleModel(
             "vehicleNumber" to vehicleNumber,
             "type" to type,
             "capacity" to capacity,
-            "isActive" to isActive
+            "active" to active
         )
     }
 }

@@ -64,7 +64,7 @@ class ScheduleViewModel(
         val newStart = toMinutes(newSchedule.startTime)
         val newEnd = toMinutes(newSchedule.endTime)
 
-        existingSchedules!!.forEach { existing ->
+        existingSchedules?.forEach { existing ->
 
             // Skip same schedule while editing
             if (existing.scheduleId == newSchedule.scheduleId) return@forEach

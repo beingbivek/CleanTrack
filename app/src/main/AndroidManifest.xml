@@ -19,6 +19,28 @@
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.user.UserScheduleListActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_schedule_list"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.user.UserRouteLiveTrackingActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_route_live_tracking"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.common.IssuesViewActivity"
             android:exported="true"
             android:label="@string/title_activity_issues_view"
@@ -55,6 +77,17 @@
             android:name=".view.admin.AdminAnnouncementSetupActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_announcement_setup"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.user.BinSetupActivity"
+            android:exported="true"
+            android:label="BinSetupActivity"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
