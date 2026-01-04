@@ -14,7 +14,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.cleantrack.model.BinModel
 import com.example.cleantrack.repository.BinRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.viewmodel.BinViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 
 class BinSetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +32,10 @@ fun BinSetupScreen(binId: String?) {
 
     val context = LocalContext.current
     val activity = context as Activity
-    val userId = "LOGGED_IN_USER_ID"
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    var currentUserId by remember { mutableStateOf("") }
+
+
 
     val vm = remember { BinViewModel(BinRepoImpl()) }
     val selected by vm.bin.observeAsState(null)
@@ -44,6 +49,9 @@ fun BinSetupScreen(binId: String?) {
 
     LaunchedEffect(binId) {
         binId?.let { vm.getBinById(it) }
+
+        // 🔹 Get the logged-in driver's ID
+        currentUserId = userViewModel.getCurrentUserId() ?: ""
     }
 
     LaunchedEffect(selected) {
@@ -116,7 +124,7 @@ fun BinSetupScreen(binId: String?) {
 
                     val model = BinModel(
                         binId = binId ?: "",
-                        ownerUserId = userId,
+                        ownerUserId = currentUserId,
                         label = label,
                         category = category
                     )
