@@ -474,7 +474,7 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
                 placeholder = {
                     Text("Enter your password")
                 },
-
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = TextBoxColor,
                     unfocusedContainerColor = TextBoxColor,
@@ -512,7 +512,7 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
                 placeholder = {
                     Text("Confirm your password")
                 },
-
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = TextBoxColor,
                     unfocusedContainerColor = TextBoxColor,
