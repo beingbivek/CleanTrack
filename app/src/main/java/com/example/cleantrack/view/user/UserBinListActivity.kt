@@ -22,6 +22,8 @@ import com.example.cleantrack.repository.BinRepoImpl
 import com.example.cleantrack.viewmodel.BinViewModel
 import com.example.cleantrack.util.QrUtil
 import androidx.compose.ui.graphics.asImageBitmap
+import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.viewmodel.UserViewModel
 
 class UserBinListActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +36,9 @@ class UserBinListActivity : ComponentActivity() {
 @Composable
 fun UserBinListScreen() {
     val context = LocalContext.current
-    val userId = "LOGGED_IN_USER_ID" // Replace with actual Auth logic
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    var currentUserId by remember { mutableStateOf("") }
+
 
     val vm = remember { BinViewModel(BinRepoImpl()) }
     val bins by vm.bins.observeAsState(emptyList())
@@ -44,8 +48,18 @@ fun UserBinListScreen() {
     var selectedBinForQr by remember { mutableStateOf<com.example.cleantrack.model.BinModel?>(null) }
     var showQrSheet by remember { mutableStateOf(false) }
 
+
+    // 1. Fetch the User ID when screen starts
     LaunchedEffect(Unit) {
-        vm.loadUserBins(userId)
+        val id = userViewModel.getCurrentUserId() ?: ""
+        currentUserId = id
+    }
+
+    // 2. ONLY load bins once currentUserId is actually fetched
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNotEmpty()) {
+            vm.loadUserBins(currentUserId)
+        }
     }
 
     Scaffold(
