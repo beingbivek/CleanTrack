@@ -53,6 +53,9 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
     val binDetails by binVM.bin.observeAsState()
     val loading by binVM.loading.observeAsState(false)
 
+    // 🔹 State to hold the current Driver's ID
+    var currentDriverId by remember { mutableStateOf("") }
+
     // Form States
     var rating by remember { mutableIntStateOf(0) }
     var remarks by remember { mutableStateOf("") }
@@ -62,6 +65,8 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
     // Fetch data when activity starts
     LaunchedEffect(binId) {
         binVM.getBinById(binId)
+        // 🔹 Get the logged-in driver's ID
+        currentDriverId = userViewModel.getCurrentUserId() ?: ""
     }
 
     Scaffold(
@@ -132,7 +137,7 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                         val model = BinCollectionModel(
                             binId = binId,
                             userId = binDetails?.ownerUserId ?: "",
-                            driverId = "", // TODO: Get from shared preferences or auth
+                            driverId = currentDriverId, // TODO: Get from shared preferences or auth
                             tripId = "CURRENT_TRIP_ID",     // TODO: Pass from previous activity
                             rating = rating,
                             remarks = remarks,
