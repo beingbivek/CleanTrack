@@ -1,47 +1,24 @@
 package com.example.cleantrack.viewmodel
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.cleantrack.model.PrivacyPolicyModel
 import com.example.cleantrack.repository.PrivacyPolicyRepo
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
-class PrivacyPolicyViewModel(val repo: PrivacyPolicyRepo) : ViewModel() {
+class PrivacyPolicyViewModel(private val repository: PrivacyPolicyRepo) : ViewModel() {
+    private val _privacypolicy = MutableStateFlow("")
+    val privacypolicy: StateFlow<String> = _privacypolicy
 
-    private val _policy = MutableLiveData<PrivacyPolicyModel?>()
-    val policy: MutableLiveData<PrivacyPolicyModel?>
-        get() = _policy
-
-    private val _loading = MutableLiveData<Boolean>()
-    val loading: MutableLiveData<Boolean>
-        get() = _loading
-
-    private val _message = MutableLiveData<String?>()
-    val message: MutableLiveData<String?>
-        get() = _message
+    private val _message = MutableStateFlow("")
+    val message: StateFlow<String> = _message
 
     fun loadPrivacyPolicy() {
-        _loading.postValue(true)
-        repo.getPrivacyPolicy { success, msg, data ->
-            _loading.postValue(false)
-            _message.postValue(msg)
-            if (success) _policy.postValue(data)
+        repository.getPrivacyPolicy { success, msg, content ->
+            if (success) _privacypolicy.value = content ?: ""
         }
     }
 
-    fun savePrivacyPolicy(description: String, callback: (Boolean, String) -> Unit) {
-        _loading.postValue(true)
-
-        val model = PrivacyPolicyModel(
-            privacypolicyId = "policy_1",
-            description = description.trim(),
-            date = System.currentTimeMillis()
-        )
-
-        repo.savePrivacyPolicy(model) { success, msg ->
-            _loading.postValue(false)
-            _message.postValue(msg)
-            if (success) _policy.postValue(model)
-            callback(success, msg)
-        }
+    fun postPrivacyPolicy(content: String, callback: (Boolean,String) -> Unit) {
+        repository.updatePrivacyPolicy(content, callback)
     }
 }

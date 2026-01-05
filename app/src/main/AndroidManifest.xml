@@ -171,6 +171,11 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".view.admin.AdminPrivacyPolicyActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_privacy_policy"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
             android:name=".view.admin.AdminVehicleSetupActivity"
             android:exported="false"
             android:label="@string/title_activity_admin_vehicle_setup"
@@ -206,15 +211,16 @@
             android:label="@string/title_activity_driver_routine"
             android:theme="@style/Theme.CleanTrack" />
         <activity
-            android:name=".view.admin.AdminPrivacyPolicyActivity"
-            android:exported="false"
-            android:label="@string/title_activity_admin_privacy_policy"
-            android:theme="@style/Theme.CleanTrack" />
-        <activity
             android:name=".view.common.PrivacyPolicyActivity"
-            android:exported="false"
-            android:label="@string/title_activity_privacy_policy"
-            android:theme="@style/Theme.CleanTrack" />
+            android:exported="true"
+            android:label="PrivacyPolicyActivity"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"
