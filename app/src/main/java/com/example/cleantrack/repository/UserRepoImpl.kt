@@ -323,4 +323,20 @@ class UserRepoImpl : UserRepo{
         return auth.currentUser?.uid
     }
 
+    override fun updateActiveRoute(
+        userId: String,
+        routeId: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        // This saves the routeId as a child under the user's specific node
+        ref.child(userId).child("activeRouteId").setValue(routeId)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    callback(true, "Route saved successfully")
+                } else {
+                    callback(false, task.exception?.message ?: "Failed to save route")
+                }
+            }
+    }
+
 }

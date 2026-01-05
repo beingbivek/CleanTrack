@@ -27,6 +27,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.filled.Announcement
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -50,9 +55,16 @@ import com.example.cleantrack.R
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.view.admin.DashboardCard
 import com.example.cleantrack.view.auth.StartActivity
 import com.example.cleantrack.view.common.LogoutDialog
+import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.viewmodel.UserViewModel
+import androidx.compose.runtime.livedata.observeAsState
+import com.example.cleantrack.model.AnnouncementModel
+import com.example.cleantrack.repository.AnnouncementRepoImpl
+import com.example.cleantrack.view.common.AnnouncementBanner // Import the banner we designed earlier
+import com.example.cleantrack.viewmodel.AnnouncementViewModel
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,16 +84,45 @@ fun UserDashboardBody() {
     val activity = context as Activity
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
+
+    // 1. Initialize Announcement ViewModel
+    val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
+
+    // 2. State for the Popup/Banner
+    val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
+    var showAnnouncement by remember { mutableStateOf(false) }
+    var latestUnseenAnnouncement by remember { mutableStateOf<AnnouncementModel?>(null) }
+
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // 2. Trigger the fetch once
+    LaunchedEffect(Unit) {
+        announcementVM.getAllAnnouncements { _, _, _ -> }
+    }
+
+// Filter Logic: Find the latest announcement where currentUserId is NOT in 'seenBy'
+    LaunchedEffect(announcements) {
+        if (!announcements.isNullOrEmpty()) {
+            val unseen = announcements!!.firstOrNull { announcement ->
+                // Check if our ID exists in the seenBy map
+                val isSeen = announcement.seenBy[currentUserId] ?: false
+                !isSeen
+            }
+
+            if (unseen != null) {
+                latestUnseenAnnouncement = unseen
+                showAnnouncement = true
+            }
+        }
+    }
 
     LogoutDialog(
         showDialog = showLogoutDialog,
         onDismiss = { showLogoutDialog = false },
         viewModel = userViewModel
     )
-
-//    val privacyText = getLatestPrivacyPolicyDesc()
-
 
     Scaffold(
         topBar = {
@@ -117,7 +158,7 @@ fun UserDashboardBody() {
                         }
                     ) {
                         Icon(
-                            Icons.Default.Settings,null
+                            Icons.Default.Settings, null
                         )
                     }
                 },
@@ -137,61 +178,102 @@ fun UserDashboardBody() {
                 )
             }
         }
-    ) { padding ->
+    ) { innerpadding ->
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(White),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top,
-        ) {
+        // We use a Box so the announcement can overlap or sit at the top
+        Box(modifier = Modifier.fillMaxSize().padding(innerpadding)) {
 
-            Text(
-                "User Dashboard",
-                style = TextStyle(
-                    textAlign = TextAlign.Center,
-                    color = Black,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 30.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
 
-            Spacer(modifier = Modifier.height(50.dp))
+                    .background(White),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top,
+            ) {
+                if (showAnnouncement && latestUnseenAnnouncement != null) {
+                    AnnouncementBanner(
+                        announcement = latestUnseenAnnouncement!!,
+                        onDismiss = {
+                            // 1. Hide from UI
+                            showAnnouncement = false
+                            // 2. Update Firebase so it never pops up again for this user
+                            announcementVM.markAsSeen(latestUnseenAnnouncement!!.id, currentUserId)
+                        }
+                    )
+                }
 
-//            Text(text = privacyText)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    "User Dashboard",
+                    style = TextStyle(
+                        textAlign = TextAlign.Center,
+                        color = Black,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 30.sp
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(50.dp))
+
+                DashboardCard(
+                    title = "Manage Bins",
+                    icon = Icons.Default.Delete
+                ) {
+                    context.startActivity(
+                        Intent(context, UserBinListActivity::class.java)
+                    )
+                }
+
+                DashboardCard(
+                    title = "See Live Truck",
+                    icon = Icons.Default.Map
+                ) {
+                    context.startActivity(
+                        Intent(context, UserLiveTrackingActivity::class.java)
+                    )
+                }
+
+                DashboardCard(
+                    title = "Payments",
+                    icon = Icons.Default.Payments
+                ) {
+                    context.startActivity(
+                        Intent(context, PaymentActivity::class.java)
+                    )
+                }
+
+                DashboardCard(
+                    title = "Announcement",
+                    icon = Icons.Default.Announcement
+                ) {
+                    context.startActivity(
+                    Intent(context, UserAnnouncementListActivity::class.java)
+                )
+                }
+                DashboardCard(
+                    title = "Routes",
+                    icon = Icons.Default.Announcement
+                ) {
+                    context.startActivity(
+                        Intent(context, UserRouteLiveTrackingActivity::class.java)
+                    )
+                }
+                DashboardCard(
+                    title = "Schedule",
+                    icon = Icons.Default.Announcement
+                ) {
+                    context.startActivity(
+                        Intent(context, UserScheduleListActivity::class.java)
+                    )
+                }
+
+            }
         }
     }
 }
-
-
-//@Composable
-//fun getLatestPrivacyPolicyDesc(): String {
-//    val firestore = Firebase.firestore
-//    val description = remember { mutableStateOf("Loading...") }
-//
-//    LaunchedEffect(Unit) {
-//        firestore.collection("privacy_policy")
-//            .orderBy("date", Query.Direction.DESCENDING)
-//            .limit(1)  // Get only the latest document
-//            .get()
-//            .addOnSuccessListener { result ->
-//                if (!result.isEmpty) {
-//                    val doc = result.documents[0]
-//                    description.value = doc.getString("description") ?: "No description found"
-//                } else {
-//                    description.value = "No documents found"
-//                }
-//            }
-//            .addOnFailureListener {
-//                description.value = "Failed to load data"
-//            }
-//    }
-
-//    return description.value
-//}
 
 @Preview
 @Composable

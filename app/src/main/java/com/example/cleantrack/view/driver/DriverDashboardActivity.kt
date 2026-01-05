@@ -26,7 +26,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,6 +43,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cleantrack.model.AnnouncementModel
+import com.example.cleantrack.repository.AnnouncementRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.ButtonColor
@@ -50,7 +54,9 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Transparent
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.view.auth.StartActivity
+import com.example.cleantrack.view.common.AnnouncementBanner
 import com.example.cleantrack.view.common.LogoutDialog
+import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 
 class DriverDashboardActivity : ComponentActivity() {
@@ -65,7 +71,6 @@ class DriverDashboardActivity : ComponentActivity() {
 
 @Composable
 fun DriverDashboardScreen(
-
     driverName: String = "Ishan",
     routeName: String = "Route A - Ward 5",
     completed: Int = 12,
@@ -80,7 +85,38 @@ fun DriverDashboardScreen(
 
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
+
+    // 1. Initialize Announcement ViewModel
+    val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
+
+    // 2. State for the Popup/Banner
+    val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
+    var showAnnouncement by remember { mutableStateOf(false) }
+    var latestUnseenAnnouncement by remember { mutableStateOf<AnnouncementModel?>(null) }
+
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // 2. Trigger the fetch once
+    LaunchedEffect(Unit) {
+        announcementVM.getAllAnnouncements { _, _, _ -> }
+    }
+
+// Filter Logic: Find the latest announcement where currentUserId is NOT in 'seenBy'
+    LaunchedEffect(announcements) {
+        if (!announcements.isNullOrEmpty()) {
+            val unseen = announcements!!.firstOrNull { announcement ->
+                // Check if our ID exists in the seenBy map
+                val isSeen = announcement.seenBy[currentUserId] ?: false
+                !isSeen
+            }
+
+            if (unseen != null) {
+                latestUnseenAnnouncement = unseen
+                showAnnouncement = true
+            }
+        }
+    }
 
     LogoutDialog(
         showDialog = showLogoutDialog,
@@ -88,9 +124,9 @@ fun DriverDashboardScreen(
         viewModel = userViewModel
     )
 
-    Scaffold (floatingActionButton = {
+    Scaffold(floatingActionButton = {
         FloatingActionButton(onClick = {
-           showLogoutDialog = true
+            showLogoutDialog = true
         }) {
             Icon(
                 Icons.Default.Logout,
@@ -98,170 +134,216 @@ fun DriverDashboardScreen(
                 tint = Red
             )
         }
-    }){ padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(White)
-                .padding(20.dp)
-        ) {
+    }) { innerpadding ->
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Screen Title
-            Text(
-                text = "Driver Dashboard",
-                style = TextStyle(
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Black,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Welcome Message
-            Text(
-                text = "Welcome, $driverName 👋",
-                style = TextStyle(
-                    fontSize = 18.sp,
-                    color = Black,
-                    fontWeight = FontWeight.Normal,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(25.dp))
-
-            // New Top Card
-            Box(
+        // We use a Box so the announcement can overlap or sit at the top
+        Box(modifier = Modifier.fillMaxSize().padding(innerpadding)) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(TextBoxColor, shape = RoundedCornerShape(18.dp))
-                    .padding(50.dp)
-            ) {
-                Column {
-                    Text(
-                        text = "Today's Overview",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Black
-                    )
+                    .fillMaxSize()
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = "You have 20 stops today.\nMake sure to complete your route on time!",
-                        fontSize = 16.sp,
-                        color = Black,
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Spacer(modifier = Modifier.height(15.dp))
-
-                    Button(
-                        onClick = onViewRoute,
-                        modifier = Modifier
-                            .fillMaxWidth(0.8f)
-                            .height(60.dp)
-                            .background(
-                                brush = Brush.horizontalGradient(colors = ButtonColor),
-                                shape = RoundedCornerShape(15.dp)
-                            ),
-                        colors = ButtonDefaults.buttonColors(containerColor = Transparent),
-                    ) {
-                        Text("View Route", color = White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-
-
-            // Assigned Route Card
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(TextBoxColor, shape = RoundedCornerShape(18.dp))
+                    .background(White)
                     .padding(20.dp)
             ) {
-                Column {
-                    Text(
-                        text = "Assigned Route",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Black
+                if (showAnnouncement && latestUnseenAnnouncement != null) {
+                    AnnouncementBanner(
+                        announcement = latestUnseenAnnouncement!!,
+                        onDismiss = {
+                            // 1. Hide from UI
+                            showAnnouncement = false
+                            // 2. Update Firebase so it never pops up again for this user
+                            announcementVM.markAsSeen(latestUnseenAnnouncement!!.id, currentUserId)
+                        }
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(40.dp))
 
-                    Text(
-                        text = routeName,
+                // Screen Title
+                Text(
+                    text = "Driver Dashboard",
+                    style = TextStyle(
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Black,
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Welcome Message
+                Text(
+                    text = "Welcome, $driverName 👋",
+                    style = TextStyle(
                         fontSize = 18.sp,
-                        color = Green,
+                        color = Black,
+                        fontWeight = FontWeight.Normal,
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                // New Top Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(TextBoxColor, shape = RoundedCornerShape(18.dp))
+                        .padding(50.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Today's Overview",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Black
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "You have 20 stops today.\nMake sure to complete your route on time!",
+                            fontSize = 16.sp,
+                            color = Black,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(15.dp))
+
+                        Button(
+                            onClick = onViewRoute,
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .height(60.dp)
+                                .background(
+                                    brush = Brush.horizontalGradient(colors = ButtonColor),
+                                    shape = RoundedCornerShape(15.dp)
+                                ),
+                            colors = ButtonDefaults.buttonColors(containerColor = Transparent),
+                        ) {
+                            Text(
+                                "View Route",
+                                color = White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+
+                // Assigned Route Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(TextBoxColor, shape = RoundedCornerShape(18.dp))
+                        .padding(20.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Assigned Route",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Black
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = routeName,
+                            fontSize = 18.sp,
+                            color = Green,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(15.dp))
+
+                        // Progress Stats Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            RouteStat("Completed", completed.toString(), Green)
+                            RouteStat("Skipped", skipped.toString(), color = Red)
+                            RouteStat(
+                                "Pending",
+                                (totalStops - completed - skipped).toString(),
+                                color = Red
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // View Route Button
+
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                // Status Banner
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFe8f5e9), RoundedCornerShape(16.dp))
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = "Status: Waiting to Start",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Green
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Start Route Button
+                Button(
+                    onClick = onStartRoute,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .background(Green, RoundedCornerShape(18.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Transparent),
+                ) {
+                    Text(
+                        text = "Start Route",
+                        fontSize = 20.sp,
+                        color = White,
                         fontWeight = FontWeight.Bold
                     )
-
-                    Spacer(modifier = Modifier.height(15.dp))
-
-                    // Progress Stats Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        RouteStat("Completed", completed.toString(), Green)
-                        RouteStat("Skipped", skipped.toString(), color = Red)
-                        RouteStat("Pending", (totalStops - completed - skipped).toString(), color = Red)
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // View Route Button
-
                 }
+                Button(
+                    onClick = {
+                        context.startActivity(
+                            Intent(
+                                context,
+                                DriverScanBinActivity::class.java
+                            )
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .background(Green, RoundedCornerShape(18.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Transparent),
+                ) {
+                    Text(
+                        text = "Scan Bin QR",
+                        fontSize = 20.sp,
+                        color = White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+
             }
-
-            Spacer(modifier = Modifier.height(30.dp))
-
-            // Status Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFe8f5e9), RoundedCornerShape(16.dp))
-                    .padding(20.dp)
-            ) {
-                Text(
-                    text = "Status: Waiting to Start",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Green
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Start Route Button
-            Button(
-                onClick = onStartRoute,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .background(Green, RoundedCornerShape(18.dp)),
-                colors = ButtonDefaults.buttonColors(containerColor = Transparent),
-            ) {
-                Text(
-                    text = "Start Route",
-                    fontSize = 20.sp,
-                    color = White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
         }
     }
 }

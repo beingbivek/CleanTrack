@@ -31,6 +31,7 @@ import com.example.cleantrack.R
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.view.common.ContactSupportActivity
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
+import com.example.cleantrack.view.common.EditProfileActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -196,7 +197,17 @@ fun SettingsBody() {
                 SettingsSectionHeader(R.drawable.baseline_account_circle_24, "Account")
                 SettingsCard(
                     items = listOf(
-                        { SettingListItem("Edit Profile") },
+                        {
+                            Box(
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(context, EditProfileActivity::class.java)
+                                    intent.putExtra("USER_ID", currentUser?.uid)
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                SettingListItem("Edit Profile")
+                            }
+                        },
                         { SettingListItem("Change Password") },
                         { SettingListItem("Delete Account", showDivider = false) }
                     )

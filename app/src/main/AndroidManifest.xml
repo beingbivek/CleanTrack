@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <!-- Internet Permission -->
-    <uses-permission android:name="android.permission.INTERNET" /> <!-- Location Permission -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- Location Permission -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -14,7 +16,160 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CleanTrack">
+        android:theme="@style/Theme.CleanTrack"
+        tools:replace="android:fullBackupContent">
+        <activity
+            android:name=".view.driver.BinCollectionActivity"
+            android:exported="true"
+            android:label="@string/title_activity_bin_collection"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.user.UserScheduleListActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_schedule_list"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.user.UserRouteLiveTrackingActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_route_live_tracking"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.common.IssuesViewActivity"
+            android:exported="true"
+            android:label="@string/title_activity_issues_view"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.user.UserAnnouncementListActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_announcement_list"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.admin.AdminAnnouncementListActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_announcement_list"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.admin.AdminAnnouncementSetupActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_announcement_setup"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.user.BinSetupActivity"
+            android:exported="true"
+            android:label="BinSetupActivity"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.common.EditProfileActivity"
+            android:exported="true"
+            android:label="@string/title_activity_edit_profile"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.admin.AdminContactSupportViewActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_contact_support_view"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.admin.AdminPointsRuleSetupActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_points_rule_setup"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminPointsRuleListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_points_rule_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.user.UserLiveTrackingActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_live_tracking"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.driver.DriverScanBinActivity"
+            android:exported="false"
+            android:label="@string/title_activity_driver_scan_bin"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.user.UserBinListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_user_bin_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.user.PaymentActivity"
+            android:exported="true"
+            android:label="@string/title_activity_payment"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".view.admin.AdminPrivacyPolicyActivity"
             android:exported="false"

@@ -98,6 +98,7 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
         repo.getUserById(userId){
             success, message, data->
+
             if (success){
                 _user.postValue(data)
                 _loading.postValue(false)
@@ -270,5 +271,13 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
     fun getCurrentUserId(): String?{
         return repo.getCurrentUserId()
+    }
+
+    fun updateActiveRoute(userId: String, routeId: String) {
+        repo.updateActiveRoute(userId, routeId) { success, message ->
+            if (!success) {
+                Log.e("UserVM", "Error saving route: $message")
+            }
+        }
     }
 }

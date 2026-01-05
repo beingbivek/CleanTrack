@@ -56,6 +56,56 @@ class ScheduleViewModel(
         }
     }
 
+    fun hasScheduleConflict(
+        newSchedule: ScheduleModel,
+        existingSchedules: List<ScheduleModel>?
+    ): Pair<Boolean, String> {
+
+        val newStart = toMinutes(newSchedule.startTime)
+        val newEnd = toMinutes(newSchedule.endTime)
+
+        existingSchedules?.forEach { existing ->
+
+            // Skip same schedule while editing
+            if (existing.scheduleId == newSchedule.scheduleId) return@forEach
+
+            if (existing.dayOfWeek != newSchedule.dayOfWeek) return@forEach
+
+            val existingStart = toMinutes(existing.startTime)
+            val existingEnd = toMinutes(existing.endTime)
+
+            val isOverlapping =
+                newStart < existingEnd && newEnd > existingStart
+
+            if (isOverlapping) {
+
+                // 🚚 VEHICLE CONFLICT
+                if (existing.vehicleId == newSchedule.vehicleId) {
+                    return Pair(
+                        true,
+                        "Vehicle already assigned during this time"
+                    )
+                }
+
+                // 👨‍✈️ DRIVER CONFLICT
+                if (existing.driverId == newSchedule.driverId) {
+                    return Pair(
+                        true,
+                        "Driver already has a schedule during this time"
+                    )
+                }
+            }
+        }
+
+        return Pair(false, "")
+    }
+
+    private fun toMinutes(time: String): Int {
+        val parts = time.split(":")
+        return parts[0].toInt() * 60 + parts[1].toInt()
+    }
+
+
     /* -------------------- CREATE -------------------- */
 
     fun addSchedule(model: ScheduleModel, callback: (Boolean, String) -> Unit) {

@@ -258,7 +258,7 @@ fun LoginBody() {
                 placeholder = {
                     Text("Enter your password")
                 },
-
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = TextBoxColor,
                     unfocusedContainerColor = TextBoxColor,
