@@ -54,6 +54,13 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
+    //Text Editor dependencies
+    dependencies {
+        implementation("com.mohamedrejeb.richeditor:richeditor-compose:1.0.0-rc05")
+        implementation("androidx.compose.material3:material3")
+        implementation("androidx.compose.material:material-icons-extended")
+    }
+
     // Needed for FlowRow and other foundation APIs
     implementation("androidx.compose.foundation:foundation")
 
@@ -88,6 +95,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     implementation("androidx.compose.runtime:runtime-livedata:<compose_version>")
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
