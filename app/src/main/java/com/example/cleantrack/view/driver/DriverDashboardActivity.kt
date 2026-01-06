@@ -272,7 +272,24 @@ fun DriverDashboardScreen() {
     }
 }
 
-
+@Composable
+fun DashboardCard(title: String, content: String, buttonText: String, onButtonClick: () -> Unit) {
+    Box(modifier = Modifier.fillMaxWidth().background(TextBoxColor, shape = RoundedCornerShape(18.dp)).padding(20.dp)) {
+        Column {
+            Text(text = title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Black)
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(text = content, fontSize = 14.sp, color = Black)
+            Spacer(modifier = Modifier.height(15.dp))
+            Button(
+                onClick = onButtonClick,
+                modifier = Modifier.fillMaxWidth().height(50.dp).background(Brush.horizontalGradient(colors = ButtonColor), shape = RoundedCornerShape(12.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Transparent)
+            ) {
+                Text(buttonText, color = White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
 
 @Composable
 fun RouteStat(label: String, value: String, color: Color) {
