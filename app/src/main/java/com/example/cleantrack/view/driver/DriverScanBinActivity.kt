@@ -1,6 +1,7 @@
 package com.example.cleantrack.view.driver
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -56,8 +57,14 @@ class DriverScanBinActivity : ComponentActivity() {
         // Fetch bin details by ID
         activeTripViewModel.getBinById(binId) { success, message, bin ->
             if (success && bin != null) {
-                // Proceed to rate bin
-                rateBin(bin)
+                // 🔹 NAVIGATION LOGIC START
+                val intent = Intent(this, BinCollectionActivity::class.java).apply {
+                    putExtra("BIN_ID", binId)
+                    // Optional: pass tripId if available here
+                    // putExtra("TRIP_ID", currentTripId)
+                }
+                startActivity(intent)
+                // 🔹 NAVIGATION LOGIC END
             } else {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
             }
