@@ -208,6 +208,35 @@ fun DriverDashboardScreen() {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                // Determine if a trip is currently running
+                val isTripActive = activeTrip != null
+
+// --- END TRIP CONFIRMATION DIALOG ---
+                if (showEndTripDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showEndTripDialog = false },
+                        title = { Text("End Route?") },
+                        text = { Text("Are you sure you want to end the collection route? This will stop live tracking.") },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showEndTripDialog = false
+                                    activeTrip?.let { trip ->
+                                        tripViewModel.endTrip(trip.tripId) { success, msg ->
+                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                            ) {
+                                Text("End Route", color = Color.White)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showEndTripDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
                     )
                 }
                 }
