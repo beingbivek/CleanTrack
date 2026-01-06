@@ -352,32 +352,6 @@ fun DriverDashboardScreen() {
                             showEndTripDialog = true
                         }
                     },
-//                    onClick = {
-//                        if (!isTripActive) {
-//                            if (assignedSchedule == null || assignedSchedule?.scheduleId?.isEmpty() == true) {
-//                                Toast.makeText(context, "No schedule found to start.", Toast.LENGTH_SHORT).show()
-//                            } else {
-//                                // FIX: Use the correct ViewModel function and explicit types
-//                                tripViewModel.startTripWithValidation(assignedSchedule!!) { success: Boolean, msg: String ->
-//                                    if (success) {
-//                                        val tripId = tripViewModel.activeTrip.value?.tripId ?: ""
-//                                        tripViewModel.startLocationTracking(tripId) {
-//                                            try {
-//                                                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-//                                                    location?.let {
-//                                                        tripViewModel.updateLocation(tripId, it.latitude, it.longitude)
-//                                                    }
-//                                                }
-//                                            } catch (e: SecurityException) { e.printStackTrace() }
-//                                        }
-//                                    }
-//                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-//                                }
-//                            }
-//                        } else {
-//                            showEndTripDialog = true
-//                        }
-//                    },
                     modifier = Modifier.fillMaxWidth().height(65.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
