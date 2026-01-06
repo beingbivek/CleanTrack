@@ -82,7 +82,16 @@ class ActiveTripViewModel(
         repo.observeActiveTrip(tripId) { _activeTrip.postValue(it) }
     }
 
+    fun updateLocation(tripId: String, lat: Double, lng: Double) {
+        repo.updateLocation(tripId, lat, lng) // Updates Firebase
 
+        // Also update local LiveData so the UI shows the new coordinates
+        _activeTrip.value?.let { current ->
+            if (current.tripId == tripId) {
+                _activeTrip.postValue(current.copy(currentLat = lat, currentLng = lng))
+            }
+        }
+    }
 
 
 }
