@@ -38,4 +38,6 @@ interface ScheduleRepo {
         scheduleId: String,
         callback: (Boolean, String) -> Unit
     )
+
+    fun getScheduleByDriver(driverId: String, callback: (ScheduleModel?) -> Unit)
 }

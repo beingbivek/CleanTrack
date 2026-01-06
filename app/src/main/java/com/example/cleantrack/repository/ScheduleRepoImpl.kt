@@ -2,6 +2,9 @@ package com.example.cleantrack.repository
 
 import com.example.cleantrack.model.ScheduleModel
 import com.google.firebase.database.*
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ScheduleRepoImpl : ScheduleRepo {
 
@@ -136,5 +139,45 @@ class ScheduleRepoImpl : ScheduleRepo {
                     callback(false, it.exception?.message ?: "Error")
                 }
             }
+    }
+
+    override fun getScheduleByDriver(driverId: String, callback: (ScheduleModel?) -> Unit) {
+        val scheduleRef = FirebaseDatabase.getInstance().getReference("Schedules")
+
+        // Get current day and time
+        val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val todayName = dayFormat.format(Date())
+        val currentTime = timeFormat.format(Date())
+
+        scheduleRef.orderByChild("driverId").equalTo(driverId)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val allSchedules = snapshot.children.mapNotNull {
+                        it.getValue(ScheduleModel::class.java)
+                    }
+
+                    // Filter logic:
+                    // 1. Must be today
+                    // 2. The shift must NOT have ended yet (Current Time < End Time)
+                    val validSchedule = allSchedules
+                        .filter { it.dayOfWeek.equals(todayName, ignoreCase = true) }
+                        .filter { isShiftStillValid(currentTime, it.endTime) }
+                        .minByOrNull { it.startTime } // Get the earliest upcoming one
+
+                    callback(validSchedule)
+                }
+
+                override fun onCancelled(error: DatabaseError) { callback(null) }
+            })
+    }
+
+    // Helper to compare "HH:mm" strings
+    private fun isShiftStillValid(currentTime: String, endTime: String): Boolean {
+        return try {
+            currentTime <= endTime
+        } catch (e: Exception) {
+            false
+        }
     }
 }
