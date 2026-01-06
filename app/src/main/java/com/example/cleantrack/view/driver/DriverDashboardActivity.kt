@@ -111,6 +111,37 @@ fun DriverDashboardScreen() {
     // Automatically resume the active trip if one exists for the assigned route
 
 
+// Automatically start location tracking if an active trip is detected
+    // 2. Logic to start the 2-second location loop once activeTrip is NOT null
+    LaunchedEffect(activeTrip) {
+        val trip = activeTrip
+        if (trip != null && trip.status == "ACTIVE") {
+            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+                2000 // Update every 2 seconds
+            ).setMinUpdateIntervalMillis(1000) // Minimum 1 second between updates
+                .build()
+
+            try {
+                fusedLocationClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    android.os.Looper.getMainLooper()
+                )
+            } catch (e: SecurityException) {
+                Log.e("CLEANTRACK", "Permission error", e)
+            }
+        } else {
+            // Stop tracking if trip is null or COMPLETED
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+    }
 
     LogoutDialog(
         showDialog = showLogoutDialog,
