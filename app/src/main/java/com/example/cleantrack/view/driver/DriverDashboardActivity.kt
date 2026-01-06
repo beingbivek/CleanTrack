@@ -62,7 +62,22 @@ class DriverDashboardActivity : ComponentActivity() {
 fun DriverDashboardScreen() {
     val context = LocalContext.current
 
-
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.entries.all { it.value }
+        if (!granted) {
+            Toast.makeText(context, "Location permission is required for tracking.", Toast.LENGTH_LONG).show()
+        }
+    }
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(
+            arrayOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
 
     // FIX 1: Pass all required repositories to the ViewModel constructor
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
