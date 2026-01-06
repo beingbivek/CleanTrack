@@ -93,7 +93,28 @@ fun DriverDashboardScreen() {
     val sLoading by scheduleViewModel.loading.observeAsState(false)
     val assignedSchedule by scheduleViewModel.schedule.observeAsState(null)
 
+    val locationCallback = remember {
+        object : com.google.android.gms.location.LocationCallback() {
+            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+                result.lastLocation?.let { location ->
+                    // This updates Firebase and your UI instantly
+                    activeTrip?.let { trip ->
+                        tripViewModel.updateLocation(trip.tripId, location.latitude, location.longitude)
+                        Log.d("CLEANTRACK", "STREAMING GPS: ${location.latitude}, ${location.longitude}")
+                    }
+                }
+            }
+        }
+    }
 
+    // Initial Data Fetch
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNotEmpty()) {
+            userViewModel.getUserById(currentUserId)
+            announcementVM.getAllAnnouncements { _, _, _ -> }
+            scheduleViewModel.getScheduleByDriver(currentUserId)
+        }
+    }
 
     // FIX 2: Handle null-safety for delegated property 'announcements'
     LaunchedEffect(announcements) {
