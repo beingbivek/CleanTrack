@@ -93,5 +93,17 @@ class ActiveTripViewModel(
         }
     }
 
+    // Inside ActiveTripViewModel.kt
+    fun endTrip(tripId: String, callback: (Boolean, String) -> Unit) {
+        repo.endTrip(tripId) { success, msg ->
+            if (success) {
+                _activeTrip.postValue(null)
+            }
+            callback(success, msg)
+        }
+    }
 
+    override fun onCleared() {
+        super.onCleared()
+    }
 }
