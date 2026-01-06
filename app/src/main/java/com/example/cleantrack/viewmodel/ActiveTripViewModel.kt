@@ -63,6 +63,20 @@ class ActiveTripViewModel(
     }
 
 
+    /**
+     * Observe an active trip by Route ID
+     * Used to resume state if the app is restarted
+     */
+    fun observeActiveTripByRoute(routeId: String) {
+        repo.observeActiveTripByRoute(routeId) { trip ->
+            _activeTrip.postValue(trip)
+            // If a trip is already active, resume loading stats
+            trip?.let {
+                loadBinStats(it.routeId, it.tripId)
+            }
+        }
+    }
+
     // --- Helper Methods using Injected Repositories ---
 
     fun getBinById(binId: String, callback: (Boolean, String, BinModel?) -> Unit) {
