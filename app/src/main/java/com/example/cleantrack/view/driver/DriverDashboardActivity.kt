@@ -158,7 +158,29 @@ fun DriverDashboardScreen() {
 
                 Spacer(modifier = Modifier.height(25.dp))
 
+                when {
+                    sLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                    assignedSchedule != null && assignedSchedule?.scheduleId?.isNotEmpty() == true -> {
+                        RouteDetailCard(schedule = assignedSchedule!!)
+                    }
+                    else -> {
+                        Text("No schedule assigned for today.", color = Color.Gray)
+                    }
+                }
 
+                Spacer(modifier = Modifier.height(20.dp))
+
+                DashboardCard(
+                    title = "Today's Overview",
+                    content = "View your assigned tasks and progress for the current route.",
+                    buttonText = "View Route Map",
+                    onButtonClick = {
+                        val intent = Intent(context, DriverLocationMapActivity::class.java)
+                        context.startActivity(intent)
+                    }
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -257,6 +279,32 @@ fun DriverDashboardScreen() {
                             showEndTripDialog = true
                         }
                     },
+//                    onClick = {
+//                        if (!isTripActive) {
+//                            if (assignedSchedule == null || assignedSchedule?.scheduleId?.isEmpty() == true) {
+//                                Toast.makeText(context, "No schedule found to start.", Toast.LENGTH_SHORT).show()
+//                            } else {
+//                                // FIX: Use the correct ViewModel function and explicit types
+//                                tripViewModel.startTripWithValidation(assignedSchedule!!) { success: Boolean, msg: String ->
+//                                    if (success) {
+//                                        val tripId = tripViewModel.activeTrip.value?.tripId ?: ""
+//                                        tripViewModel.startLocationTracking(tripId) {
+//                                            try {
+//                                                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+//                                                    location?.let {
+//                                                        tripViewModel.updateLocation(tripId, it.latitude, it.longitude)
+//                                                    }
+//                                                }
+//                                            } catch (e: SecurityException) { e.printStackTrace() }
+//                                        }
+//                                    }
+//                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+//                                }
+//                            }
+//                        } else {
+//                            showEndTripDialog = true
+//                        }
+//                    },
                     modifier = Modifier.fillMaxWidth().height(65.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
