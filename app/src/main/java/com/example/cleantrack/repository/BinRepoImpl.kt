@@ -94,4 +94,30 @@ class BinRepoImpl : BinRepo {
                 }
             })
     }
+
+    override fun getBinsByOwnerIds(
+        ownerIds: List<String>,
+        callback: (List<BinModel>) -> Unit
+    ) {
+        val binRef = FirebaseDatabase.getInstance().getReference("Bins")
+
+        binRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val binsInRoute = mutableListOf<BinModel>()
+                for (child in snapshot.children) {
+                    val bin = child.getValue(BinModel::class.java)
+
+                    // Check if this bin's owner is one of the users in the route
+                    if (bin != null && ownerIds.contains(bin.ownerUserId)) {
+                        binsInRoute.add(bin)
+                    }
+                }
+                callback(binsInRoute)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(emptyList())
+            }
+        })
+    }
 }

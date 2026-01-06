@@ -28,4 +28,7 @@ interface BinRepo {
         binId: String,
         callback: (Boolean, String, BinModel?) -> Unit
     )
+
+    // Gets all bins belonging to a list of user IDs
+    fun getBinsByOwnerIds(ownerIds: List<String>, callback: (List<BinModel>) -> Unit)
 }
