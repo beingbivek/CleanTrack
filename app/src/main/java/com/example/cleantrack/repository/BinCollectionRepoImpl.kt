@@ -1,7 +1,10 @@
 package com.example.cleantrack.repository
 
 import com.example.cleantrack.model.BinCollectionModel
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class BinCollectionRepoImpl : BinCollectionRepo {
 
@@ -21,5 +24,22 @@ class BinCollectionRepoImpl : BinCollectionRepo {
                 if (it.isSuccessful) callback(true, "Collection saved")
                 else callback(false, it.exception?.message ?: "Error")
             }
+    }
+
+    override fun observeCollectionsByTrip(
+        tripId: String,
+        callback: (Boolean, String, List<BinCollectionModel>?) -> Unit
+    ) {
+        ref.orderByChild("tripId").equalTo(tripId)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val list = snapshot.children.mapNotNull { it.getValue(BinCollectionModel::class.java) }
+                    callback(true, "Success", list) // Fixed parameters
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null) // Fixed parameters
+                }
+            })
     }
 }
