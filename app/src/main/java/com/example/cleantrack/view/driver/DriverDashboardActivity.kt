@@ -242,7 +242,21 @@ fun DriverDashboardScreen() {
 
 // --- THE MAIN ACTION BUTTON ---
                 Button(
-
+                    onClick = {
+                        if (!isTripActive) {
+                            val schedule = assignedSchedule
+                            if (schedule == null || schedule.scheduleId.isBlank()) {
+                                Toast.makeText(context, "No schedule assigned for today.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Log.d("CLEANTRACK", "Attempting to start: ${schedule.scheduleId}")
+                                tripViewModel.startTripWithValidation(schedule) { success, msg ->
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } else {
+                            showEndTripDialog = true
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().height(65.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
