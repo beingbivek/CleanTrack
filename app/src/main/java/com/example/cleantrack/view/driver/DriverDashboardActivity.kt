@@ -109,7 +109,13 @@ fun DriverDashboardScreen() {
         }
     }
     // Automatically resume the active trip if one exists for the assigned route
-
+    LaunchedEffect(assignedSchedule) {
+        assignedSchedule?.routeId?.let { routeId ->
+            if (routeId.isNotEmpty()) {
+                tripViewModel.observeActiveTripByRoute(routeId)
+            }
+        }
+    }
 
 // Automatically start location tracking if an active trip is detected
     // 2. Logic to start the 2-second location loop once activeTrip is NOT null
