@@ -3,35 +3,22 @@ package com.example.cleantrack.view.driver
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.Route
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -40,28 +27,30 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.AnnouncementModel
-import com.example.cleantrack.repository.AnnouncementRepoImpl
-import com.example.cleantrack.repository.UserRepoImpl
-import com.example.cleantrack.ui.theme.Black
-import com.example.cleantrack.ui.theme.ButtonColor
-import com.example.cleantrack.ui.theme.Green
-import com.example.cleantrack.ui.theme.Red
-import com.example.cleantrack.ui.theme.TextBoxColor
-import com.example.cleantrack.ui.theme.Transparent
-import com.example.cleantrack.ui.theme.White
-import com.example.cleantrack.view.auth.StartActivity
+import com.example.cleantrack.model.ScheduleModel
+import com.example.cleantrack.repository.*
+import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.AnnouncementBanner
 import com.example.cleantrack.view.common.LogoutDialog
+import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
+import com.example.cleantrack.viewmodel.ScheduleViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import java.text.SimpleDateFormat
+import java.util.*
 
+private lateinit var fusedLocationClient: FusedLocationProviderClient
 class DriverDashboardActivity : ComponentActivity() {
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         enableEdgeToEdge()
         setContent {
             DriverDashboardScreen()
@@ -70,51 +59,129 @@ class DriverDashboardActivity : ComponentActivity() {
 }
 
 @Composable
-fun DriverDashboardScreen(
-    driverName: String = "Ishan",
-    routeName: String = "Route A - Ward 5",
-    completed: Int = 12,
-    skipped: Int = 2,
-    totalStops: Int = 20,
-    onStartRoute: () -> Unit = {},
-    onViewRoute: () -> Unit = {}
-) {
-
+fun DriverDashboardScreen() {
     val context = LocalContext.current
-    val activity = context as Activity
 
-
-    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-    val currentUserId = userViewModel.getCurrentUserId() ?: ""
-
-    // 1. Initialize Announcement ViewModel
-    val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
-
-    // 2. State for the Popup/Banner
-    val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
-    var showAnnouncement by remember { mutableStateOf(false) }
-    var latestUnseenAnnouncement by remember { mutableStateOf<AnnouncementModel?>(null) }
-
-    var showLogoutDialog by remember { mutableStateOf(false) }
-
-    // 2. Trigger the fetch once
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.entries.all { it.value }
+        if (!granted) {
+            Toast.makeText(context, "Location permission is required for tracking.", Toast.LENGTH_LONG).show()
+        }
+    }
     LaunchedEffect(Unit) {
-        announcementVM.getAllAnnouncements { _, _, _ -> }
+        permissionLauncher.launch(
+            arrayOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
     }
 
-// Filter Logic: Find the latest announcement where currentUserId is NOT in 'seenBy'
-    LaunchedEffect(announcements) {
-        if (!announcements.isNullOrEmpty()) {
-            val unseen = announcements!!.firstOrNull { announcement ->
-                // Check if our ID exists in the seenBy map
-                val isSeen = announcement.seenBy[currentUserId] ?: false
-                !isSeen
-            }
+    // FIX 1: Pass all required repositories to the ViewModel constructor
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val scheduleViewModel = remember { ScheduleViewModel(ScheduleRepoImpl()) }
+    val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
+    var showEndTripDialog by remember { mutableStateOf(false) }
+    val tripViewModel = remember {
+        ActiveTripViewModel(
+            repo = ActiveTripRepoImpl(),
+            userRepo = UserRepoImpl(),
+            binRepo = BinRepoImpl(),
+            collectionRepo = BinCollectionRepoImpl()
+        )
+    }
 
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
+    val currentUser by userViewModel.user!!.observeAsState()
+
+
+    // State Observers
+    val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
+    val activeTrip by tripViewModel.activeTrip.observeAsState()
+
+    // UI State
+    var showAnnouncement by remember { mutableStateOf(false) }
+    var latestUnseenAnnouncement by remember { mutableStateOf<AnnouncementModel?>(null) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    val sLoading by scheduleViewModel.loading.observeAsState(false)
+    val assignedSchedule by scheduleViewModel.schedule.observeAsState(null)
+
+    val locationCallback = remember {
+        object : com.google.android.gms.location.LocationCallback() {
+            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+                result.lastLocation?.let { location ->
+                    // This updates Firebase and your UI instantly
+                    activeTrip?.let { trip ->
+                        tripViewModel.updateLocation(trip.tripId, location.latitude, location.longitude)
+                        Log.d("CLEANTRACK", "STREAMING GPS: ${location.latitude}, ${location.longitude}")
+                    }
+                }
+            }
+        }
+    }
+
+    // Initial Data Fetch
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNotEmpty()) {
+            userViewModel.getUserById(currentUserId)
+            announcementVM.getAllAnnouncements { _, _, _ -> }
+            scheduleViewModel.getScheduleByDriver(currentUserId)
+        }
+    }
+
+    // FIX 2: Handle null-safety for delegated property 'announcements'
+    LaunchedEffect(announcements) {
+        val list = announcements ?: emptyList()
+        if (list.isNotEmpty()) {
+            val unseen = list.firstOrNull { announcement ->
+                !(announcement.seenBy[currentUserId] ?: false)
+            }
             if (unseen != null) {
                 latestUnseenAnnouncement = unseen
                 showAnnouncement = true
             }
+        }
+    }
+    // Automatically resume the active trip if one exists for the assigned route
+    LaunchedEffect(assignedSchedule) {
+        assignedSchedule?.routeId?.let { routeId ->
+            if (routeId.isNotEmpty()) {
+                tripViewModel.observeActiveTripByRoute(routeId)
+            }
+        }
+    }
+
+// Automatically start location tracking if an active trip is detected
+    // 2. Logic to start the 2-second location loop once activeTrip is NOT null
+    LaunchedEffect(activeTrip) {
+        val trip = activeTrip
+        if (trip != null && trip.status == "ACTIVE") {
+            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+                2000 // Update every 2 seconds
+            ).setMinUpdateIntervalMillis(1000) // Minimum 1 second between updates
+                .build()
+
+            try {
+                fusedLocationClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    android.os.Looper.getMainLooper()
+                )
+            } catch (e: SecurityException) {
+                Log.e("CLEANTRACK", "Permission error", e)
+            }
+        } else {
+            // Stop tracking if trip is null or COMPLETED
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
 
@@ -124,24 +191,17 @@ fun DriverDashboardScreen(
         viewModel = userViewModel
     )
 
-    Scaffold(floatingActionButton = {
-        FloatingActionButton(onClick = {
-            showLogoutDialog = true
-        }) {
-            Icon(
-                Icons.Default.Logout,
-                contentDescription = "Logout",
-                tint = Red
-            )
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showLogoutDialog = true }) {
+                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Red)
+            }
         }
-    }) { innerpadding ->
-
-        // We use a Box so the announcement can overlap or sit at the top
-        Box(modifier = Modifier.fillMaxSize().padding(innerpadding)) {
+    ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-
                     .background(White)
                     .padding(20.dp)
             ) {
@@ -149,9 +209,7 @@ fun DriverDashboardScreen(
                     AnnouncementBanner(
                         announcement = latestUnseenAnnouncement!!,
                         onDismiss = {
-                            // 1. Hide from UI
                             showAnnouncement = false
-                            // 2. Update Firebase so it never pops up again for this user
                             announcementVM.markAsSeen(latestUnseenAnnouncement!!.id, currentUserId)
                         }
                     )
@@ -159,85 +217,46 @@ fun DriverDashboardScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // Screen Title
                 Text(
                     text = "Driver Dashboard",
-                    style = TextStyle(
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Black,
-                        textAlign = TextAlign.Center
-                    ),
+                    style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = Black, textAlign = TextAlign.Center),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Welcome Message
                 Text(
-                    text = "Welcome, $driverName 👋",
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        color = Black,
-                        fontWeight = FontWeight.Normal,
-                        textAlign = TextAlign.Center
-                    ),
+                    text = "Welcome ${currentUser?.fullname ?: "Driver"} 👋",
+                    style = TextStyle(fontSize = 18.sp, color = Black, textAlign = TextAlign.Center),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(25.dp))
 
-                // New Top Card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(TextBoxColor, shape = RoundedCornerShape(18.dp))
-                        .padding(50.dp)
-                ) {
-                    Column {
-                        Text(
-                            text = "Today's Overview",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Black
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Text(
-                            text = "You have 20 stops today.\nMake sure to complete your route on time!",
-                            fontSize = 16.sp,
-                            color = Black,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        Spacer(modifier = Modifier.height(15.dp))
-
-                        Button(
-                            onClick = onViewRoute,
-                            modifier = Modifier
-                                .fillMaxWidth(0.8f)
-                                .height(60.dp)
-                                .background(
-                                    brush = Brush.horizontalGradient(colors = ButtonColor),
-                                    shape = RoundedCornerShape(15.dp)
-                                ),
-                            colors = ButtonDefaults.buttonColors(containerColor = Transparent),
-                        ) {
-                            Text(
-                                "View Route",
-                                color = White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+                when {
+                    sLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                    assignedSchedule != null && assignedSchedule?.scheduleId?.isNotEmpty() == true -> {
+                        RouteDetailCard(schedule = assignedSchedule!!)
+                    }
+                    else -> {
+                        Text("No schedule assigned for today.", color = Color.Gray)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                DashboardCard(
+                    title = "Today's Overview",
+                    content = "View your assigned tasks and progress for the current route.",
+                    buttonText = "View Route Map",
+                    onButtonClick = {
+                        val intent = Intent(context, DriverLocationMapActivity::class.java)
+                        context.startActivity(intent)
+                    }
+                )
 
-                // Assigned Route Card
+                Spacer(modifier = Modifier.height(20.dp))
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -245,104 +264,149 @@ fun DriverDashboardScreen(
                         .padding(20.dp)
                 ) {
                     Column {
-                        Text(
-                            text = "Assigned Route",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Black
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Text(
-                            text = routeName,
-                            fontSize = 18.sp,
-                            color = Green,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("Assigned Route", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Black)
+                        Text(activeTrip?.routeName ?: "No Active Route", fontSize = 18.sp, color = Green, fontWeight = FontWeight.Bold)
 
                         Spacer(modifier = Modifier.height(15.dp))
 
-                        // Progress Stats Row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            RouteStat("Completed", completed.toString(), Green)
-                            RouteStat("Skipped", skipped.toString(), color = Red)
+                            val stats by tripViewModel.binStats.observeAsState(Triple(0, 0, 0))
+
                             RouteStat(
-                                "Pending",
-                                (totalStops - completed - skipped).toString(),
+                                label = "Collected",
+                                value = stats.second.toString(),
+                                color = Green
+                            )
+                            RouteStat(
+                                label = "Remains",
+                                value = stats.third.toString(),
                                 color = Red
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        // View Route Button
-
                     }
                 }
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // Status Banner
+                val statusText = if (activeTrip?.status == "ACTIVE") "Status: Route Active" else "Status: Waiting to Start"
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFe8f5e9), RoundedCornerShape(16.dp))
+                        .background(if (activeTrip != null) Color(0xFFE8F5E9) else TextBoxColor, RoundedCornerShape(16.dp))
                         .padding(20.dp)
                 ) {
-                    Text(
-                        text = "Status: Waiting to Start",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Green
-                    )
+                    Text(text = statusText, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Green)
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Start Route Button
-                Button(
-                    onClick = onStartRoute,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .background(Green, RoundedCornerShape(18.dp)),
-                    colors = ButtonDefaults.buttonColors(containerColor = Transparent),
-                ) {
-                    Text(
-                        text = "Start Route",
-                        fontSize = 20.sp,
-                        color = White,
-                        fontWeight = FontWeight.Bold
+                // Determine if a trip is currently running
+                val isTripActive = activeTrip != null
+
+// --- END TRIP CONFIRMATION DIALOG ---
+                if (showEndTripDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showEndTripDialog = false },
+                        title = { Text("End Route?") },
+                        text = { Text("Are you sure you want to end the collection route? This will stop live tracking.") },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showEndTripDialog = false
+                                    activeTrip?.let { trip ->
+                                        tripViewModel.endTrip(trip.tripId) { success, msg ->
+                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                            ) {
+                                Text("End Route", color = Color.White)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showEndTripDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
                     )
                 }
+
+// --- THE MAIN ACTION BUTTON ---
                 Button(
                     onClick = {
-                        context.startActivity(
-                            Intent(
-                                context,
-                                DriverScanBinActivity::class.java
-                            )
-                        )
+                        if (!isTripActive) {
+                            val schedule = assignedSchedule
+                            if (schedule == null || schedule.scheduleId.isBlank()) {
+                                Toast.makeText(context, "No schedule assigned for today.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Log.d("CLEANTRACK", "Attempting to start: ${schedule.scheduleId}")
+                                tripViewModel.startTripWithValidation(schedule) { success, msg ->
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } else {
+                            showEndTripDialog = true
+                        }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .background(Green, RoundedCornerShape(18.dp)),
-                    colors = ButtonDefaults.buttonColors(containerColor = Transparent),
-                ) {
-                    Text(
-                        text = "Scan Bin QR",
-                        fontSize = 20.sp,
-                        color = White,
-                        fontWeight = FontWeight.Bold
+                    modifier = Modifier.fillMaxWidth().height(65.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isTripActive) Color.Red else Color(0xFF4CAF50)
                     )
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = if (isTripActive) "End Collection Route" else "Start Collection Route",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        if (!isTripActive && assignedSchedule != null) {
+                            Text(
+                                text = "Route: ${assignedSchedule?.routeName}",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
                 }
 
+                Spacer(modifier = Modifier.height(10.dp))
 
+                if (activeTrip != null) {
+                    Button(
+                        onClick = {
+                            context.startActivity(Intent(context, DriverScanBinActivity::class.java))
+                        },
+                        modifier = Modifier.fillMaxWidth().height(60.dp).background(ButtonColor.first(), RoundedCornerShape(18.dp)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Transparent)
+                    ) {
+                        Text("Scan Bin QR", fontSize = 20.sp, color = White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardCard(title: String, content: String, buttonText: String, onButtonClick: () -> Unit) {
+    Box(modifier = Modifier.fillMaxWidth().background(TextBoxColor, shape = RoundedCornerShape(18.dp)).padding(20.dp)) {
+        Column {
+            Text(text = title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Black)
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(text = content, fontSize = 14.sp, color = Black)
+            Spacer(modifier = Modifier.height(15.dp))
+            Button(
+                onClick = onButtonClick,
+                modifier = Modifier.fillMaxWidth().height(50.dp).background(Brush.horizontalGradient(colors = ButtonColor), shape = RoundedCornerShape(12.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Transparent)
+            ) {
+                Text(buttonText, color = White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -356,9 +420,35 @@ fun RouteStat(label: String, value: String, color: Color) {
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun DriverDashboardPreview() {
-    DriverDashboardScreen()
-}
+fun RouteDetailCard(schedule: ScheduleModel) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)) // Light green tint
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Route, contentDescription = null, tint = Green)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = schedule.routeName,
+                    style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                )
+            }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    Text("Start Time", fontSize = 12.sp, color = Color.Gray)
+                    Text(schedule.startTime, fontWeight = FontWeight.Medium)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("End Time", fontSize = 12.sp, color = Color.Gray)
+                    Text(schedule.endTime, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+    }
+}

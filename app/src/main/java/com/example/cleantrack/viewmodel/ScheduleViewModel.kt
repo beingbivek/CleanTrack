@@ -123,4 +123,12 @@ class ScheduleViewModel(
     fun deleteSchedule(scheduleId: String, callback: (Boolean, String) -> Unit) {
         repo.deleteSchedule(scheduleId, callback)
     }
+
+    fun getScheduleByDriver(driverId: String){
+        _loading.postValue(true)
+        repo.getScheduleByDriver(driverId) { data ->
+            _schedule.postValue(data)
+            _loading.postValue(false)
+        }
+    }
 }

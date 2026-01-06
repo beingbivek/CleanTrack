@@ -182,7 +182,7 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
             val userId = googleUserModel!!.userId
             val updatedModel = googleUserModel.copy(
                 fullname = fullname,
-                email = email,
+                email = email.trim(),
                 number = number ,// This completes the profile required field
                 // Role remains "USER" // PULLING DATA FROM UserAddressViewModel
 
@@ -211,11 +211,11 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
 
         } else {
             // --- STANDARD EMAIL/PASSWORD REGISTRATION FLOW ---
-            userViewModel.register(email, password) { success, message, userId ->
+            userViewModel.register(email.trim(), password.trim()) { success, message, userId ->
                 if (success) {
                     val model = UserModel(
                         userId = userId,
-                        email = email,
+                        email = email.trim(),
                         fullname = fullname,
                         number = number,
                         role = "USER",

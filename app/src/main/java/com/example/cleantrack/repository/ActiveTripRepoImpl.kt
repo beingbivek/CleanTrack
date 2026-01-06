@@ -1,5 +1,6 @@
 package com.example.cleantrack.repository
 
+import android.util.Log
 import com.example.cleantrack.model.ActiveTripModel
 import com.example.cleantrack.model.ScheduleModel
 import com.google.firebase.database.DataSnapshot
@@ -13,57 +14,71 @@ class ActiveTripRepoImpl : ActiveTripRepo {
     private val tripRef = db.getReference("ActiveTrips")
     private val scheduleRef = db.getReference("Schedules")
 
-    override fun startTrip(
-        scheduleId: String,
-        callback: (Boolean, String) -> Unit
-    ) {
+    override fun startTrip(scheduleId: String, callback: (Boolean, String) -> Unit) {
+        Log.d("CLEANTRACK", "Repo: Fetching schedule details for $scheduleId")
 
-        scheduleRef.child(scheduleId).get()
-            .addOnSuccessListener { snapshot ->
-                val schedule = snapshot.getValue(ScheduleModel::class.java)
-                    ?: return@addOnSuccessListener callback(false, "Schedule not found")
+        scheduleRef.child(scheduleId).get().addOnSuccessListener { snapshot ->
+            val schedule = snapshot.getValue(ScheduleModel::class.java)
+            if (schedule == null) {
+                Log.e("CLEANTRACK", "Repo: Schedule object is NULL in Firebase")
+                callback(false, "Schedule data error")
+                return@addOnSuccessListener
+            }
 
-                // Check if driver already has an active trip
-                tripRef.orderByChild("driverId")
-                    .equalTo(schedule.driverId)
-                    .get()
-                    .addOnSuccessListener { tripSnap ->
+            Log.d("CLEANTRACK", "Repo: Checking for existing trips for driver: ${schedule.driverId}")
 
-                        for (child in tripSnap.children) {
-                            val status = child.child("status").getValue(String::class.java)
-                            if (status == "ACTIVE") {
-                                callback(false, "You already have an active route")
-                                return@addOnSuccessListener
-                            }
+            tripRef.orderByChild("driverId").equalTo(schedule.driverId).get()
+                .addOnSuccessListener { tripSnap ->
+                    var alreadyHasActive = false
+                    for (child in tripSnap.children) {
+                        val status = child.child("status").getValue(String::class.java)
+                        if (status == "ACTIVE") {
+                            alreadyHasActive = true
+                            break
                         }
-
-                        // Create trip
-                        val tripId = tripRef.push().key
-                            ?: return@addOnSuccessListener callback(false, "Failed to start trip")
-
-                        val trip = ActiveTripModel(
-                            tripId = tripId,
-                            scheduleId = schedule.scheduleId,
-                            routeId = schedule.routeId,
-                            routeName = schedule.routeName,
-                            driverId = schedule.driverId,
-                            vehicleId = schedule.vehicleId,
-                            vehicleNumber = schedule.vehicleNumber,
-                            startTimestamp = System.currentTimeMillis(),
-                            status = "ACTIVE"
-                        )
-
-                        tripRef.child(tripId).setValue(trip)
-                            .addOnSuccessListener {
-                                callback(true, "Route started")
-                            }
-                            .addOnFailureListener {
-                                callback(false, it.localizedMessage ?: "Failed")
-                            }
                     }
+
+                    if (alreadyHasActive) {
+                        Log.w("CLEANTRACK", "Repo: Driver already has an active trip")
+                        callback(false, "You already have an active route")
+                    } else {
+                        createTripRecord(schedule, callback)
+                    }
+                }
+                .addOnFailureListener {
+                    Log.e("CLEANTRACK", "Repo: Trip check failed: ${it.message}")
+                    createTripRecord(schedule, callback) // Proceed anyway if check fails
+                }
+        }.addOnFailureListener {
+            Log.e("CLEANTRACK", "Repo: Failed to get schedule: ${it.message}")
+            callback(false, "Database connection error")
+        }
+    }
+
+    private fun createTripRecord(schedule: ScheduleModel, callback: (Boolean, String) -> Unit) {
+        val tripId = tripRef.push().key ?: return callback(false, "ID Generation Failed")
+
+        val trip = ActiveTripModel(
+            tripId = tripId,
+            scheduleId = schedule.scheduleId,
+            routeId = schedule.routeId,
+            routeName = schedule.routeName,
+            driverId = schedule.driverId,
+            vehicleId = schedule.vehicleId,
+            vehicleNumber = schedule.vehicleNumber,
+            startTimestamp = System.currentTimeMillis(),
+            status = "ACTIVE"
+        )
+
+        Log.d("CLEANTRACK", "Repo: Writing new trip to Firebase...")
+        tripRef.child(tripId).setValue(trip)
+            .addOnSuccessListener {
+                Log.d("CLEANTRACK", "Repo: Trip successfully created!")
+                callback(true, "Route started successfully")
             }
             .addOnFailureListener {
-                callback(false, it.localizedMessage ?: "Error")
+                Log.e("CLEANTRACK", "Repo: Write failed: ${it.message}")
+                callback(false, "Failed to write to database")
             }
     }
 

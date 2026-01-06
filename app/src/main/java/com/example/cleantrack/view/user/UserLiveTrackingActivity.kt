@@ -8,26 +8,31 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.example.cleantrack.R
+import com.example.cleantrack.repository.*
 import com.example.cleantrack.util.ApiTokenUtil
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
-import com.example.cleantrack.repository.ActiveTripRepoImpl
 import org.maplibre.android.MapLibre
-import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.annotations.IconFactory
 import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.MarkerOptions
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
 
 class UserLiveTrackingActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Initialize MapLibre before setContent
+        MapLibre.getInstance(this)
 
-        MapLibre.getInstance(applicationContext)
-
-        // 🔹 user’s assigned route
-        val routeId = intent.getStringExtra("ROUTE_ID") ?: return
+        val routeId = intent.getStringExtra("ROUTE_ID") ?: ""
 
         setContent {
             UserLiveMapScreen(routeId)
@@ -37,54 +42,87 @@ class UserLiveTrackingActivity : ComponentActivity() {
 
 @Composable
 fun UserLiveMapScreen(routeId: String) {
-
     val context = LocalContext.current
-    val vm = remember { ActiveTripViewModel(ActiveTripRepoImpl()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Use factory to prevent reconstruction on recomposition
+    val vm = remember {
+        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl())
+    }
 
     val activeTrip by vm.activeTrip.observeAsState()
+    val mapView = remember { MapView(context) }
+    var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
+    var truckMarker by remember { mutableStateOf<Marker?>(null) }
+    var isStyleLoaded by remember { mutableStateOf(false) }
 
-    val mapView = remember { MapView(context).apply { onCreate(null) } }
-    var map by remember { mutableStateOf<MapLibreMap?>(null) }
-    var marker by remember { mutableStateOf<Marker?>(null) }
+    val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
 
-    val styleUrl =
-        "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
-
-    // 🔴 Start listening
+    // 1. Observe Trip Data
     LaunchedEffect(routeId) {
         vm.observeActiveTripByRoute(routeId)
     }
 
-    DisposableEffect(mapView) {
-        mapView.getMapAsync { m ->
-            map = m
-            m.setStyle(styleUrl)
+    // 2. Manage Map Lifecycle (CRITICAL for MapLibre)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_CREATE -> mapView.onCreate(null)
+                Lifecycle.Event.ON_START -> mapView.onStart()
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_STOP -> mapView.onStop()
+                Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+                else -> {}
+            }
         }
-        onDispose { mapView.onDestroy() }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
-    // 🔄 Update marker when driver moves
-    LaunchedEffect(activeTrip?.currentLat, activeTrip?.currentLng) {
-
-        val lat = activeTrip?.currentLat
-        val lng = activeTrip?.currentLng
-
-        if (lat != null && lng != null && map != null) {
-
-            val pos = LatLng(lat, lng)
-
-            if (marker == null) {
-                marker = map!!.addMarker(
-                    MarkerOptions().position(pos).title("Waste Collection Vehicle")
-                )
-                map!!.moveCamera(
-                    org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(pos, 15.0)
-                )
-            } else {
-                marker!!.position = pos
+    // 3. Initialize Map and Style
+    LaunchedEffect(mapView) {
+        mapView.getMapAsync { m ->
+            mapInstance = m
+            m.setStyle(styleUrl) {
+                isStyleLoaded = true
             }
         }
     }
 
-    AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+    // 4. Update Marker when Location changes
+    LaunchedEffect(activeTrip?.currentLat, activeTrip?.currentLng, isStyleLoaded) {
+        val lat = activeTrip?.currentLat ?: 0.0
+        val lng = activeTrip?.currentLng ?: 0.0
+        val map = mapInstance
+
+        if (isStyleLoaded && map != null && lat != 0.0 && lng != 0.0) {
+            val pos = LatLng(lat, lng)
+
+            if (truckMarker == null) {
+                val iconFactory = IconFactory.getInstance(context)
+                // Ensure ic_truck exists in res/drawable
+                val truckIcon = iconFactory.fromResource(R.drawable.ic_truck)
+
+                truckMarker = map.addMarker(
+                    MarkerOptions()
+                        .position(pos)
+                        .title("Waste Collection Vehicle")
+                        .icon(truckIcon)
+                )
+                // Smoothly zoom to truck on first load
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15.0))
+            } else {
+                // Update existing marker position
+                truckMarker?.position = pos
+            }
+        }
+    }
+
+    AndroidView(
+        factory = { mapView },
+        modifier = Modifier.fillMaxSize()
+    )
 }

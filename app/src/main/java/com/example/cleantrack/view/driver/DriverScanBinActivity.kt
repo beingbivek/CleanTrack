@@ -15,7 +15,10 @@ import com.example.cleantrack.model.BinModel
 import com.example.cleantrack.model.PointsRuleModel
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.repository.ActiveTripRepoImpl
+import com.example.cleantrack.repository.BinCollectionRepoImpl
+import com.example.cleantrack.repository.BinRepoImpl
 import com.example.cleantrack.repository.PointsRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 
@@ -28,7 +31,10 @@ class DriverScanBinActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             // Setup the ViewModel
-            activeTripViewModel = ActiveTripViewModel(ActiveTripRepoImpl())
+            activeTripViewModel = ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(),
+                BinRepoImpl(),
+                BinCollectionRepoImpl()
+            )
 
             // Your UI
             Button(onClick = { scanLauncher.launch(ScanOptions()) }) {

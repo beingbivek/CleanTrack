@@ -339,4 +339,32 @@ class UserRepoImpl : UserRepo{
             }
     }
 
+    override fun getUsersByRoute(
+        routeId: String,
+        callback: (Boolean, String, List<UserModel>?) -> Unit
+    ) {
+        // ref points to "Users" node
+        ref.orderByChild("activeRouteId").equalTo(routeId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val userList = mutableListOf<UserModel>()
+                    if (snapshot.exists()) {
+                        for (child in snapshot.children) {
+                            val user = child.getValue(UserModel::class.java)
+                            if (user != null) {
+                                userList.add(user)
+                            }
+                        }
+                        callback(true, "Users fetched successfully", userList)
+                    } else {
+                        callback(false, "No users found for this route", emptyList())
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
+    }
+
 }

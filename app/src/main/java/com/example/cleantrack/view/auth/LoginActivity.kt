@@ -281,7 +281,7 @@ fun LoginBody() {
                     .padding(horizontal = 15.dp)
                     .clickable{
 
-                        forgotPasswordEmail = email
+                        forgotPasswordEmail = email.trim()
                         showForgotPasswordDialog = true
                     }
             )
@@ -294,7 +294,7 @@ fun LoginBody() {
             ) {
                 Button(
                     onClick = {
-                       userViewModel.login(email, password){
+                       userViewModel.login(email.trim(), password.trim()){
                            Success, errorMessage, role, userId->
                            if (Success){
 
@@ -504,7 +504,7 @@ fun ForgotPasswordDialog(
                     if (emailInput.isNotBlank()){
                         onSendReset(emailInput)
                     }else{
-                        AppUtil.showToast(context , "Email fiels cannot be empty.")
+                        AppUtil.showToast(context , "Email fields cannot be empty.")
                     }
                 }
             ){
