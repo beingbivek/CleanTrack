@@ -62,6 +62,36 @@ class ActiveTripViewModel(
         }
     }
 
+    /**
+     * Dashboard Data Logic
+     * 1. Finds Users in Route -> 2. Finds Bins for those Users -> 3. Observes Collections for Trip
+     */
+    fun loadBinStats(routeId: String, tripId: String) {
+        // Step A: Find users on this route
+        userRepo.getUsersByRoute(routeId) { success, _, users ->
+            if (success && users != null) {
+                val userIds = users.map { it.userId }
+
+                // Step B: Find all bins for those users
+                binRepo.getBinsByOwnerIds(userIds) { bins ->
+                    val total = bins.size
+
+                    // Step C: Observe collection entries for this trip
+                    collectionRepo.observeCollectionsByTrip(tripId) { collectionSuccess, _, collections ->
+                        if (collectionSuccess && collections != null) {
+
+                            // Every entry for this tripId counts as collected
+                            val collected = collections.size
+                            val remains = if (total > collected) total - collected else 0
+
+                            // Updated Triple: Total, Collected, Remains
+                            _binStats.postValue(Triple(total, collected, remains))
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Observe an active trip by Route ID
