@@ -33,7 +33,9 @@ class ActiveTripViewModel(
     // Bin details for specific scans
     val binDetails = MutableLiveData<BinModel?>()
 
-
+    // Dashboard Stats: Total, Remains, Skipped
+    private val _binStats = MutableLiveData<Triple<Int, Int, Int>>()
+    val binStats: LiveData<Triple<Int, Int, Int>> = _binStats
 
     /**
      * Start Trip with Time Validation
