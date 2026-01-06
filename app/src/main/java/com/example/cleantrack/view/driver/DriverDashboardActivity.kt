@@ -239,6 +239,31 @@ fun DriverDashboardScreen() {
                         }
                     )
                 }
+
+// --- THE MAIN ACTION BUTTON ---
+                Button(
+
+                    modifier = Modifier.fillMaxWidth().height(65.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isTripActive) Color.Red else Color(0xFF4CAF50)
+                    )
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = if (isTripActive) "End Collection Route" else "Start Collection Route",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        if (!isTripActive && assignedSchedule != null) {
+                            Text(
+                                text = "Route: ${assignedSchedule?.routeName}",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
                 }
 
 
