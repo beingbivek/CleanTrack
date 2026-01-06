@@ -35,6 +35,32 @@ class ActiveTripViewModel(
 
 
 
+    /**
+     * Start Trip with Time Validation
+     * Only allows start if current time is between schedule start and end
+     */
+    fun startTripWithValidation(schedule: ScheduleModel, callback: (Boolean, String) -> Unit) {
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val currentTime = sdf.format(Date())
+
+        if (currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
+            repo.startTrip(schedule.scheduleId) { success, message ->
+                if (success) {
+                    // IMPORTANT: After starting, we need to find the tripId
+                    // and start observing it so the LiveData updates.
+                    repo.observeActiveTripByRoute(schedule.routeId) { trip ->
+                        _activeTrip.postValue(trip)
+                        if (trip != null) {
+                            loadBinStats(trip.routeId, trip.tripId)
+                        }
+                    }
+                }
+                callback(success, message)
+            }
+        } else {
+            callback(false, "Cannot start. Current time ($currentTime) is outside schedule.")
+        }
+    }
 
 
     // --- Helper Methods using Injected Repositories ---
