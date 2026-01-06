@@ -282,3 +282,35 @@ fun RouteStat(label: String, value: String, color: Color) {
     }
 }
 
+@Composable
+fun RouteDetailCard(schedule: ScheduleModel) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)) // Light green tint
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Route, contentDescription = null, tint = Green)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = schedule.routeName,
+                    style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    Text("Start Time", fontSize = 12.sp, color = Color.Gray)
+                    Text(schedule.startTime, fontWeight = FontWeight.Medium)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("End Time", fontSize = 12.sp, color = Color.Gray)
+                    Text(schedule.endTime, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+    }
+}
