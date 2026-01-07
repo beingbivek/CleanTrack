@@ -37,6 +37,8 @@ import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.AnnouncementBanner
 import com.example.cleantrack.view.common.EditProfileActivity
 import com.example.cleantrack.view.common.LogoutDialog
+import com.example.cleantrack.view.user.UserAnnouncementListActivity
+import com.example.cleantrack.view.user.UserScheduleListActivity
 import com.example.cleantrack.viewmodel.*
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -254,7 +256,10 @@ fun DriverDashboardScreens() {
                         }
                     }
                     QuickActionItem(Icons.Default.History, "Recent") { /* Logs Activity */ }
-                    QuickActionItem(Icons.Default.Notifications, "Alerts") { /* Announcement Activity */ }
+                    QuickActionItem(Icons.Default.Notifications, "Announcements") {
+                        context.startActivity(
+                            Intent(context, UserAnnouncementListActivity::class.java)
+                        ) }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
