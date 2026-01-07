@@ -250,7 +250,7 @@ fun DriverDashboardScreen() {
                     content = "View your assigned tasks and progress for the current route.",
                     buttonText = "View Route Map",
                     onButtonClick = {
-                        val intent = Intent(context, DriverLocationMapActivity::class.java)
+                        val intent = Intent(context, DriverRouteMapActivity::class.java)
                         context.startActivity(intent)
                     }
                 )

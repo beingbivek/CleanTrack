@@ -47,7 +47,8 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
     val binVM = remember { BinViewModel(BinRepoImpl()) }
     val collectionRepo = remember { BinCollectionRepoImpl() }
     val userViewModel  = remember { UserViewModel(UserRepoImpl()) }
-    val activeTripViewModel = remember { ActiveTripViewModel(ActiveTripRepoImpl()) }
+    val activeTripViewModel = remember { ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(),
+        BinRepoImpl(), BinCollectionRepoImpl()) }
 
 
     val binDetails by binVM.bin.observeAsState()
