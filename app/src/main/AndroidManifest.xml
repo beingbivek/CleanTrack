@@ -19,6 +19,17 @@
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.driver.DemoDriverDashActivity"
+            android:exported="true"
+            android:label="@string/title_activity_demo_driver_dash"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.driver.DriverRouteMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_route_map"
