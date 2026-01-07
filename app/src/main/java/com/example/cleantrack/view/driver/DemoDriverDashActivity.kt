@@ -35,6 +35,7 @@ import com.example.cleantrack.model.AnnouncementModel
 import com.example.cleantrack.repository.*
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.AnnouncementBanner
+import com.example.cleantrack.view.common.EditProfileActivity
 import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.viewmodel.*
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -161,15 +162,29 @@ fun DriverDashboardScreens() {
                     icon = { Icon(Icons.Default.Home, null) },
                     label = { Text("Home") }
                 )
+                // MAP TAB (Updated with Logic)
                 NavigationBarItem(
                     selected = selectedTab == 1,
-                    onClick = { context.startActivity(Intent(context, DriverRouteMapActivity::class.java)) },
+                    onClick = {
+                        if (activeTrip != null && activeTrip?.status == "ACTIVE") {
+                            selectedTab = 1
+                            context.startActivity(Intent(context, DriverRouteMapActivity::class.java))
+                        } else {
+                            Toast.makeText(context, "Please start the Collection Route to view the map", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     icon = { Icon(Icons.Default.Map, null) },
-                    label = { Text("Route") }
+                    label = { Text("Route") },
+                    colors = NavigationBarItemDefaults.colors(
+                        // Keep it looking disabled or standard if not active
+                        selectedIconColor = if (activeTrip != null) Color(0xFF009688) else Color.Gray
+                    )
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
-                    onClick = { /* Profile logic */ },
+                    onClick = {   val intent = Intent(context, EditProfileActivity::class.java)
+                        intent.putExtra("USER_ID", currentUserId)
+                        context.startActivity(intent) },
                     icon = { Icon(Icons.Default.AccountCircle, null) },
                     label = { Text("Profile") }
                 )
@@ -232,7 +247,11 @@ fun DriverDashboardScreens() {
                         else Toast.makeText(context, "Please start a route first", Toast.LENGTH_SHORT).show()
                     }
                     QuickActionItem(Icons.Default.Map, "Route Map") {
-                        context.startActivity(Intent(context, DriverRouteMapActivity::class.java))
+                        if (activeTrip != null && activeTrip?.status == "ACTIVE") {
+                            context.startActivity(Intent(context, DriverRouteMapActivity::class.java))
+                        } else {
+                            Toast.makeText(context, "Access Denied: Start your route first", Toast.LENGTH_SHORT).show()
+                        }
                     }
                     QuickActionItem(Icons.Default.History, "Recent") { /* Logs Activity */ }
                     QuickActionItem(Icons.Default.Notifications, "Alerts") { /* Announcement Activity */ }
