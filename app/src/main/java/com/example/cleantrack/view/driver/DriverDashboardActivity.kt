@@ -107,6 +107,7 @@ fun DriverDashboardScreen() {
     var showLogoutDialog by remember { mutableStateOf(false) }
     val sLoading by scheduleViewModel.loading.observeAsState(false)
     val assignedSchedule by scheduleViewModel.schedule.observeAsState(null)
+    val isCompleted by tripViewModel.isScheduleCompleted.observeAsState(false)
 
     val locationCallback = remember {
         object : com.google.android.gms.location.LocationCallback() {
@@ -146,6 +147,9 @@ fun DriverDashboardScreen() {
     }
     // Automatically resume the active trip if one exists for the assigned route
     LaunchedEffect(assignedSchedule) {
+        assignedSchedule?.scheduleId?.let { id ->
+            tripViewModel.checkCompletionStatus(id)
+        }
         assignedSchedule?.routeId?.let { routeId ->
             if (routeId.isNotEmpty()) {
                 tripViewModel.observeActiveTripByRoute(routeId)
@@ -343,7 +347,6 @@ fun DriverDashboardScreen() {
                             if (schedule == null || schedule.scheduleId.isBlank()) {
                                 Toast.makeText(context, "No schedule assigned for today.", Toast.LENGTH_SHORT).show()
                             } else {
-                                Log.d("CLEANTRACK", "Attempting to start: ${schedule.scheduleId}")
                                 tripViewModel.startTripWithValidation(schedule) { success, msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                 }
@@ -352,15 +355,25 @@ fun DriverDashboardScreen() {
                             showEndTripDialog = true
                         }
                     },
+                    enabled = !isCompleted,
                     modifier = Modifier.fillMaxWidth().height(65.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isTripActive) Color.Red else Color(0xFF4CAF50)
+                        containerColor = when {
+                            isCompleted -> Color.Gray
+                            isTripActive -> Color.Red
+                            else -> Color(0xFF4CAF50)
+                        },
+                        disabledContainerColor = Color.Gray // Appearance when disabled
                     )
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = if (isTripActive) "End Collection Route" else "Start Collection Route",
+                            text = when {
+                                isCompleted -> "Schedule Already Completed"
+                                isTripActive -> "End Collection Route"
+                                else -> "Start Collection Route"
+                            },
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
