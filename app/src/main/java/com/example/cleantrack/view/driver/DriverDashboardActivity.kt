@@ -108,6 +108,7 @@ fun DriverDashboardScreen() {
     val sLoading by scheduleViewModel.loading.observeAsState(false)
     val assignedSchedule by scheduleViewModel.schedule.observeAsState(null)
     val isCompleted by tripViewModel.isScheduleCompleted.observeAsState(false)
+    var isScheduleActive = false
 
     val locationCallback = remember {
         object : com.google.android.gms.location.LocationCallback() {
@@ -149,6 +150,7 @@ fun DriverDashboardScreen() {
     LaunchedEffect(assignedSchedule) {
         assignedSchedule?.scheduleId?.let { id ->
             tripViewModel.checkCompletionStatus(id)
+            isScheduleActive = assignedSchedule?.active == "ACTIVE" ?: false
         }
         assignedSchedule?.routeId?.let { routeId ->
             if (routeId.isNotEmpty()) {
@@ -355,11 +357,12 @@ fun DriverDashboardScreen() {
                             showEndTripDialog = true
                         }
                     },
-                    enabled = !isCompleted,
+                    enabled = !isCompleted && isScheduleActive,
                     modifier = Modifier.fillMaxWidth().height(65.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = when {
+                            !isScheduleActive -> Color.DarkGray
                             isCompleted -> Color.Gray
                             isTripActive -> Color.Red
                             else -> Color(0xFF4CAF50)
@@ -370,6 +373,7 @@ fun DriverDashboardScreen() {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = when {
+                                !isScheduleActive -> "Schedule Cancelled"
                                 isCompleted -> "Schedule Already Completed"
                                 isTripActive -> "End Collection Route"
                                 else -> "Start Collection Route"
