@@ -7,6 +7,9 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ActiveTripRepoImpl : ActiveTripRepo {
 
@@ -147,14 +150,34 @@ class ActiveTripRepoImpl : ActiveTripRepo {
             })
     }
 
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    fun getCurrentDate(): String {
+        return sdf.format(Date())
+    }
+
     override fun checkExistingTrip(scheduleId: String, callback: (ActiveTripModel?) -> Unit) {
-        // Query by scheduleId only
+        val today = getCurrentDate()
+
+        // Query trips for this schedule
         tripRef.orderByChild("scheduleId").equalTo(scheduleId)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    // If snapshot has children, it means a trip was already attempted/done for this schedule
-                    val existingTrip = snapshot.children.firstOrNull()?.getValue(ActiveTripModel::class.java)
-                    callback(existingTrip)
+                    var todayTrip: ActiveTripModel? = null
+
+                    for (child in snapshot.children) {
+                        val trip = child.getValue(ActiveTripModel::class.java)
+
+                        // NEW: Only care about trips created TODAY
+                        // Assuming your ActiveTripModel has a 'date' field or you check the timestamp
+                        if (trip != null) {
+                            val tripDate = sdf.format(Date(trip.startTimestamp))
+                            if (tripDate == today) {
+                                todayTrip = trip
+                                break
+                            }
+                        }
+                    }
+                    callback(todayTrip)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
