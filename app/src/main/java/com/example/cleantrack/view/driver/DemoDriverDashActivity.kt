@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.AnnouncementModel
+import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.*
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.AnnouncementBanner
@@ -61,6 +62,10 @@ fun DriverDashboardScreens() {
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
 
+
+
+
+
     // --- FUNCTIONAL INITIALIZATION ---
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val scheduleViewModel = remember { ScheduleViewModel(ScheduleRepoImpl()) }
@@ -68,6 +73,9 @@ fun DriverDashboardScreens() {
     val tripViewModel = remember {
         ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl())
     }
+
+
+    val sLoading by scheduleViewModel.loading.observeAsState(false)
 
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
     val currentUser by userViewModel.user!!.observeAsState()
@@ -258,14 +266,15 @@ fun DriverDashboardScreens() {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Schedule Details using TextBoxColor
-                assignedSchedule?.let {
-                    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = TextBoxColor) {
-                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Schedule, contentDescription = null, tint = DarkGreen)
-                            Spacer(Modifier.width(12.dp))
-                            Text("Today's Shift: ${it.startTime} - ${it.endTime}", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Black)
-                        }
+                when {
+                    sLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                    assignedSchedule != null && assignedSchedule?.scheduleId?.isNotEmpty() == true -> {
+                        RouteDetailCards(schedule = assignedSchedule!!)
+                    }
+                    else -> {
+                        Text("No schedule assigned for today.", color = Color.Gray)
                     }
                 }
 
@@ -329,3 +338,72 @@ fun QuickActionItem(icon: ImageVector, label: String, onClick: () -> Unit) {
         Text(text = label, fontSize = 12.sp, color = Color.DarkGray, fontWeight = FontWeight.Medium)
     }
 }
+
+
+
+@Composable
+
+fun RouteDetailCards(schedule: ScheduleModel) {
+
+    Card(
+
+        modifier = Modifier.fillMaxWidth(),
+
+        shape = RoundedCornerShape(16.dp),
+
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)) // Light green tint
+
+    ) {
+
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+
+                Icon(Icons.Default.Route, contentDescription = null, tint = Green)
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+
+                    text = schedule.routeName,
+
+                    style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+                )
+
+            }
+
+
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
+                Column {
+
+                    Text("Start Time", fontSize = 12.sp, color = Color.Gray)
+
+                    Text(schedule.startTime, fontWeight = FontWeight.Medium)
+
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+
+                    Text("End Time", fontSize = 12.sp, color = Color.Gray)
+
+                    Text(schedule.endTime, fontWeight = FontWeight.Medium)
+
+                }
+
+            }
+
+        }
+
+    }
+}
+
