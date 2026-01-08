@@ -105,11 +105,6 @@
             android:label="@string/title_activity_payment"
             android:theme="@style/Theme.CleanTrack"/>
         <activity
-            android:name=".view.admin.AdminPrivacyPolicyActivity"
-            android:exported="false"
-            android:label="@string/title_activity_admin_privacy_policy"
-            android:theme="@style/Theme.CleanTrack" />
-        <activity
             android:name=".view.admin.AdminVehicleSetupActivity"
             android:exported="false"
             android:label="@string/title_activity_admin_vehicle_setup"
