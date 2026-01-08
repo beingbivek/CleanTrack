@@ -7,6 +7,9 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ActiveTripRepoImpl : ActiveTripRepo {
 
@@ -100,7 +103,7 @@ class ActiveTripRepoImpl : ActiveTripRepo {
                 callback(true, "Route completed")
             }
             .addOnFailureListener {
-                callback(false, it.localizedMessage ?: "Failed")
+                callback(false, it.localizedMessage ?: "Failed to end route!")
             }
     }
 
@@ -147,4 +150,39 @@ class ActiveTripRepoImpl : ActiveTripRepo {
             })
     }
 
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    fun getCurrentDate(): String {
+        return sdf.format(Date())
+    }
+
+    override fun checkExistingTrip(scheduleId: String, callback: (ActiveTripModel?) -> Unit) {
+        val today = getCurrentDate()
+
+        // Query trips for this schedule
+        tripRef.orderByChild("scheduleId").equalTo(scheduleId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    var todayTrip: ActiveTripModel? = null
+
+                    for (child in snapshot.children) {
+                        val trip = child.getValue(ActiveTripModel::class.java)
+
+                        // NEW: Only care about trips created TODAY
+                        // Assuming your ActiveTripModel has a 'date' field or you check the timestamp
+                        if (trip != null) {
+                            val tripDate = sdf.format(Date(trip.startTimestamp))
+                            if (tripDate == today) {
+                                todayTrip = trip
+                                break
+                            }
+                        }
+                    }
+                    callback(todayTrip)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(null)
+                }
+            })
+    }
 }

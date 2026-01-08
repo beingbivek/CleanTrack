@@ -26,4 +26,6 @@ interface ActiveTripRepo {
         routeId: String,
         callback: (ActiveTripModel?) -> Unit
     )
+
+    fun checkExistingTrip(scheduleId: String, callback: (ActiveTripModel?) -> Unit)
 }
