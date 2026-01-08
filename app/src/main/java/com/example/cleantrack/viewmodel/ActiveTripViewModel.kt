@@ -30,6 +30,10 @@ class ActiveTripViewModel(
     private val _activeTrip = MutableLiveData<ActiveTripModel?>()
     val activeTrip: LiveData<ActiveTripModel?> get() = _activeTrip
 
+    // Schedule State
+    private val _isScheduleCompleted = MutableLiveData<Boolean>(false)
+    val isScheduleCompleted: LiveData<Boolean> get() = _isScheduleCompleted
+
     // Bin details for specific scans
     val binDetails = MutableLiveData<BinModel?>()
 
@@ -46,21 +50,51 @@ class ActiveTripViewModel(
         val currentTime = sdf.format(Date())
 
         if (currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
-            repo.startTrip(schedule.scheduleId) { success, message ->
-                if (success) {
-                    // IMPORTANT: After starting, we need to find the tripId
-                    // and start observing it so the LiveData updates.
-                    repo.observeActiveTripByRoute(schedule.routeId) { trip ->
-                        _activeTrip.postValue(trip)
-                        if (trip != null) {
-                            loadBinStats(trip.routeId, trip.tripId)
+
+            repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
+                when {
+                    // SCENARIO 1: Trip was already finished today
+                    existingTrip?.status == "COMPLETED" -> {
+                        callback(false, "This schedule is already completed for today.")
+                    }
+
+                    // SCENARIO 2: Trip is currently running (Resume)
+                    existingTrip?.status == "ACTIVE" -> {
+                        _activeTrip.postValue(existingTrip)
+                        loadBinStats(existingTrip.routeId, existingTrip.tripId)
+                        callback(true, "Resuming current active route.")
+                    }
+
+                    // SCENARIO 3: First time starting this schedule
+                    else -> {
+                        repo.startTrip(schedule.scheduleId) { success, message ->
+                            if (success) {
+                                repo.observeActiveTripByRoute(schedule.routeId) { trip ->
+                                    _activeTrip.postValue(trip)
+                                    if (trip != null) loadBinStats(trip.routeId, trip.tripId)
+                                }
+                            }
+                            callback(success, message)
                         }
                     }
                 }
-                callback(success, message)
             }
         } else {
             callback(false, "Cannot start. Current time ($currentTime) is outside schedule.")
+        }
+    }
+
+    /**
+     * Checks if a trip for this schedule was already completed today.
+     * Call this when the Dashboard loads or when assignedSchedule changes.
+     */
+    fun checkCompletionStatus(scheduleId: String) {
+        repo.checkExistingTrip(scheduleId) { trip ->
+            if (trip?.status == "COMPLETED") {
+                _isScheduleCompleted.postValue(true)
+            } else {
+                _isScheduleCompleted.postValue(false)
+            }
         }
     }
 
@@ -139,7 +173,6 @@ class ActiveTripViewModel(
         }
     }
 
-    // Inside ActiveTripViewModel.kt
     fun endTrip(tripId: String, callback: (Boolean, String) -> Unit) {
         repo.endTrip(tripId) { success, msg ->
             if (success) {
