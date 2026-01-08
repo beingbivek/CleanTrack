@@ -100,7 +100,7 @@ class ActiveTripRepoImpl : ActiveTripRepo {
                 callback(true, "Route completed")
             }
             .addOnFailureListener {
-                callback(false, it.localizedMessage ?: "Failed")
+                callback(false, it.localizedMessage ?: "Failed to end route!")
             }
     }
 
@@ -147,4 +147,19 @@ class ActiveTripRepoImpl : ActiveTripRepo {
             })
     }
 
+    override fun checkExistingTrip(scheduleId: String, callback: (ActiveTripModel?) -> Unit) {
+        // Query by scheduleId only
+        tripRef.orderByChild("scheduleId").equalTo(scheduleId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    // If snapshot has children, it means a trip was already attempted/done for this schedule
+                    val existingTrip = snapshot.children.firstOrNull()?.getValue(ActiveTripModel::class.java)
+                    callback(existingTrip)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(null)
+                }
+            })
+    }
 }
