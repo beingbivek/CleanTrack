@@ -34,6 +34,10 @@ class ActiveTripViewModel(
     private val _isScheduleCompleted = MutableLiveData<Boolean>(false)
     val isScheduleCompleted: LiveData<Boolean> get() = _isScheduleCompleted
 
+    private val _loading = MutableLiveData<Boolean>()
+    val loading : MutableLiveData<Boolean>
+        get() = _loading
+
     // Bin details for specific scans
     val binDetails = MutableLiveData<BinModel?>()
 
@@ -184,5 +188,35 @@ class ActiveTripViewModel(
 
     override fun onCleared() {
         super.onCleared()
+    }
+
+    // In ActiveTripViewModel.kt
+
+// 1. Add this to the constructor (if not already there)
+// collectionRepo: BinCollectionRepo
+
+    fun checkAndValidateBin(tripId: String, binId: String, onResult: (Boolean, String) -> Unit) {
+        loading.postValue(true) // Optional: add a loading state to this VM
+
+        // Step 1: Check if already collected in this trip
+        collectionRepo.observeCollectionsByTrip(tripId) { success, _, collections ->
+            val alreadyCollected = collections?.any { it.binId == binId } ?: false
+
+            if (alreadyCollected) {
+                loading.postValue(false)
+                onResult(false, "Qr is already scanned for this trip")
+            } else {
+                // Step 2: If not collected, fetch bin details to ensure it exists
+                binRepo.getBinById(binId) { binSuccess, message, bin ->
+                    loading.postValue(false)
+                    if (binSuccess && bin != null) {
+                        binDetails.postValue(bin)
+                        onResult(true, "Success")
+                    } else {
+                        onResult(false, message)
+                    }
+                }
+            }
+        }
     }
 }
