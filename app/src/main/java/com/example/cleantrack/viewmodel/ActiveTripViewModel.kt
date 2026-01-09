@@ -10,6 +10,7 @@ import com.example.cleantrack.model.ActiveTripModel
 import com.example.cleantrack.model.BinCollectionModel
 import com.example.cleantrack.model.BinModel
 import com.example.cleantrack.model.ScheduleModel
+import com.example.cleantrack.model.TripHistoryUiModel
 import com.example.cleantrack.repository.ActiveTripRepo
 import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.BinRepo
@@ -316,6 +317,56 @@ class ActiveTripViewModel(
                     _loading.postValue(false)
                     callback(saveSuccess, saveMessage)
                 }
+            }
+        }
+    }
+
+    private val _tripHistory = MutableLiveData<List<TripHistoryUiModel>>()
+    val tripHistory: LiveData<List<TripHistoryUiModel>> get() = _tripHistory
+
+    fun fetchDriverHistory(driverId: String) {
+        _loading.postValue(true)
+        repo.getDriverTripHistory(driverId) { success, message, trips ->
+            if (success && !trips.isNullOrEmpty()) {
+                val historyList = mutableListOf<TripHistoryUiModel>()
+                var processedCount = 0
+
+                trips.forEach { trip ->
+                    // STEP 1: Get the Driver's Name
+                    userRepo.getUserById(trip.driverId) { userSuccess, _, driverUser ->
+                        val dName = driverUser?.fullname ?: "Unknown Driver"
+
+                        // STEP 2: Get users on the route to count bins
+                        userRepo.getUsersByRoute(trip.routeId) { _, _, routeUsers ->
+                            val userIds = routeUsers?.map { it.userId } ?: emptyList()
+
+                            binRepo.getBinsByOwnerIds(userIds) { bins ->
+                                val total = bins.size
+
+                                // STEP 3: Get collections for this specific trip
+                                collectionRepo.getCollectionsByTripOnce(trip.tripId) { _, _, collections ->
+                                    val collected = collections?.size ?: 0
+
+                                    historyList.add(TripHistoryUiModel(
+                                        trip = trip,
+                                        totalBins = total,
+                                        collectedBins = collected,
+                                        driverName = dName // Save the name here
+                                    ))
+
+                                    processedCount++
+                                    if (processedCount == trips.size) {
+                                        _tripHistory.postValue(historyList.sortedByDescending { it.trip.startTimestamp })
+                                        _loading.postValue(false)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                _tripHistory.postValue(emptyList())
+                _loading.postValue(false)
             }
         }
     }
