@@ -252,6 +252,7 @@ fun DriverDashboardScreens() {
                         if (isTripActive) {
                             val intent = Intent(context, DriverScanBinActivity::class.java).apply {
                                 putExtra("TRIP_ID", activeTrip?.tripId)
+                                putExtra("ROUTE_ID", activeTrip?.routeId)
                             }
                             context.startActivity(intent)
                         } else {
