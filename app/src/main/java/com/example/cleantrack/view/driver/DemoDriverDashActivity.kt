@@ -267,7 +267,9 @@ fun DriverDashboardScreens() {
                             Toast.makeText(context, "Access Denied: Start your route first", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    QuickActionItem(Icons.Default.History, "Recent") { /* Logs Activity */ }
+                    QuickActionItem(Icons.Default.History, "TripHistory") {
+                        context.startActivity(Intent(context, DriversTripHistoryActivity::class.java))
+                    }
                     QuickActionItem(Icons.Default.Notifications, "Alerts") {
                         context.startActivity(Intent(context, UserAnnouncementListActivity::class.java))
                     }
