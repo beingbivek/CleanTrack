@@ -13,6 +13,7 @@ import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.ActiveTripRepo
 import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.BinRepo
+import com.example.cleantrack.repository.PointsRepo
 import com.example.cleantrack.repository.UserRepo
 import com.google.android.gms.location.FusedLocationProviderClient
 import java.text.SimpleDateFormat
@@ -23,7 +24,8 @@ class ActiveTripViewModel(
     private val repo: ActiveTripRepo,
     private val userRepo: UserRepo,
     private val binRepo: BinRepo,
-    private val collectionRepo: BinCollectionRepo
+    private val collectionRepo: BinCollectionRepo,
+    private val pointsRepo: PointsRepo // ADD THIS
 ) : ViewModel() {
 
     // Active Trip State
@@ -235,6 +237,62 @@ class ActiveTripViewModel(
                     } else {
                         onResult(false, message)
                     }
+                }
+            }
+        }
+    }
+
+    fun collectBinWithPoints(
+        bin: BinModel,
+        driverId: String,
+        tripId: String,
+        rating: Int,
+        remarks: String,
+        isSegregated: Boolean,
+        callback: (Boolean, String) -> Unit
+    ) {
+        _loading.postValue(true)
+
+        // 1. Use the 3-parameter callback matching your UserRepoImpl
+        userRepo.getUserById(bin.ownerUserId) { success, message, user ->
+            if (!success || user == null) {
+                _loading.postValue(false) // Stop loading on UI
+                callback(false, "Failed to fetch user: $message")
+                return@getUserById
+            }
+
+            // 2. Use 'activeRouteId' (as defined in your UserRepoImpl updateActiveRoute)
+            val userRouteId = user.activeRouteId ?: ""
+
+            // 3. Calculate points using 'category' from BinModel
+            pointsRepo.calculatePoints(bin.category, isSegregated) { calculatedPoints ->
+
+                // 4. Build the collection model with the awarded points
+                val collection = BinCollectionModel(
+                    binId = bin.binId,
+                    driverId = driverId,
+                    userId = bin.ownerUserId,
+                    tripId = tripId,
+                    rating = rating,
+                    remarks = remarks,
+                    segregatedCorrectly = isSegregated,
+                    pointsAwarded = calculatedPoints,
+                    collectedAt = System.currentTimeMillis()
+                )
+
+                // 5. Save the collection via BinCollectionRepoImpl
+                collectionRepo.addBinCollection(collection) { saveSuccess, saveMessage ->
+                    if (saveSuccess) {
+                        // 6. Update the User's total point balance
+                        pointsRepo.addPointsToUser(bin.ownerUserId, calculatedPoints)
+
+                        // 7. Refresh stats using the retrieved routeId
+                        if (userRouteId.isNotEmpty()) {
+                            loadBinStats(userRouteId, tripId)
+                        }
+                    }
+                    _loading.postValue(false)
+                    callback(saveSuccess, saveMessage)
                 }
             }
         }
