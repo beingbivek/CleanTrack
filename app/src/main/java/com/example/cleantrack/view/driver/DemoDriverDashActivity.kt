@@ -64,7 +64,7 @@ fun DriverDashboardScreens() {
     val scheduleViewModel = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
     val tripViewModel = remember {
-        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl())
+        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl(),PointsRepoImpl())
     }
 
     // --- STATE OBSERVERS ---

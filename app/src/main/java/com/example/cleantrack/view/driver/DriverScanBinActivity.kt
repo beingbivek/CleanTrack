@@ -29,7 +29,8 @@ class DriverScanBinActivity : ComponentActivity() {
             ActiveTripRepoImpl(),
             UserRepoImpl(),
             BinRepoImpl(),
-            BinCollectionRepoImpl()
+            BinCollectionRepoImpl(),
+            PointsRepoImpl()
         )
 
         // 2. IMMEDIATELY LAUNCH SCANNER
