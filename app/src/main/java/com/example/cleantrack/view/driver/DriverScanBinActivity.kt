@@ -68,17 +68,28 @@ class DriverScanBinActivity : ComponentActivity() {
         }
 
     private fun validateBin(binId: String) {
+        // Get both TRIP_ID and ROUTE_ID from the intent passed from the Dashboard
         val tripId = intent.getStringExtra("TRIP_ID") ?: ""
+        val routeId = intent.getStringExtra("ROUTE_ID") ?: ""
 
-        activeTripViewModel.checkAndValidateBin(tripId, binId) { allowed, message ->
+        if (tripId.isEmpty() || routeId.isEmpty()) {
+            Toast.makeText(this, "Error: Trip or Route info missing", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        // Now calling the updated ViewModel method with the routeId parameter
+        activeTripViewModel.checkAndValidateBin(tripId, routeId, binId) { allowed, message ->
             if (allowed) {
                 val intent = Intent(this, BinCollectionActivity::class.java).apply {
                     putExtra("BIN_ID", binId)
                     putExtra("TRIP_ID", tripId)
+                    putExtra("ROUTE_ID", routeId) // Also pass it to the next screen
                 }
                 startActivity(intent)
                 finish()
             } else {
+                // This will now show "Access Denied: This bin belongs to Route X..."
                 Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 finish()
             }
