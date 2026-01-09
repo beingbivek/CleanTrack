@@ -274,6 +274,9 @@ fun DriverDashboardScreens() {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Helper to determine if the work for the day is 100% done
+                val isRouteFullyFinished = stats.first > 0 && stats.second >= stats.first && isTripCompleted
+
                 // Schedule Details Section
                 when {
                     sLoading -> {
@@ -281,11 +284,19 @@ fun DriverDashboardScreens() {
                             CircularProgressIndicator(color = Blue)
                         }
                     }
+                    // ADD THIS CONDITION: If finished, show "No schedule" or a "Finished" message
+                    isRouteFullyFinished -> {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Green, modifier = Modifier.size(48.dp))
+                            Text("All bins collected for today!", fontWeight = FontWeight.Bold, color = Green)
+                            Text("Great job, your route is complete.", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
                     assignedSchedule != null -> {
                         RouteDetailCards(schedule = assignedSchedule!!)
                     }
                     else -> {
-                        Text("No schedule assigned for today.", color = Color.Gray, modifier = Modifier.padding(16.dp))
+                        Text("No schedule assigned for today.", color = Color.Gray)
                     }
                 }
 

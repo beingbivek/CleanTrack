@@ -54,48 +54,54 @@ class ActiveTripViewModel(
         val currentTime = sdf.format(Date())
 
         if (currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
-
             repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
                 when {
-                    // MODIFIED SCENARIO 1: Trip was finished today, but we want to RESTART it
                     existingTrip?.status == "COMPLETED" -> {
-                        // Instead of blocking, we call the resume function
-                        repo.resumeTrip(existingTrip.tripId) { success, message ->
-                            if (success) {
-                                // Update local state so UI reflects "ACTIVE" immediately
-                                val resumedTrip = existingTrip.copy(status = "ACTIVE")
-                                _activeTrip.postValue(resumedTrip)
-                                loadBinStats(resumedTrip.routeId, resumedTrip.tripId)
-                                callback(true, "Route restarted successfully!")
-                            } else {
-                                callback(false, message)
+                        // --- NEW LOGIC: Check if all bins are already collected ---
+                        userRepo.getUsersByRoute(schedule.routeId) { success, _, users ->
+                            if (success && users != null) {
+                                val userIds = users.map { it.userId }
+                                binRepo.getBinsByOwnerIds(userIds) { bins ->
+                                    val totalBins = bins.size
+
+                                    collectionRepo.observeCollectionsByTrip(existingTrip.tripId) { collSuccess, _, collections ->
+                                        val collectedCount = collections?.size ?: 0
+
+                                        if (collectedCount >= totalBins && totalBins > 0) {
+                                            // Block restart because work is finished
+                                            callback(false, "Route fully collected. Cannot restart.")
+                                        } else {
+                                            // Proceed with restart as some bins remain
+                                            repo.resumeTrip(existingTrip.tripId) { s, m ->
+                                                if (s) {
+                                                    val resumed = existingTrip.copy(status = "ACTIVE")
+                                                    _activeTrip.postValue(resumed)
+                                                    loadBinStats(resumed.routeId, resumed.tripId)
+                                                }
+                                                callback(s, m)
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-
-                    // SCENARIO 2: Trip is currently running (Resume app state)
+                    // ... Scenario 2 (ACTIVE) and Scenario 3 (New Trip) remain the same
                     existingTrip?.status == "ACTIVE" -> {
                         _activeTrip.postValue(existingTrip)
                         loadBinStats(existingTrip.routeId, existingTrip.tripId)
-                        callback(true, "Resuming current active route.")
+                        callback(true, "Resuming active route.")
                     }
-
-                    // SCENARIO 3: First time starting this schedule today
                     else -> {
-                        repo.startTrip(schedule.scheduleId) { success, message ->
-                            if (success) {
-                                repo.observeActiveTripByRoute(schedule.routeId) { trip ->
-                                    _activeTrip.postValue(trip)
-                                    if (trip != null) loadBinStats(trip.routeId, trip.tripId)
-                                }
-                            }
-                            callback(success, message)
+                        repo.startTrip(schedule.scheduleId) { s, m ->
+                            if (s) observeActiveTripByRoute(schedule.routeId)
+                            callback(s, m)
                         }
                     }
                 }
             }
         } else {
-            callback(false, "Cannot start. Current time ($currentTime) is outside schedule.")
+            callback(false, "Outside schedule time.")
         }
     }
 
