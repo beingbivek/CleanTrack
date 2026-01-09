@@ -57,19 +57,30 @@ class ActiveTripViewModel(
 
             repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
                 when {
-                    // SCENARIO 1: Trip was already finished today
+                    // MODIFIED SCENARIO 1: Trip was finished today, but we want to RESTART it
                     existingTrip?.status == "COMPLETED" -> {
-                        callback(false, "This schedule is already completed for today.")
+                        // Instead of blocking, we call the resume function
+                        repo.resumeTrip(existingTrip.tripId) { success, message ->
+                            if (success) {
+                                // Update local state so UI reflects "ACTIVE" immediately
+                                val resumedTrip = existingTrip.copy(status = "ACTIVE")
+                                _activeTrip.postValue(resumedTrip)
+                                loadBinStats(resumedTrip.routeId, resumedTrip.tripId)
+                                callback(true, "Route restarted successfully!")
+                            } else {
+                                callback(false, message)
+                            }
+                        }
                     }
 
-                    // SCENARIO 2: Trip is currently running (Resume)
+                    // SCENARIO 2: Trip is currently running (Resume app state)
                     existingTrip?.status == "ACTIVE" -> {
                         _activeTrip.postValue(existingTrip)
                         loadBinStats(existingTrip.routeId, existingTrip.tripId)
                         callback(true, "Resuming current active route.")
                     }
 
-                    // SCENARIO 3: First time starting this schedule
+                    // SCENARIO 3: First time starting this schedule today
                     else -> {
                         repo.startTrip(schedule.scheduleId) { success, message ->
                             if (success) {
@@ -94,7 +105,10 @@ class ActiveTripViewModel(
      */
     fun checkCompletionStatus(scheduleId: String) {
         repo.checkExistingTrip(scheduleId) { trip ->
-            if (trip?.status == "COMPLETED") {
+            // If there is an active trip, it is definitely NOT completed.
+            if (trip?.status == "ACTIVE") {
+                _isScheduleCompleted.postValue(false)
+            } else if (trip?.status == "COMPLETED") {
                 _isScheduleCompleted.postValue(true)
             } else {
                 _isScheduleCompleted.postValue(false)
