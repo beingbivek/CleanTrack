@@ -2,6 +2,7 @@ package com.example.cleantrack.repository
 
 import android.util.Log
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.model.UserPointsModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
@@ -17,6 +18,8 @@ class UserRepoImpl : UserRepo{
     val database : FirebaseDatabase = FirebaseDatabase.getInstance()
 
     val ref : DatabaseReference = database.getReference("Users")
+
+    private val pointsRef: DatabaseReference = database.getReference("UserPoints")
 
 
 
@@ -366,5 +369,44 @@ class UserRepoImpl : UserRepo{
                 }
             })
     }
+
+    override fun addUserPoints(userId: String, points: Int, callback: (Boolean, String) -> Unit) {
+        // 1. Fetch current points first
+        pointsRef.child(userId).get().addOnSuccessListener { snapshot ->
+            val currentPoints = snapshot.child("totalPoints").getValue(Int::class.java) ?: 0
+            val newTotal = currentPoints + points
+
+            // 2. Create the model
+            val pointsUpdate = UserPointsModel(
+                userId = userId,
+                totalPoints = newTotal,
+                lastUpdated = System.currentTimeMillis()
+            )
+
+            // 3. Save to database
+            pointsRef.child(userId).setValue(pointsUpdate)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        callback(true, "Points awarded: $points")
+                    } else {
+                        callback(false, task.exception?.message ?: "Failed to update points")
+                    }
+                }
+        }.addOnFailureListener {
+            callback(false, it.message ?: "Database error")
+        }
+    }
+
+    override fun getUserPoints(userId: String, callback: (Boolean, String, Int) -> Unit) {
+        pointsRef.child(userId).child("totalPoints").get()
+            .addOnSuccessListener { snapshot ->
+                val pts = snapshot.getValue(Int::class.java) ?: 0
+                callback(true, "Success", pts)
+            }
+            .addOnFailureListener {
+                callback(false, it.message ?: "Error", 0)
+            }
+    }
+
 
 }

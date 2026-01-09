@@ -281,4 +281,27 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
             }
         }
     }
+
+    // Inside UserViewModel.kt
+
+    private val _userPoints = MutableLiveData<Int>()
+    val userPoints: MutableLiveData<Int> get() = _userPoints
+
+    fun awardPoints(userId: String, points: Int) {
+        repo.addUserPoints(userId, points) { success, message ->
+            if (success) {
+                Log.d("UserVM", "Points updated successfully for $userId")
+                // Refresh local points value
+                fetchUserPoints(userId)
+            } else {
+                Log.e("UserVM", "Failed to update points: $message")
+            }
+        }
+    }
+
+    fun fetchUserPoints(userId: String) {
+        repo.getUserPoints(userId) { success, _, points ->
+            if (success) _userPoints.postValue(points)
+        }
+    }
 }
