@@ -223,14 +223,14 @@ class ActiveTripViewModel(
     fun checkAndValidateBin(tripId: String, currentRouteId: String, binId: String, onResult: (Boolean, String) -> Unit) {
         _loading.postValue(true)
 
-        // STEP 1: Check if already collected in this specific trip
-        collectionRepo.observeCollectionsByTrip(tripId) { success, _, collections ->
+        // CHANGE: Use the 'Once' method here
+        collectionRepo.getCollectionsByTripOnce(tripId) { success, _, collections ->
             val alreadyCollected = collections?.any { it.binId == binId } ?: false
 
             if (alreadyCollected) {
                 _loading.postValue(false)
                 onResult(false, "This bin has already been scanned for this trip.")
-                return@observeCollectionsByTrip
+                return@getCollectionsByTripOnce // Stops execution here
             }
 
             // STEP 2: Fetch Bin Details
