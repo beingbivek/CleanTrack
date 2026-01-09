@@ -30,4 +30,6 @@ interface ActiveTripRepo {
     fun checkExistingTrip(scheduleId: String, callback: (ActiveTripModel?) -> Unit)
 
     fun resumeTrip(tripId: String, callback: (Boolean, String) -> Unit)
+
+    fun getDriverTripHistory(driverId: String, callback: (Boolean, String, List<ActiveTripModel>?) -> Unit)
 }

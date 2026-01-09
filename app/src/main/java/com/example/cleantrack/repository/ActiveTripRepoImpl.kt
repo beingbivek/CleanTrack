@@ -28,7 +28,10 @@ class ActiveTripRepoImpl : ActiveTripRepo {
                 return@addOnSuccessListener
             }
 
-            Log.d("CLEANTRACK", "Repo: Checking for existing trips for driver: ${schedule.driverId}")
+            Log.d(
+                "CLEANTRACK",
+                "Repo: Checking for existing trips for driver: ${schedule.driverId}"
+            )
 
             tripRef.orderByChild("driverId").equalTo(schedule.driverId).get()
                 .addOnSuccessListener { tripSnap ->
@@ -215,5 +218,28 @@ class ActiveTripRepoImpl : ActiveTripRepo {
             }
     }
 
+    override fun getDriverTripHistory(
+        driverId: String,
+        callback: (Boolean, String, List<ActiveTripModel>?) -> Unit
+    ) {
+        Log.d("REPO_CHECK", "Searching for driverId: $driverId")
 
+        // Use the existing tripRef defined at the top of your class
+        tripRef.orderByChild("driverId").equalTo(driverId).get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.exists()) {
+                    Log.d("REPO_CHECK", "Trips found: ${snapshot.childrenCount}")
+                    val trips = snapshot.children.mapNotNull { it.getValue(ActiveTripModel::class.java) }
+                        .sortedByDescending { it.startTimestamp }
+                    callback(true, "History fetched successfully", trips)
+                } else {
+                    Log.d("REPO_CHECK", "No trips found for driverId: $driverId")
+                    callback(false, "No history found", emptyList())
+                }
+            }
+            .addOnFailureListener {
+                Log.e("REPO_CHECK", "Failed to fetch history: ${it.message}")
+                callback(false, it.message ?: "Failed to fetch history", null)
+            }
+    }
 }
