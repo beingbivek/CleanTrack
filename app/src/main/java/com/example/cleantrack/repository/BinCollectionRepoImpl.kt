@@ -42,4 +42,19 @@ class BinCollectionRepoImpl : BinCollectionRepo {
                 }
             })
     }
+
+    // ADD THIS: Use this for QR Scanning/Validation (No Toast Loop)
+    override fun getCollectionsByTripOnce(
+        tripId: String,
+        callback: (Boolean, String, List<BinCollectionModel>?) -> Unit
+    ) {
+        ref.orderByChild("tripId").equalTo(tripId).get()
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.children.mapNotNull { it.getValue(BinCollectionModel::class.java) }
+                callback(true, "Data fetched", list)
+            }
+            .addOnFailureListener {
+                callback(false, it.message ?: "Fetch failed", null)
+            }
+    }
 }
