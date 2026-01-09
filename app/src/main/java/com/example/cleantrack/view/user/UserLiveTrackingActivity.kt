@@ -47,7 +47,8 @@ fun UserLiveMapScreen(routeId: String) {
 
     // Use factory to prevent reconstruction on recomposition
     val vm = remember {
-        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl())
+        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl(),
+            PointsRepoImpl())
     }
 
     val activeTrip by vm.activeTrip.observeAsState()
