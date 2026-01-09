@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -103,12 +104,14 @@ fun LoginBody() {
     var showForgotPasswordDialog by remember { mutableStateOf(false ) }
     var forgotPasswordEmail by remember { mutableStateOf("") }
 
+    val webClientId = stringResource(id = R.string.default_web_client_id)
+
     // 1. Configure Google Sign-In Options
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
 
         // IMPORTANT: Request the ID token for Firebase authentication i.e. sign with google
-            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestIdToken(webClientId)
             .requestEmail()
             .build()
     }
