@@ -13,7 +13,7 @@ import com.example.cleantrack.view.admin.AdminDashboardActivity
 import com.example.cleantrack.view.auth.LoginActivity
 import com.example.cleantrack.view.auth.RegistrationActivity
 import com.example.cleantrack.view.auth.UserLocationMapActivity
-import com.example.cleantrack.view.driver.DemoDriverDashActivity
+
 import com.example.cleantrack.view.driver.DriverDashboardActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
 
@@ -245,7 +245,7 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
 
                     val destinationActivity = when(userModel.role){
                         "ADMIN" -> AdminDashboardActivity::class.java
-                        "DRIVER" -> DemoDriverDashActivity::class.java
+                        "DRIVER" -> DriverDashboardActivity::class.java
                         "USER" -> UserDashboardActivity::class.java
                         else -> UserDashboardActivity::class.java
                     }
