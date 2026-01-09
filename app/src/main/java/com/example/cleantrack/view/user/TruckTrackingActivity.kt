@@ -24,7 +24,6 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.Style
 
 class UserLiveTrackingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +46,8 @@ fun UserLiveMapScreen(routeId: String) {
 
     // Use factory to prevent reconstruction on recomposition
     val vm = remember {
-        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl())
+        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl(),
+            PointsRepoImpl())
     }
 
     val activeTrip by vm.activeTrip.observeAsState()
@@ -104,7 +104,7 @@ fun UserLiveMapScreen(routeId: String) {
             if (truckMarker == null) {
                 val iconFactory = IconFactory.getInstance(context)
                 // Ensure ic_truck exists in res/drawable
-                val truckIcon = iconFactory.fromResource(R.drawable.ic_truck)
+                val truckIcon = iconFactory.fromResource(R.drawable.truckicon)
 
                 truckMarker = map.addMarker(
                     MarkerOptions()

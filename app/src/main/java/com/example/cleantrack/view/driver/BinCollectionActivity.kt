@@ -31,42 +31,44 @@ class BinCollectionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binId = intent.getStringExtra("BIN_ID") ?: ""
+        val tripId = intent.getStringExtra("TRIP_ID") ?: "" // 🔹 FETCH TRIP_ID FROM INTENT
 
         setContent {
-            BinCollectionScreen(binId) { finish() }
+            BinCollectionScreen(binId, tripId) { finish() }
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
+fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    // 🔹 Use BinViewModel to fetch bin details
+    // ViewModels
     val binVM = remember { BinViewModel(BinRepoImpl()) }
-    val collectionRepo = remember { BinCollectionRepoImpl() }
-    val userViewModel  = remember { UserViewModel(UserRepoImpl()) }
-    val activeTripViewModel = remember { ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(),
-        BinRepoImpl(), BinCollectionRepoImpl()) }
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
 
+    // Inject all required Repositories into the ActiveTripViewModel
+    val activeTripViewModel = remember {
+        ActiveTripViewModel(
+            ActiveTripRepoImpl(),
+            UserRepoImpl(),
+            BinRepoImpl(),
+            BinCollectionRepoImpl(),
+            com.example.cleantrack.repository.PointsRepoImpl() // Add this!
+        )
+    }
 
     val binDetails by binVM.bin.observeAsState()
     val loading by binVM.loading.observeAsState(false)
 
-    // 🔹 State to hold the current Driver's ID
     var currentDriverId by remember { mutableStateOf("") }
-
-    // Form States
     var rating by remember { mutableIntStateOf(0) }
     var remarks by remember { mutableStateOf("") }
     var isSegregated by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
 
-    // Fetch data when activity starts
     LaunchedEffect(binId) {
         binVM.getBinById(binId)
-        // 🔹 Get the logged-in driver's ID
         currentDriverId = userViewModel.getCurrentUserId() ?: ""
     }
 
@@ -85,7 +87,7 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // --- Bin Header ---
+                // Header (Bin details)
                 binDetails?.let { bin ->
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
@@ -95,16 +97,13 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                     }
                 }
 
-                // --- Segregation Status ---
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                // Segregation Switch
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("Was waste segregated correctly?", modifier = Modifier.weight(1f))
                     Switch(checked = isSegregated, onCheckedChange = { isSegregated = it })
                 }
 
-                // --- Rating System ---
+                // Star Rating
                 Text("Rate User Performance:")
                 Row {
                     repeat(5) { index ->
@@ -120,36 +119,36 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                     }
                 }
 
-                // --- Remarks ---
+                // Remarks
                 OutlinedTextField(
                     value = remarks,
                     onValueChange = { remarks = it },
                     label = { Text("Optional Remarks") },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("e.g. Bin was overfilled") }
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.weight(1f))
 
-                // --- Save Button ---
+                // --- NEW SAVE LOGIC ---
                 Button(
                     onClick = {
-                        isSaving = true
-                        val model = BinCollectionModel(
-                            binId = binId,
-                            userId = binDetails?.ownerUserId ?: "",
-                            driverId = currentDriverId, // TODO: Get from shared preferences or auth
-                            tripId = "CURRENT_TRIP_ID",     // TODO: Pass from previous activity
-                            rating = rating,
-                            remarks = remarks,
-                            segregatedCorrectly = isSegregated,
-                            pointsAwarded = if (isSegregated) 10 else 2
-                        )
+                        val bin = binDetails
+                        if (bin != null) {
+                            isSaving = true
 
-                        collectionRepo.addBinCollection(model) { success, msg ->
-                            isSaving = false
-                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            if (success) onComplete()
+                            // Call the ViewModel function that handles Point Calculation + Saving
+                            activeTripViewModel.collectBinWithPoints(
+                                bin = bin,
+                                driverId = currentDriverId,
+                                tripId = tripId,
+                                rating = rating,
+                                remarks = remarks,
+                                isSegregated = isSegregated
+                            ) { success, msg ->
+                                isSaving = false
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                if (success) onComplete()
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),

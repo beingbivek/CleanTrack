@@ -5,20 +5,22 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -28,8 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.ScheduleRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
-import com.example.cleantrack.ui.theme.Black
-import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.viewmodel.ScheduleViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 
@@ -47,22 +48,16 @@ class UserScheduleListActivity : ComponentActivity() {
 @Composable
 fun UserScheduleListScreen() {
     val context = LocalContext.current
-
     val scheduleVM = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     val userVM = remember { UserViewModel(UserRepoImpl()) }
 
-    // 1. Observe Drivers to get their names
     val allSchedules by scheduleVM.schedules.observeAsState(emptyList())
-    val drivers by userVM.drivers.observeAsState(emptyList()) // Added this
+    val drivers by userVM.drivers.observeAsState(emptyList())
     val userProfile by userVM.user.observeAsState()
     val loading by scheduleVM.loading.observeAsState(false)
 
-    // 2. Create the Driver Name Map
     val driverMap = remember(drivers) {
-        drivers?.associateBy(
-            keySelector = { it.userId },
-            valueTransform = { it.fullname }
-        ) ?: emptyMap()
+        drivers?.associateBy(keySelector = { it.userId }, valueTransform = { it.fullname }) ?: emptyMap()
     }
 
     var selectedScheduleForDetail by remember { mutableStateOf<ScheduleModel?>(null) }
@@ -71,79 +66,88 @@ fun UserScheduleListScreen() {
 
     LaunchedEffect(Unit) {
         scheduleVM.getAllSchedules()
-        userVM.getAllDrivers() // Fetch drivers so we have the names
+        userVM.getAllDrivers()
         userVM.getCurrentUserId()?.let { userVM.getUserById(it) }
     }
 
     val mySchedules = remember(allSchedules, userProfile) {
-        allSchedules?.filter {
-            it.routeId == userProfile?.activeRouteId && it.active
-        } ?: emptyList()
+        allSchedules?.filter { it.routeId == userProfile?.activeRouteId && it.active } ?: emptyList()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Collection Schedules", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = { (context as? Activity)?.finish() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = White)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Blue, Green, Color.White),
+                    startY = 0f,
+                    endY = 1300f
+                )
             )
-        }
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).background(White)) {
-            when {
-                loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                userProfile?.activeRouteId.isNullOrEmpty() -> {
-                    EmptyStateView(
-                        title = "No Route Selected",
-                        description = "Please go to 'Live Tracking' and confirm your neighborhood route."
-                    )
-                }
-                mySchedules.isEmpty() -> {
-                    EmptyStateView(
-                        title = "No Upcoming Pickups",
-                        description = "There are currently no active schedules for your route."
-                    )
-                }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(mySchedules) { schedule ->
-                            UserScheduleCard(
-                                schedule = schedule,
-                                // 3. Pass Driver Name to the Card
-                                driverName = driverMap[schedule.driverId] ?: "Assigned Driver",
-                                onClick = {
-                                    selectedScheduleForDetail = schedule
-                                    showSheet = true
-                                }
-                            )
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text("Collection Schedules", fontWeight = FontWeight.ExtraBold, color = Color.White) },
+                    navigationIcon = {
+                        IconButton(onClick = { (context as? Activity)?.finish() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                         }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+                )
+            }
+        ) { padding ->
+            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                when {
+                    loading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
                     }
-
-                    if (showSheet && selectedScheduleForDetail != null) {
-                        ModalBottomSheet(
-                            onDismissRequest = { showSheet = false },
-                            sheetState = sheetState,
-                            containerColor = White,
-                            dragHandle = { BottomSheetDefaults.DragHandle() }
+                    userProfile?.activeRouteId.isNullOrEmpty() -> {
+                        EmptyStateView(
+                            title = "No Route Selected",
+                            description = "Please go to 'Live Tracking' and confirm your neighborhood route."
+                        )
+                    }
+                    mySchedules.isEmpty() -> {
+                        EmptyStateView(
+                            title = "No Upcoming Pickups",
+                            description = "There are currently no active schedules for your route."
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // 4. Pass Driver Name to the Detail Content
-                            ScheduleDetailContent(
-                                schedule = selectedScheduleForDetail!!,
-                                driverName = driverMap[selectedScheduleForDetail!!.driverId] ?: "Unknown Driver"
-                            )
+                            items(mySchedules) { schedule ->
+                                UserScheduleCard(
+                                    schedule = schedule,
+                                    driverName = driverMap[schedule.driverId] ?: "Assigned Driver",
+                                    onClick = {
+                                        selectedScheduleForDetail = schedule
+                                        showSheet = true
+                                    }
+                                )
+                            }
                         }
                     }
+                }
+            }
+
+            if (showSheet && selectedScheduleForDetail != null) {
+                ModalBottomSheet(
+                    onDismissRequest = { showSheet = false },
+                    sheetState = sheetState,
+                    containerColor = Color.White,
+                    dragHandle = { BottomSheetDefaults.DragHandle() }
+                ) {
+                    ScheduleDetailContent(
+                        schedule = selectedScheduleForDetail!!,
+                        driverName = driverMap[selectedScheduleForDetail!!.driverId] ?: "Unknown Driver"
+                    )
                 }
             }
         }
@@ -153,35 +157,42 @@ fun UserScheduleListScreen() {
 @Composable
 fun UserScheduleCard(schedule: ScheduleModel, driverName: String, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = White),
-        elevation = CardDefaults.cardElevation(2.dp),
-        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.Schedule,
-                contentDescription = null,
-                tint = Color(0xFF4CAF50),
-                modifier = Modifier.size(32.dp)
-            )
+            Surface(
+                shape = CircleShape,
+                color = Green.copy(alpha = 0.1f),
+                modifier = Modifier.size(45.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Schedule, null, tint = Green, modifier = Modifier.size(24.dp))
+                }
+            }
+
             Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = schedule.routeName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(text = schedule.routeName, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Black)
                 Text(
-                    text = "${schedule.dayOfWeek} | ${schedule.startTime} - ${schedule.endTime}",
-                    color = Color.Gray,
+                    text = "${schedule.dayOfWeek} | ${schedule.startTime}",
+                    color = Color.DarkGray,
                     fontSize = 14.sp
                 )
-                // Optional: Show driver name briefly on card
-                Text(text = "Driver: $driverName", fontSize = 12.sp, color = Color(0xFF4CAF50))
+                Text(text = "Driver: $driverName", fontSize = 12.sp, color = Green, fontWeight = FontWeight.Bold)
             }
+
             Column(horizontalAlignment = Alignment.End) {
                 Text(text = "Truck", fontSize = 10.sp, color = Color.Gray)
-                Text(text = schedule.vehicleNumber, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(text = schedule.vehicleNumber, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Black)
             }
         }
     }
@@ -193,37 +204,41 @@ fun ScheduleDetailContent(schedule: ScheduleModel, driverName: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 16.dp)
-            .padding(bottom = 32.dp)
+            .padding(bottom = 40.dp)
     ) {
         Text(
-            text = "Schedule Details",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            text = "Pickup Details",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.ExtraBold,
             color = Black
         )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        DetailRow(label = "Route Name", value = schedule.routeName)
-        DetailRow(label = "Day of Week", value = schedule.dayOfWeek)
-        DetailRow(label = "Time Slot", value = "${schedule.startTime} - ${schedule.endTime}")
-        DetailRow(label = "Vehicle No", value = schedule.vehicleNumber)
-
-        // 🔹 Driver Name added, Vehicle/Driver IDs removed as requested
-        DetailRow(label = "Driver Name", value = driverName)
-
         Spacer(modifier = Modifier.height(20.dp))
 
+        DetailRow(label = "Neighborhood", value = schedule.routeName)
+        DetailRow(label = "Collection Day", value = schedule.dayOfWeek)
+        DetailRow(label = "Window", value = "${schedule.startTime} - ${schedule.endTime}")
+        DetailRow(label = "Vehicle Plate", value = schedule.vehicleNumber)
+        DetailRow(label = "Assigned Driver", value = driverName)
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         Surface(
-            color = if (schedule.active) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
-            shape = MaterialTheme.shapes.small
+            color = if (schedule.active) Green.copy(0.1f) else Color.Red.copy(0.1f),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Text(
-                text = if (schedule.active) "STATUS: ACTIVE" else "STATUS: INACTIVE",
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                color = if (schedule.active) Color(0xFF2E7D32) else Color.Red,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.size(8.dp).background(if(schedule.active) Green else Color.Red, CircleShape))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (schedule.active) "ACTIVE SCHEDULE" else "INACTIVE",
+                    color = if (schedule.active) Green else Color.Red,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
         }
     }
 }
@@ -231,11 +246,11 @@ fun ScheduleDetailContent(schedule: ScheduleModel, driverName: String) {
 @Composable
 fun DetailRow(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, color = Color.Gray, fontWeight = FontWeight.Medium)
-        Text(text = value, color = Black, fontWeight = FontWeight.SemiBold)
+        Text(text = label, color = Color.DarkGray, fontWeight = FontWeight.Medium)
+        Text(text = value, color = Black, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -246,12 +261,12 @@ fun EmptyStateView(title: String, description: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Black)
+        Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             description,
             textAlign = TextAlign.Center,
-            color = Color.Gray,
+            color = Color.White.copy(0.8f),
             fontSize = 14.sp
         )
     }

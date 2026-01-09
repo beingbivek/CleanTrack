@@ -20,6 +20,11 @@ class PointsRepoImpl : PointsRepo {
             .equalTo(binType)
             .get()
             .addOnSuccessListener { snapshot ->
+                if (!snapshot.exists()) {
+                    callback(0) // No rules found for this type
+                    return@addOnSuccessListener
+                }
+
                 for (child in snapshot.children) {
                     val rule = child.getValue(PointsRuleModel::class.java)
                     if (rule != null &&
@@ -30,6 +35,10 @@ class PointsRepoImpl : PointsRepo {
                         return@addOnSuccessListener
                     }
                 }
+                callback(0) // Rules found but none matched segregation status
+            }
+            .addOnFailureListener {
+                // CRITICAL FIX: If Firebase fails, return 0 so the UI can finish
                 callback(0)
             }
     }
