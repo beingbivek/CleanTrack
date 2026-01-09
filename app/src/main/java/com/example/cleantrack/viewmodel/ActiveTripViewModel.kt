@@ -184,6 +184,9 @@ class ActiveTripViewModel(
         }
     }
 
+
+
+
     fun observeTrip(tripId: String) {
         repo.observeActiveTrip(tripId) { _activeTrip.postValue(it) }
     }
@@ -242,6 +245,10 @@ class ActiveTripViewModel(
         }
     }
 
+    // --- DELETE THIS BROKEN FUNCTION ---
+// fun addBinCollection(collectionModel: BinCollectionModel, callback: (Boolean, String) -> Unit) { ... }
+
+    // --- USE THIS CORRECTED VERSION ---
     fun collectBinWithPoints(
         bin: BinModel,
         driverId: String,
@@ -253,21 +260,21 @@ class ActiveTripViewModel(
     ) {
         _loading.postValue(true)
 
-        // 1. Use the 3-parameter callback matching your UserRepoImpl
+        // 1. Fetch the user to ensure they exist and get their route info
         userRepo.getUserById(bin.ownerUserId) { success, message, user ->
             if (!success || user == null) {
-                _loading.postValue(false) // Stop loading on UI
-                callback(false, "Failed to fetch user: $message")
+                _loading.postValue(false)
+                callback(false, "User not found: $message")
                 return@getUserById
             }
 
-            // 2. Use 'activeRouteId' (as defined in your UserRepoImpl updateActiveRoute)
+            // 2. Get route ID (matching your UserModel field name)
             val userRouteId = user.activeRouteId ?: ""
 
-            // 3. Calculate points using 'category' from BinModel
+            // 3. Get the point value from the rules engine
             pointsRepo.calculatePoints(bin.category, isSegregated) { calculatedPoints ->
 
-                // 4. Build the collection model with the awarded points
+                // 4. Create the collection record
                 val collection = BinCollectionModel(
                     binId = bin.binId,
                     driverId = driverId,
@@ -280,13 +287,13 @@ class ActiveTripViewModel(
                     collectedAt = System.currentTimeMillis()
                 )
 
-                // 5. Save the collection via BinCollectionRepoImpl
+                // 5. Save the collection log
                 collectionRepo.addBinCollection(collection) { saveSuccess, saveMessage ->
                     if (saveSuccess) {
-                        // 6. Update the User's total point balance
+                        // 6. Award the points to the user's balance
                         pointsRepo.addPointsToUser(bin.ownerUserId, calculatedPoints)
 
-                        // 7. Refresh stats using the retrieved routeId
+                        // 7. Refresh the Dashboard numbers (Total/Remains/Collected)
                         if (userRouteId.isNotEmpty()) {
                             loadBinStats(userRouteId, tripId)
                         }
