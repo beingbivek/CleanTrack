@@ -89,7 +89,8 @@ fun DriverDashboardScreen() {
             repo = ActiveTripRepoImpl(),
             userRepo = UserRepoImpl(),
             binRepo = BinRepoImpl(),
-            collectionRepo = BinCollectionRepoImpl()
+            collectionRepo = BinCollectionRepoImpl(),
+            pointsRepo = PointsRepoImpl()
         )
     }
 

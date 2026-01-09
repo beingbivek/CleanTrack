@@ -21,6 +21,7 @@ import com.example.cleantrack.model.ScheduleModel   // ✅ CORRECT IMPORT
 import com.example.cleantrack.repository.ActiveTripRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.BinRepoImpl
+import com.example.cleantrack.repository.PointsRepoImpl
 import com.example.cleantrack.repository.ScheduleRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.util.AppUtil
@@ -62,7 +63,8 @@ fun DriverRoutineScreen(
 
     val activeTripViewModel = remember {
         ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(),
-            BinCollectionRepoImpl())
+            BinCollectionRepoImpl(), PointsRepoImpl()
+        )
     }
 
     val context = LocalContext.current
