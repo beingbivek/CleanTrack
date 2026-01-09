@@ -58,11 +58,16 @@ fun UserDashboardBody() {
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val userProfile by userViewModel.user.observeAsState()
 
+    // 1. Observe the specific points LiveData
+    val currentPoints by userViewModel.userPoints.observeAsState(0)
+
     var selectedTab by remember { mutableIntStateOf(0) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        userViewModel.getCurrentUserId()?.let { uid -> userViewModel.getUserById(uid) }
+        userViewModel.getCurrentUserId()?.let { uid -> userViewModel.getUserById(uid)
+            // 2. Fetch points explicitly on load
+            userViewModel.fetchUserPoints(uid)}
     }
 
     LogoutDialog(
@@ -106,7 +111,7 @@ fun UserDashboardBody() {
             }
         ) { innerPadding ->
             when (selectedTab) {
-                0 -> HomeSection(innerPadding, userViewModel, userProfile)
+                0 -> HomeSection(innerPadding, userViewModel, userProfile,currentPoints)
                 1 -> MapTrackerSection(innerPadding, userProfile)
                 2 -> ProfileSection(innerPadding, userProfile) { showLogoutDialog = true }
             }
@@ -115,7 +120,7 @@ fun UserDashboardBody() {
 }
 
 @Composable
-fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfile: UserModel?) {
+fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfile: UserModel?, currentPoints: Int) {
     val context = LocalContext.current
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
@@ -182,7 +187,7 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Text(text = "Points: ${userProfile?.points ?: 0} ✨", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(text = "Points: ${currentPoints?: 0} ✨", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.weight(1f))
 
