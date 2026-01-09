@@ -67,19 +67,19 @@ class DriverScanBinActivity : ComponentActivity() {
         }
 
     private fun validateBin(binId: String) {
+        // We assume the tripId was passed to this Activity from the Dashboard
+        val currentTripId = intent.getStringExtra("TRIP_ID") ?: ""
+
         activeTripViewModel.getBinById(binId) { success, message, bin ->
             if (success && bin != null) {
-                // Navigate to Collection Activity
                 val intent = Intent(this, BinCollectionActivity::class.java).apply {
                     putExtra("BIN_ID", binId)
+                    putExtra("TRIP_ID", currentTripId) // 🔹 PASSING TRIP_ID TO NEXT SCREEN
                 }
                 startActivity(intent)
-
-                // Finish this activity so it's not in the backstack
                 finish()
             } else {
-                Toast.makeText(this, "Error: $message", Toast.LENGTH_SHORT).show()
-                // Close on failure so they can try again from dashboard
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 finish()
             }
         }
