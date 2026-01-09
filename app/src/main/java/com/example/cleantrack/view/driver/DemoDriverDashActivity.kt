@@ -1,6 +1,5 @@
 package com.example.cleantrack.view.driver
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -31,15 +30,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.cleantrack.model.AnnouncementModel
 import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.*
 import com.example.cleantrack.ui.theme.*
-import com.example.cleantrack.view.common.AnnouncementBanner
 import com.example.cleantrack.view.common.EditProfileActivity
 import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.view.user.UserAnnouncementListActivity
-import com.example.cleantrack.view.user.UserScheduleListActivity
 import com.example.cleantrack.viewmodel.*
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -56,17 +52,14 @@ class DemoDriverDashActivity : ComponentActivity() {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DriverDashboardScreens() {
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
 
-
-
-
-
-    // --- FUNCTIONAL INITIALIZATION ---
+    // --- VIEWMODELS ---
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val scheduleViewModel = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
@@ -74,25 +67,28 @@ fun DriverDashboardScreens() {
         ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl())
     }
 
-
-    val sLoading by scheduleViewModel.loading.observeAsState(false)
-
+    // --- STATE OBSERVERS ---
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
     val currentUser by userViewModel.user!!.observeAsState()
     val activeTrip by tripViewModel.activeTrip.observeAsState()
     val assignedSchedule by scheduleViewModel.schedule.observeAsState(null)
     val stats by tripViewModel.binStats.observeAsState(Triple(0, 0, 0))
+    val sLoading by scheduleViewModel.loading.observeAsState(false)
 
     var showEndTripDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // --- TRIP STATUS HELPERS ---
+    val isTripActive = activeTrip?.status == "ACTIVE"
+    val isTripCompleted = activeTrip?.status == "COMPLETED"
 
     // --- LOCATION LOGIC ---
     val locationCallback = remember {
         object : com.google.android.gms.location.LocationCallback() {
             override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
                 result.lastLocation?.let { location ->
-                    activeTrip?.let { trip ->
-                        tripViewModel.updateLocation(trip.tripId, location.latitude, location.longitude)
+                    if (isTripActive) {
+                        activeTrip?.let { tripViewModel.updateLocation(it.tripId, location.latitude, location.longitude) }
                     }
                 }
             }
@@ -123,8 +119,8 @@ fun DriverDashboardScreens() {
         assignedSchedule?.routeId?.let { if (it.isNotEmpty()) tripViewModel.observeActiveTripByRoute(it) }
     }
 
-    LaunchedEffect(activeTrip) {
-        if (activeTrip != null && activeTrip?.status == "ACTIVE") {
+    LaunchedEffect(isTripActive) {
+        if (isTripActive) {
             val req = com.google.android.gms.location.LocationRequest.Builder(com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 2000).build()
             try { fusedLocationClient.requestLocationUpdates(req, locationCallback, android.os.Looper.getMainLooper()) }
             catch (e: SecurityException) { Log.e("CLEANTRACK", "GPS Error", e) }
@@ -141,7 +137,7 @@ fun DriverDashboardScreens() {
         AlertDialog(
             onDismissRequest = { showEndTripDialog = false },
             title = { Text("End Route?") },
-            text = { Text("Are you sure you want to end the collection route?") },
+            text = { Text("Are you sure you want to end the collection route? This will stop live tracking.") },
             confirmButton = {
                 Button(onClick = {
                     showEndTripDialog = false
@@ -169,11 +165,11 @@ fun DriverDashboardScreens() {
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = {
-                        if (activeTrip != null && activeTrip?.status == "ACTIVE") {
+                        if (isTripActive) {
                             selectedTab = 1
                             context.startActivity(Intent(context, DriverRouteMapActivity::class.java))
                         } else {
-                            Toast.makeText(context, "Please start the Collection Route to view the map", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please start the route to view the map", Toast.LENGTH_SHORT).show()
                         }
                     },
                     icon = { Icon(Icons.Default.Map, null) },
@@ -196,7 +192,7 @@ fun DriverDashboardScreens() {
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding).background(Color(0xFFF8FAF9))) {
 
-            // 1. Header with Gradient (Matches Login Button Gradient)
+            // 1. Header with Gradient
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -224,14 +220,19 @@ fun DriverDashboardScreens() {
                 // Progress Card
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(6.dp)) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        Text(activeTrip?.routeName ?: "No Active Route", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        val routeTitle = when {
+                            isTripActive -> activeTrip?.routeName ?: ""
+                            isTripCompleted -> "${activeTrip?.routeName} (Ended)"
+                            else -> "No Active Route"
+                        }
+                        Text(routeTitle, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = if(isTripCompleted) Color.Gray else Color.Black)
                         Spacer(modifier = Modifier.height(12.dp))
 
                         val progress = if (stats.first > 0) stats.second.toFloat() / stats.first.toFloat() else 0f
                         LinearProgressIndicator(
-                            progress = progress,
+                            progress = { progress },
                             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                            color = Green,
+                            color = if (isTripCompleted) Color.Gray else Green,
                             trackColor = TextBoxColor
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -248,22 +249,18 @@ fun DriverDashboardScreens() {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     QuickActionItem(Icons.Default.QrCodeScanner, "Scan Bin") {
-                        // 1. Check if there is an active trip
-                        val currentTrip = activeTrip
-
-                        if (currentTrip != null && currentTrip.status == "ACTIVE") {
-                            // 2. Pass the tripId to the Scanner Activity
+                        if (isTripActive) {
                             val intent = Intent(context, DriverScanBinActivity::class.java).apply {
-                                putExtra("TRIP_ID", currentTrip.tripId)
+                                putExtra("TRIP_ID", activeTrip?.tripId)
                             }
                             context.startActivity(intent)
                         } else {
-                            // 3. Alert the driver if they haven't started the route yet
-                            Toast.makeText(context, "Please start a route before scanning bins", Toast.LENGTH_SHORT).show()
+                            val msg = if (isTripCompleted) "Restart route to scan" else "Start route first"
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         }
                     }
                     QuickActionItem(Icons.Default.Map, "Route Map") {
-                        if (activeTrip != null && activeTrip?.status == "ACTIVE") {
+                        if (isTripActive) {
                             context.startActivity(Intent(context, DriverRouteMapActivity::class.java))
                         } else {
                             Toast.makeText(context, "Access Denied: Start your route first", Toast.LENGTH_SHORT).show()
@@ -277,47 +274,61 @@ fun DriverDashboardScreens() {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Schedule Details Section
                 when {
                     sLoading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Blue)
+                        }
                     }
-                    assignedSchedule != null && assignedSchedule?.scheduleId?.isNotEmpty() == true -> {
+                    assignedSchedule != null -> {
                         RouteDetailCards(schedule = assignedSchedule!!)
                     }
                     else -> {
-                        Text("No schedule assigned for today.", color = Color.Gray)
+                        Text("No schedule assigned for today.", color = Color.Gray, modifier = Modifier.padding(16.dp))
                     }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // MAIN ACTION BUTTON with Gradient (Matches Login)
-                val isTripActive = activeTrip != null
+                // MAIN ACTION BUTTON
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp)
                         .height(56.dp)
                         .background(
-                            brush = if (isTripActive) Brush.horizontalGradient(colors = listOf(Red, Color(0xFFFF5252)))
-                            else Brush.horizontalGradient(colors = ButtonColor),
+                            brush = when {
+                                isTripActive -> Brush.horizontalGradient(colors = listOf(Red, Color(0xFFFF5252)))
+                                isTripCompleted -> Brush.horizontalGradient(colors = listOf(Blue, Color(0xFF2196F3)))
+                                else -> Brush.horizontalGradient(colors = ButtonColor)
+                            },
                             shape = RoundedCornerShape(15.dp)
                         )
                         .clickable {
-                            if (!isTripActive) {
-                                if (assignedSchedule == null) Toast.makeText(context, "No schedule assigned", Toast.LENGTH_SHORT).show()
-                                else tripViewModel.startTripWithValidation(assignedSchedule!!) { s, m -> Toast.makeText(context, m, Toast.LENGTH_SHORT).show() }
-                            } else {
+                            if (isTripActive) {
                                 showEndTripDialog = true
+                            } else {
+                                if (assignedSchedule == null) {
+                                    Toast.makeText(context, "No schedule assigned", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    tripViewModel.startTripWithValidation(assignedSchedule!!) { s, m ->
+                                        Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             }
                         },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (isTripActive) "End Collection Route" else "Start Collection Route",
+                        text = when {
+                            isTripActive -> "End Collection Route"
+                            isTripCompleted -> "Restart Collection Route"
+                            else -> "Start Collection Route"
+                        },
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = White
+                        color = Color.White
                     )
                 }
             }
@@ -337,12 +348,7 @@ fun QuickActionItem(icon: ImageVector, label: String, onClick: () -> Unit) {
             shadowElevation = 2.dp
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = Blue, // Using Blue from your theme
-                    modifier = Modifier.size(28.dp)
-                )
+                Icon(imageVector = icon, contentDescription = label, tint = Blue, modifier = Modifier.size(28.dp))
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -350,71 +356,30 @@ fun QuickActionItem(icon: ImageVector, label: String, onClick: () -> Unit) {
     }
 }
 
-
-
 @Composable
-
 fun RouteDetailCards(schedule: ScheduleModel) {
-
     Card(
-
         modifier = Modifier.fillMaxWidth(),
-
         shape = RoundedCornerShape(16.dp),
-
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)) // Light green tint
-
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9))
     ) {
-
         Column(modifier = Modifier.padding(16.dp)) {
-
             Row(verticalAlignment = Alignment.CenterVertically) {
-
                 Icon(Icons.Default.Route, contentDescription = null, tint = Green)
-
                 Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-
-                    text = schedule.routeName,
-
-                    style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
-
-                )
-
+                Text(text = schedule.routeName, style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold))
             }
-
-
-
             Spacer(modifier = Modifier.height(8.dp))
-
-
-
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column {
-
                     Text("Start Time", fontSize = 12.sp, color = Color.Gray)
-
                     Text(schedule.startTime, fontWeight = FontWeight.Medium)
-
                 }
-
                 Column(horizontalAlignment = Alignment.End) {
-
                     Text("End Time", fontSize = 12.sp, color = Color.Gray)
-
                     Text(schedule.endTime, fontWeight = FontWeight.Medium)
-
                 }
-
             }
-
         }
-
     }
 }
-
