@@ -248,8 +248,19 @@ fun DriverDashboardScreens() {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     QuickActionItem(Icons.Default.QrCodeScanner, "Scan Bin") {
-                        if (activeTrip != null) context.startActivity(Intent(context, DriverScanBinActivity::class.java))
-                        else Toast.makeText(context, "Please start a route first", Toast.LENGTH_SHORT).show()
+                        // 1. Check if there is an active trip
+                        val currentTrip = activeTrip
+
+                        if (currentTrip != null && currentTrip.status == "ACTIVE") {
+                            // 2. Pass the tripId to the Scanner Activity
+                            val intent = Intent(context, DriverScanBinActivity::class.java).apply {
+                                putExtra("TRIP_ID", currentTrip.tripId)
+                            }
+                            context.startActivity(intent)
+                        } else {
+                            // 3. Alert the driver if they haven't started the route yet
+                            Toast.makeText(context, "Please start a route before scanning bins", Toast.LENGTH_SHORT).show()
+                        }
                     }
                     QuickActionItem(Icons.Default.Map, "Route Map") {
                         if (activeTrip != null && activeTrip?.status == "ACTIVE") {
