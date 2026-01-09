@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -25,11 +27,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.cleantrack.R
 import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.*
 import com.example.cleantrack.ui.theme.*
@@ -206,8 +211,53 @@ fun DriverDashboardScreen() {
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text(text = "Driver Dashboard", style = TextStyle(color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold))
-                        Text(text = "Welcome, ${currentUser?.fullname ?: "Driver"} 👋", style = TextStyle(color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp))
+                        Text(
+                            text = "Driver Dashboard",
+                            style = TextStyle(
+                                color = Color.White,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.White.copy(0.4f),
+                                modifier = Modifier.size(45.dp),
+                                border = BorderStroke(1.dp, Color.White.copy(0.5f))
+                            ) {
+                                AsyncImage(
+                                    model = if (!currentUser?.profileImageUrl.isNullOrEmpty()) {
+                                        currentUser?.profileImageUrl
+                                    } else {
+                                        R.drawable.user_logo
+                                    },
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                text = "Welcome, ${currentUser?.fullname ?: "Driver"} 👋",
+                                style = TextStyle(
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    fontSize = 14.sp
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            IconButton(onClick = { context.startActivity(Intent(context, UserAnnouncementListActivity::class.java)) }) {
+                                Icon(Icons.Outlined.Campaign, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                            }
+                        }
                     }
                     IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(Icons.Default.PowerSettingsNew, contentDescription = "Logout", tint = Color.White)
@@ -271,9 +321,7 @@ fun DriverDashboardScreen() {
                     QuickActionItem(Icons.Default.History, "TripHistory") {
                         context.startActivity(Intent(context, DriversTripHistoryActivity::class.java))
                     }
-                    QuickActionItem(Icons.Default.Notifications, "Alerts") {
-                        context.startActivity(Intent(context, UserAnnouncementListActivity::class.java))
-                    }
+
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
