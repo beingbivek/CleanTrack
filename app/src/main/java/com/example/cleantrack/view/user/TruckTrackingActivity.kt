@@ -104,7 +104,7 @@ fun UserLiveMapScreen(routeId: String) {
             if (truckMarker == null) {
                 val iconFactory = IconFactory.getInstance(context)
                 // Ensure ic_truck exists in res/drawable
-                val truckIcon = iconFactory.fromResource(R.drawable.ic_truck)
+                val truckIcon = iconFactory.fromResource(R.drawable.truckicon)
 
                 truckMarker = map.addMarker(
                     MarkerOptions()
