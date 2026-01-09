@@ -19,104 +19,72 @@
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.driver.DriversTripHistoryActivity"
+            android:exported="true"
+            android:label="@string/title_activity_drivers_trip_history"
+            android:theme="@style/Theme.CleanTrack">
+
+        </activity>
+
+        <activity
+            android:name=".view.driver.DriverRouteMapActivity"
+            android:exported="true"
+            android:label="@string/title_activity_driver_route_map"
+            android:theme="@style/Theme.CleanTrack">
+
+        </activity>
+        <activity
+            android:name=".view.driver.BinCollectionActivity"
+            android:exported="true"
+            android:label="@string/title_activity_bin_collection"
+            android:theme="@style/Theme.CleanTrack">
+
+        </activity>
+        <activity
             android:name=".view.user.UserScheduleListActivity"
             android:exported="true"
             android:label="@string/title_activity_user_schedule_list"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.user.UserRouteLiveTrackingActivity"
             android:exported="true"
             android:label="@string/title_activity_user_route_live_tracking"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.IssuesViewActivity"
             android:exported="true"
             android:label="@string/title_activity_issues_view"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.user.UserAnnouncementListActivity"
             android:exported="true"
             android:label="@string/title_activity_user_announcement_list"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminAnnouncementListActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_announcement_list"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminAnnouncementSetupActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_announcement_setup"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.user.BinSetupActivity"
             android:exported="true"
             android:label="BinSetupActivity"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.EditProfileActivity"
             android:exported="true"
             android:label="@string/title_activity_edit_profile"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminContactSupportViewActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_contact_support_view"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminPointsRuleSetupActivity"
             android:exported="false"
@@ -131,13 +99,7 @@
             android:name=".view.user.UserLiveTrackingActivity"
             android:exported="true"
             android:label="@string/title_activity_user_live_tracking"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.DriverScanBinActivity"
             android:exported="false"
@@ -152,13 +114,7 @@
             android:name=".view.user.PaymentActivity"
             android:exported="true"
             android:label="@string/title_activity_payment"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminVehicleSetupActivity"
             android:exported="false"
@@ -195,19 +151,9 @@
             android:label="@string/title_activity_driver_routine"
             android:theme="@style/Theme.CleanTrack" />
         <activity
-            android:name=".view.admin.AdminPrivacyPolicyActivity"
-            android:exported="false"
-            android:label="@string/title_activity_admin_privacy_policy"
-            android:theme="@style/Theme.CleanTrack" />
-        <activity
             android:name=".view.common.PrivacyPolicyActivity"
-            android:exported="false"
-            android:label="@string/title_activity_privacy_policy"
-            android:theme="@style/Theme.CleanTrack" />
-        <activity
-            android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"
-            android:label="@string/title_activity_admin_route_setup"
+            android:label="PrivacyPolicyActivity"
             android:theme="@style/Theme.CleanTrack">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -215,6 +161,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".view.admin.AdminRouteSetupActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_route_setup"
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.ErrorActivity"
             android:exported="false"
@@ -224,101 +175,42 @@
             android:name=".view.user.SettingsActivity"
             android:exported="true"
             android:label="@string/title_activity_settings"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.DriverLocationMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_location_map"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.auth.UserLocationMapActivity"
             android:exported="true"
             android:label="@string/title_activity_map"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.DriverDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_dashboard"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.user.UserDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_user_dashboard"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_dashboard"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.TermsAndConditionActivity"
             android:exported="true"
             android:label="@string/title_activity_privacy_policy"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.auth.SplashActivity"
-            android:exported="true"
-            android:label="@string/title_activity_splash"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.ContactSupportActivity"
             android:exported="true"
             android:label="@string/title_activity_contact_support"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.auth.StartActivity"
             android:exported="true"
@@ -334,35 +226,17 @@
             android:name=".view.auth.LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.auth.RegistrationActivity"
             android:exported="true"
             android:label="@string/title_activity_registration"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.auth.MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:label="MainActivity"
+            android:theme="@style/Theme.CleanTrack" />
 
         <service
             android:name=".util.FCMNotificationService"

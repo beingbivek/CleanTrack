@@ -30,6 +30,7 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.R
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.view.common.ContactSupportActivity
+import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.common.EditProfileActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -265,7 +266,17 @@ fun SettingsBody() {
                 SettingsSectionHeader(R.drawable.baseline_lock_24, "Privacy")
                 SettingsCard(
                     items = listOf(
-                        { SettingListItem("Privacy Policy") },
+                        {
+                            Box(
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(context, PrivacyPolicyActivity::class.java)
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                SettingListItem("Privacy Policy")
+                            }
+                        },
+
                         { SettingListItem("Terms & Conditions", showDivider = false) }
                     )
                 )

@@ -26,6 +26,10 @@ import com.example.cleantrack.model.BinCollectionModel
 import com.example.cleantrack.model.BinModel
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.repository.ActiveTripRepoImpl
+import com.example.cleantrack.repository.BinCollectionRepoImpl
+import com.example.cleantrack.repository.BinRepoImpl
+import com.example.cleantrack.repository.PointsRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.util.ApiTokenUtil
 import com.journeyapps.barcodescanner.ScanContract
@@ -95,7 +99,9 @@ class DriverLocationMapActivity : ComponentActivity() {
 
         tripId = intent.getStringExtra("TRIP_ID") ?: ""
 
-        activeTripViewModel = ActiveTripViewModel(ActiveTripRepoImpl())
+        activeTripViewModel = ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(),
+            BinCollectionRepoImpl(), PointsRepoImpl()
+        )
 
         setContent {
             DriverMapComposable(

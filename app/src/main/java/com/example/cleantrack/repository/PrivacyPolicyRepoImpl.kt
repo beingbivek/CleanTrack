@@ -1,42 +1,30 @@
 package com.example.cleantrack.repository
 
-import com.example.cleantrack.model.PrivacyPolicyModel
-import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class PrivacyPolicyRepoImpl : PrivacyPolicyRepo {
+    private val db = FirebaseDatabase.getInstance().getReference("PrivacyPolicy")
 
-    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
-
-    // Recommended node: PrivacyPolicy/policy_1
-    private val ref: DatabaseReference = database.getReference("PrivacyPolicy").child("policy_1")
-
-    override fun getPrivacyPolicy(callback: (Boolean, String, PrivacyPolicyModel?) -> Unit) {
-        ref.get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot.exists()) {
-                    val policy = snapshot.getValue(PrivacyPolicyModel::class.java)
-                    callback(true, "Privacy policy fetched", policy)
-                } else {
-                    callback(true, "Privacy policy not set yet", PrivacyPolicyModel())
-                }
-            }
-            .addOnFailureListener { e ->
-                callback(false, e.localizedMessage ?: "Failed to fetch privacy policy", null)
+    override fun updatePrivacyPolicy(content: String, callback: (Boolean, String) -> Unit) {
+        db.child("current").setValue(content)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) callback(true, "Privacy Policy updated!")
+                else callback(false, task.exception?.message ?: "Update failed")
             }
     }
 
-    override fun savePrivacyPolicy(model: PrivacyPolicyModel, callback: (Boolean, String) -> Unit) {
-        val updated = model.copy(date = System.currentTimeMillis())
-
-        // You can use setValue(updated) also. updateChildren matches your pattern.
-        ref.updateChildren(updated.toMap())
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    callback(true, "Privacy policy saved")
-                } else {
-                    callback(false, it.exception?.localizedMessage ?: "Failed to save privacy policy")
-                }
+    override fun getPrivacyPolicy(callback: (Boolean, String, String?) -> Unit) {
+        db.child("current").addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val content = snapshot.getValue(String::class.java)
+                callback(true, "Loaded", content)
             }
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
+            }
+        })
     }
 }

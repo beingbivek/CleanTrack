@@ -13,6 +13,7 @@ import com.example.cleantrack.view.admin.AdminDashboardActivity
 import com.example.cleantrack.view.auth.LoginActivity
 import com.example.cleantrack.view.auth.RegistrationActivity
 import com.example.cleantrack.view.auth.UserLocationMapActivity
+
 import com.example.cleantrack.view.driver.DriverDashboardActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
 
@@ -278,6 +279,29 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
             if (!success) {
                 Log.e("UserVM", "Error saving route: $message")
             }
+        }
+    }
+
+    // Inside UserViewModel.kt
+
+    private val _userPoints = MutableLiveData<Int>()
+    val userPoints: MutableLiveData<Int> get() = _userPoints
+
+    fun awardPoints(userId: String, points: Int) {
+        repo.addUserPoints(userId, points) { success, message ->
+            if (success) {
+                Log.d("UserVM", "Points updated successfully for $userId")
+                // Refresh local points value
+                fetchUserPoints(userId)
+            } else {
+                Log.e("UserVM", "Failed to update points: $message")
+            }
+        }
+    }
+
+    fun fetchUserPoints(userId: String) {
+        repo.getUserPoints(userId) { success, _, points ->
+            if (success) _userPoints.postValue(points)
         }
     }
 }

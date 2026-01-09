@@ -19,7 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.ScheduleModel   // ✅ CORRECT IMPORT
 import com.example.cleantrack.repository.ActiveTripRepoImpl
+import com.example.cleantrack.repository.BinCollectionRepoImpl
+import com.example.cleantrack.repository.BinRepoImpl
+import com.example.cleantrack.repository.PointsRepoImpl
 import com.example.cleantrack.repository.ScheduleRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.viewmodel.ScheduleViewModel
@@ -58,7 +62,9 @@ fun DriverRoutineScreen(
 
 
     val activeTripViewModel = remember {
-        ActiveTripViewModel(ActiveTripRepoImpl())
+        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(),
+            BinCollectionRepoImpl(), PointsRepoImpl()
+        )
     }
 
     val context = LocalContext.current
@@ -105,28 +111,7 @@ fun DriverRoutineScreen(
                 // Schedule list
                 items(daySchedules) { schedule ->
                     ScheduleCard(
-                        schedule = schedule,
-                        onStart = { selectedSchedule ->
-
-                            activeTripViewModel.startTrip(
-                                selectedSchedule.scheduleId
-                            ) { success, message ->
-
-                                if (success) {
-                                    val intent = Intent(
-                                        context,
-                                        DriverLocationMapActivity::class.java
-                                    )
-                                    intent.putExtra(
-                                        "TRIP_ID",
-                                        selectedSchedule.scheduleId
-                                    )
-                                    context.startActivity(intent)
-                                } else {
-                                    AppUtil.showToast(context, message)
-                                }
-                            }
-                        }
+                        schedule = schedule
                     )
                 }
             }
@@ -136,8 +121,7 @@ fun DriverRoutineScreen(
 
 @Composable
 fun ScheduleCard(
-    schedule: ScheduleModel,
-    onStart: (ScheduleModel) -> Unit
+    schedule: ScheduleModel
 ) {
     Card(
         modifier = Modifier
@@ -164,12 +148,6 @@ fun ScheduleCard(
                 "${schedule.startTime} - ${schedule.endTime}",
                 color = Color.White
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(onClick = { onStart(schedule) }) {
-                Text("Start Route")
-            }
         }
     }
 }
