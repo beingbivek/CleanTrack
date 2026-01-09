@@ -132,16 +132,26 @@ class ActiveTripRepoImpl : ActiveTripRepo {
             .equalTo(routeId)
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
+                    var currentTrip: ActiveTripModel? = null
+                    val today = getCurrentDate()
 
                     for (child in snapshot.children) {
                         val trip = child.getValue(ActiveTripModel::class.java)
-                        if (trip != null && trip.status == "ACTIVE") {
-                            callback(trip)
-                            return
+                        if (trip != null) {
+                            val tripDate = sdf.format(Date(trip.startTimestamp))
+                            // Check if it's today's trip (Active OR Completed)
+                            if (tripDate == today) {
+                                currentTrip = trip
+                                // If we find an ACTIVE one, prioritize it and return immediately
+                                if (trip.status == "ACTIVE") {
+                                    callback(trip)
+                                    return
+                                }
+                            }
                         }
                     }
-
-                    callback(null) // No active trip
+                    // If we didn't find an ACTIVE one, return the COMPLETED one (if exists) or null
+                    callback(currentTrip)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -184,6 +194,25 @@ class ActiveTripRepoImpl : ActiveTripRepo {
                     callback(null)
                 }
             })
+    }
+
+    override fun resumeTrip(
+        tripId: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        Log.d("CLEANTRACK", "Repo: Resuming trip $tripId")
+
+        tripRef.child(tripId)
+            .child("status")
+            .setValue("ACTIVE")
+            .addOnSuccessListener {
+                Log.d("CLEANTRACK", "Repo: Trip status set back to ACTIVE")
+                callback(true, "Route restarted successfully")
+            }
+            .addOnFailureListener { e ->
+                Log.e("CLEANTRACK", "Repo: Failed to resume trip", e)
+                callback(false, e.localizedMessage ?: "Failed to restart route!")
+            }
     }
 
 
