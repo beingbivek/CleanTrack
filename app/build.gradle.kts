@@ -81,6 +81,9 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx:21.6.0")
 
+    // Google Vertex AI for Firebase Library
+    implementation("com.google.firebase:firebase-vertexai")
+
     // QR
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
