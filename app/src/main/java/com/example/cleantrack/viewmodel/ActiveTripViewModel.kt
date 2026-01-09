@@ -220,31 +220,46 @@ class ActiveTripViewModel(
 // 1. Add this to the constructor (if not already there)
 // collectionRepo: BinCollectionRepo
 
-    fun checkAndValidateBin(tripId: String, binId: String, onResult: (Boolean, String) -> Unit) {
-        loading.postValue(true) // Optional: add a loading state to this VM
+    fun checkAndValidateBin(tripId: String, currentRouteId: String, binId: String, onResult: (Boolean, String) -> Unit) {
+        _loading.postValue(true)
 
-        // Step 1: Check if already collected in this trip
+        // STEP 1: Check if already collected in this specific trip
         collectionRepo.observeCollectionsByTrip(tripId) { success, _, collections ->
             val alreadyCollected = collections?.any { it.binId == binId } ?: false
 
             if (alreadyCollected) {
-                loading.postValue(false)
-                onResult(false, "Qr is already scanned for this trip")
-            } else {
-                // Step 2: If not collected, fetch bin details to ensure it exists
-                binRepo.getBinById(binId) { binSuccess, message, bin ->
-                    loading.postValue(false)
-                    if (binSuccess && bin != null) {
-                        binDetails.postValue(bin)
-                        onResult(true, "Success")
+                _loading.postValue(false)
+                onResult(false, "This bin has already been scanned for this trip.")
+                return@observeCollectionsByTrip
+            }
+
+            // STEP 2: Fetch Bin Details
+            binRepo.getBinById(binId) { binSuccess, _, bin ->
+                if (!binSuccess || bin == null) {
+                    _loading.postValue(false)
+                    onResult(false, "Invalid QR Code: Bin not found in system.")
+                    return@getBinById
+                }
+
+                // STEP 3: Fetch the Owner of this bin to check their route
+                userRepo.getUserById(bin.ownerUserId) { userSuccess, _, owner ->
+                    _loading.postValue(false)
+
+                    if (userSuccess && owner != null) {
+                        // STEP 4: The Route Validation
+                        if (owner.activeRouteId == currentRouteId) {
+                            binDetails.postValue(bin)
+                            onResult(true, "Success")
+                        } else {
+                            onResult(false, "Access Denied: This bin belongs to Route ${owner.activeRouteId}, not your current route.")
+                        }
                     } else {
-                        onResult(false, message)
+                        onResult(false, "Error: Could not verify bin owner.")
                     }
                 }
             }
         }
     }
-
     // --- DELETE THIS BROKEN FUNCTION ---
 // fun addBinCollection(collectionModel: BinCollectionModel, callback: (Boolean, String) -> Unit) { ... }
 
