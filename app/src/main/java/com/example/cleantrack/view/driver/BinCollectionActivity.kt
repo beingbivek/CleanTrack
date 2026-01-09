@@ -31,16 +31,17 @@ class BinCollectionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binId = intent.getStringExtra("BIN_ID") ?: ""
+        val tripId = intent.getStringExtra("TRIP_ID") ?: "" // 🔹 FETCH TRIP_ID FROM INTENT
 
         setContent {
-            BinCollectionScreen(binId) { finish() }
+            BinCollectionScreen(binId, tripId) { finish() }
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
+fun BinCollectionScreen(binId: String,tripId: String, onComplete: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     // 🔹 Use BinViewModel to fetch bin details
@@ -139,7 +140,7 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                             binId = binId,
                             userId = binDetails?.ownerUserId ?: "",
                             driverId = currentDriverId, // TODO: Get from shared preferences or auth
-                            tripId = "CURRENT_TRIP_ID",     // TODO: Pass from previous activity
+                            tripId = tripId,     // TODO: Pass from previous activity
                             rating = rating,
                             remarks = remarks,
                             segregatedCorrectly = isSegregated,
