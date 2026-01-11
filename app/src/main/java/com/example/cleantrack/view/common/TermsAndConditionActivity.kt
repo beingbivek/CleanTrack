@@ -1,288 +1,351 @@
 package com.example.cleantrack.view.common
 
+import android.app.Activity
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.cleantrack.ui.theme.Black
-import com.example.cleantrack.ui.theme.ButtonColor
-import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.repository.TermsAndConditionRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.viewmodel.TermsAndConditionViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
+import com.mohamedrejeb.richeditor.model.RichTextState
+import com.mohamedrejeb.richeditor.model.rememberRichTextState
+import com.mohamedrejeb.richeditor.ui.material3.RichText
+import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
 
 class TermsAndConditionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
-            TermsAndConditionBody()
-        }
-    }
-}
+            val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+            val userModel by userViewModel.user.observeAsState()
 
-@Composable
-fun TermsAndConditionBody() {
-    var checked by remember { mutableStateOf(true) }
+            LaunchedEffect(Unit) {
+                val currentId = userViewModel.getCurrentUserId()
+                if (currentId != null) {
+                    userViewModel.getUserById(currentId)
+                }
+            }
 
-
-    Scaffold { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(White),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top,
-        ) {
-            Spacer(modifier = Modifier.height(50.dp))
-
-            Text(
-                "Terms and Condition",
-                style = TextStyle(
-                    textAlign = TextAlign.Center,
-                    color = Black,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 30.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFe4e6e5)),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ){
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFe4e6e5))
-                        .verticalScroll(rememberScrollState()),
-                ) {
-
-                    Card(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-                            .height(950.dp).fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = White
-                        )
-                    ) {
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 20.dp, top = 15.dp, end = 20.dp, bottom = 20.dp)
-                        ) {
-
-                            Text(
-                                "1. Acceptance of Terms",
-                                style = TextStyle(
-                                    color = Black,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 20.sp
-                                )
-                            )
-                            Text(
-                                "By creating an account on CleanTrack, you agree to follow these Terms and Conditions. " +
-                                        "If you do not agree, please stop using the app immediately.",
-                                style = TextStyle(color = Black, fontSize = 15.sp),
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(15.dp))
-
-                            Text(
-                                "2. User Responsibilities",
-                                style = TextStyle(
-                                    color = Black,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 20.sp
-                                )
-                            )
-                            Text(
-                                "You agree to: \n" +
-                                        "• Provide accurate personal information\n" +
-                                        "• Keep your login details secure\n" +
-                                        "• Not misuse, hack, or exploit CleanTrack or its features\n" +
-                                        "• Follow all recycling and waste-management guidelines within the app",
-                                style = TextStyle(color = Black, fontSize = 15.sp),
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(15.dp))
-
-                            Text(
-                                "3. Account Types (User, Admin, Driver)",
-                                style = TextStyle(
-                                    color = Black,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 20.sp
-                                )
-                            )
-                            Text(
-                                "CleanTrack provides different access levels. Admins and Drivers must follow additional internal policies. " +
-                                        "Misuse of assigned roles may result in account suspension.",
-                                style = TextStyle(color = Black, fontSize = 15.sp),
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(15.dp))
-
-                            Text(
-                                "4. Data Collection & Privacy",
-                                style = TextStyle(
-                                    color = Black,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 20.sp
-                                )
-                            )
-                            Text(
-                                "We collect basic information like name, phone, email, and location (municipality & ward) " +
-                                        "to provide better waste-tracking services. Your data is safe and never sold to third parties.",
-                                style = TextStyle(color = Black, fontSize = 15.sp),
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(15.dp))
-
-                            Text(
-                                "5. Service Availability",
-                                style = TextStyle(
-                                    color = Black,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 20.sp
-                                )
-                            )
-                            Text(
-                                "CleanTrack may experience maintenance downtime or temporary unavailability. " +
-                                        "We are not responsible for delays or missed pickups caused by technical issues.",
-                                style = TextStyle(color = Black, fontSize = 15.sp),
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(15.dp))
-
-                            Text(
-                                "6. Termination of Accounts",
-                                style = TextStyle(
-                                    color = Black,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 20.sp
-                                )
-                            )
-                            Text(
-                                "We may suspend or delete accounts that violate these terms, attempt fraud, or cause harm to the platform.",
-                                style = TextStyle(color = Black, fontSize = 15.sp),
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(15.dp))
-
-                            Text(
-                                "7. Contact Information",
-                                style = TextStyle(
-                                    color = Black,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 20.sp
-                                )
-                            )
-                            Text(
-                                "For any questions or concerns, please contact us at:\n" +
-                                        "Email: rizzcycle@gmail.com",
-                                style = TextStyle(color = Black, fontSize = 15.sp),
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(15.dp))
-
-                            Text(
-                                "Last Updated: December 1, 2025",
-                                style = TextStyle(
-                                    color = Black,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
-                                ),
-                                modifier = Modifier.padding(top = 10.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(25.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Button(
-                                    onClick = { /* TODO: Implement 'Sign Up' action */ },
-                                    modifier = Modifier
-                                        .fillMaxWidth(0.8f)
-                                        .height(60.dp)
-                                        .background(
-                                            brush = Brush.horizontalGradient(colors = ButtonColor),
-                                            shape = RoundedCornerShape(15.dp)
-                                        ),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                                ) {
-                                    Text(
-                                        "Agree",
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.White
-                                    )
-                                }
+            MaterialTheme {
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                        when {
+                            userModel == null -> {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            }
+                            userModel?.role == "ADMIN" -> {
+                                AdminTermsScreen()
+                            }
+                            else -> {
+                                TermsScreen()
                             }
                         }
-
-
                     }
                 }
-
-
-
-
             }
         }
     }
 }
 
-@Preview
 @Composable
-fun TermsAndConditionPreview(){
-    TermsAndConditionBody()
+fun AdminTermsScreen() {
+    val viewModel = remember { TermsAndConditionViewModel(TermsAndConditionRepoImpl()) }
+    val currentTerms by viewModel.termsAndCondition.collectAsState()
+    val context = LocalContext.current
+    val activity = context as Activity
+
+    val state = rememberRichTextState()
+    val titleSize = MaterialTheme.typography.displaySmall.fontSize
+    val subtitleSize = MaterialTheme.typography.titleLarge.fontSize
+
+    LaunchedEffect(Unit) { viewModel.loadTermsAndCondition() }
+
+    LaunchedEffect(currentTerms) {
+        if (currentTerms.isNotEmpty()) {
+            state.setHtml(currentTerms)
+        }
+    }
+
+    Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
+        Text("Admin: Edit Terms & Conditions", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Controls(
+            modifier = Modifier.weight(2.5f),
+            state = state,
+            onBoldClick = { state.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold)) },
+            onItalicClick = { state.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic)) },
+            onUnderlineClick = { state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline)) },
+            onTitleClick = { state.toggleSpanStyle(SpanStyle(fontSize = titleSize)) },
+            onSubtitleClick = { state.toggleSpanStyle(SpanStyle(fontSize = subtitleSize)) },
+            onTextColorClick = { state.toggleSpanStyle(SpanStyle(color = Color.Red)) },
+            onStartAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.Start)) },
+            onEndAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.End)) },
+            onCenterAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.Center)) },
+            onExportClick = { Log.d("Editor", state.toHtml()) }
+        )
+
+        RichTextEditor(
+            modifier = Modifier.fillMaxWidth().weight(6.5f).border(1.dp, Color.LightGray, RoundedCornerShape(8.dp)),
+            state = state,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                viewModel.postTermsAndCondition(state.toHtml()) { success, msg ->
+                    if (success) {
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        activity.finish()
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Update Terms & Conditions")
+        }
+    }
+}
+
+@Composable
+fun TermsScreen() {
+    val viewModel = remember { TermsAndConditionViewModel(TermsAndConditionRepoImpl()) }
+    val content by viewModel.termsAndCondition.collectAsState()
+    val state = rememberRichTextState()
+
+    LaunchedEffect(Unit) { viewModel.loadTermsAndCondition() }
+
+    LaunchedEffect(content) {
+        state.setHtml(content)
+    }
+
+    Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
+        Text("Terms & Conditions", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Box(modifier = Modifier.padding(20.dp)) {
+                if (content.isEmpty()) {
+                    Text("Loading terms...")
+                } else {
+                    RichText(state = state)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun Controls(
+    modifier: Modifier = Modifier,
+    state: RichTextState,
+    onBoldClick: () -> Unit,
+    onItalicClick: () -> Unit,
+    onUnderlineClick: () -> Unit,
+    onTitleClick: () -> Unit,
+    onSubtitleClick: () -> Unit,
+    onTextColorClick: () -> Unit,
+    onStartAlignClick: () -> Unit,
+    onEndAlignClick: () -> Unit,
+    onCenterAlignClick: () -> Unit,
+    onExportClick: () -> Unit,
+) {
+    var boldSelected by rememberSaveable { mutableStateOf(false) }
+    var italicSelected by rememberSaveable { mutableStateOf(false) }
+    var underlineSelected by rememberSaveable { mutableStateOf(false) }
+    var titleSelected by rememberSaveable { mutableStateOf(false) }
+    var subtitleSelected by rememberSaveable { mutableStateOf(false) }
+    var textColorSelected by rememberSaveable { mutableStateOf(false) }
+    var linkSelected by rememberSaveable { mutableStateOf(false) }
+    var alignmentSelected by rememberSaveable { mutableIntStateOf(0) }
+    var showLinkDialog by remember { mutableStateOf(false) }
+
+    if (showLinkDialog) {
+        LinkDialog(
+            onDismissRequest = {
+                showLinkDialog = false
+                linkSelected = false
+            },
+            onConfirmation = { linkText, link ->
+                state.addLink(text = linkText, url = link)
+                showLinkDialog = false
+                linkSelected = false
+            }
+        )
+    }
+
+    FlowRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Wrapper(
+            selected = boldSelected,
+            onChangeClick = { boldSelected = it },
+            onClick = onBoldClick
+        ) {
+            Icon(Icons.Default.FormatBold, contentDescription = "Bold", tint = Color.White)
+        }
+        Wrapper(
+            selected = italicSelected,
+            onChangeClick = { italicSelected = it },
+            onClick = onItalicClick
+        ) {
+            Icon(Icons.Default.FormatItalic, contentDescription = "Italic", tint = Color.White)
+        }
+        Wrapper(
+            selected = underlineSelected,
+            onChangeClick = { underlineSelected = it },
+            onClick = onUnderlineClick
+        ) {
+            Icon(
+                Icons.Default.FormatUnderlined,
+                contentDescription = "Underline",
+                tint = Color.White
+            )
+        }
+        Wrapper(
+            selected = titleSelected,
+            onChangeClick = { titleSelected = it },
+            onClick = onTitleClick
+        ) {
+            Icon(Icons.Default.Title, contentDescription = "Title", tint = Color.White)
+        }
+        Wrapper(
+            selected = subtitleSelected,
+            onChangeClick = { subtitleSelected = it },
+            onClick = onSubtitleClick
+        ) {
+            Icon(Icons.Default.FormatSize, contentDescription = "Subtitle", tint = Color.White)
+        }
+        Wrapper(
+            selected = textColorSelected,
+            onChangeClick = { textColorSelected = it },
+            onClick = onTextColorClick
+        ) {
+            Icon(Icons.Default.FormatColorText, contentDescription = "Color", tint = Color.White)
+        }
+        Wrapper(
+            selected = linkSelected,
+            onChangeClick = { linkSelected = it },
+            onClick = { showLinkDialog = true }) {
+            Icon(Icons.Default.AddLink, contentDescription = "Link", tint = Color.White)
+        }
+        Wrapper(
+            selected = alignmentSelected == 0,
+            onChangeClick = { alignmentSelected = 0 },
+            onClick = onStartAlignClick
+        ) {
+            Icon(Icons.Default.FormatAlignLeft, contentDescription = "Left", tint = Color.White)
+        }
+        Wrapper(
+            selected = alignmentSelected == 1,
+            onChangeClick = { alignmentSelected = 1 },
+            onClick = onCenterAlignClick
+        ) {
+            Icon(Icons.Default.FormatAlignCenter, contentDescription = "Center", tint = Color.White)
+        }
+        Wrapper(
+            selected = alignmentSelected == 2,
+            onChangeClick = { alignmentSelected = 2 },
+            onClick = onEndAlignClick
+        ) {
+            Icon(Icons.Default.FormatAlignRight, contentDescription = "Right", tint = Color.White)
+        }
+    }
+}
+
+@Composable
+fun Wrapper(
+    selected: Boolean,
+    selectedColor: Color = MaterialTheme.colorScheme.primary,
+    unselectedColor: Color = MaterialTheme.colorScheme.inversePrimary,
+    onChangeClick: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(size = 6.dp))
+            .clickable {
+                onClick()
+                onChangeClick(!selected)
+            }
+            .background(if (selected) selectedColor else unselectedColor)
+            .border(width = 1.dp, color = Color.LightGray, shape = RoundedCornerShape(size = 6.dp))
+            .padding(all = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun Link(onDismissRequest: () -> Unit, onConfirmation: (String, String) -> Unit) {
+    var linkText by remember { mutableStateOf("") }
+    var linkUrl by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Add Link") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextField(
+                    value = linkText,
+                    onValueChange = { linkText = it },
+                    label = { Text("Display Text") })
+                TextField(
+                    value = linkUrl,
+                    onValueChange = { linkUrl = it },
+                    label = { Text("URL") })
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirmation(
+                    linkText,
+                    linkUrl
+                )
+            }) { Text("Confirm") }
+        },
+        dismissButton = { TextButton(onClick = onDismissRequest) { Text("Dismiss") } }
+    )
 }
