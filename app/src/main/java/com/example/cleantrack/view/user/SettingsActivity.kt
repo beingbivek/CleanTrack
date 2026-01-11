@@ -32,6 +32,7 @@ import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.view.common.ContactSupportActivity
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.common.EditProfileActivity
+import com.example.cleantrack.view.common.TermsAndConditionActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -275,10 +276,18 @@ fun SettingsBody() {
                             ) {
                                 SettingListItem("Privacy Policy")
                             }
+                            Box(
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(context, TermsAndConditionActivity::class.java)
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                SettingListItem("Terms and Condition")
+                            }
                         },
 
-                        { SettingListItem("Terms & Conditions", showDivider = false) }
                     )
+
                 )
 
                 // Help Section
