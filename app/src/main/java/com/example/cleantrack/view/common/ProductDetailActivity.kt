@@ -30,8 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.cleantrack.repository.ProductRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.viewmodel.ProductViewModel
+import com.example.cleantrack.viewmodel.UserViewModel
 
 class ProductDetailActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,14 +54,25 @@ class ProductDetailActivity : ComponentActivity() {
 fun ProductDetailScreen(productId: String, userId: String) {
     val context = LocalContext.current
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
 
-    // Observe the real product from Firebase
     val product by productViewModel.product.observeAsState()
+    val seller by userViewModel.sellerData.observeAsState()
+    val highestBidder by userViewModel.highestBidderData.observeAsState()
+
     var bidAmount by remember { mutableStateOf("") }
 
-    // Fetch product details on load
     LaunchedEffect(productId) {
         productViewModel.getProductById(productId)
+    }
+
+    LaunchedEffect(product) {
+        product?.let { currentProduct ->
+            userViewModel.getSellerInfo(currentProduct.sellerId)
+            if (currentProduct.highestBidderId.isNotEmpty()) {
+                userViewModel.getHighestBidderInfo(currentProduct.highestBidderId)
+            }
+        }
     }
 
     Box(
@@ -90,9 +103,9 @@ fun ProductDetailScreen(productId: String, userId: String) {
                 ) {
                     // 1. Product Image
                     Card(
-                        modifier = Modifier.fillMaxWidth().height(300.dp).padding(20.dp),
+                        modifier = Modifier.fillMaxWidth().height(320.dp).padding(20.dp),
                         shape = RoundedCornerShape(24.dp),
-                        elevation = CardDefaults.cardElevation(8.dp)
+                        elevation = CardDefaults.cardElevation(10.dp)
                     ) {
                         AsyncImage(
                             model = currentProduct.pImageUrl,
@@ -102,7 +115,7 @@ fun ProductDetailScreen(productId: String, userId: String) {
                         )
                     }
 
-                    // 2. Info Content Card
+                    // 2. Main Content Card
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
@@ -113,53 +126,81 @@ fun ProductDetailScreen(productId: String, userId: String) {
                                 Surface(color = Green.copy(0.1f), shape = RoundedCornerShape(8.dp)) {
                                     Text(
                                         currentProduct.pCategory.uppercase(),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.ExtraBold,
                                         color = Green
                                     )
                                 }
                                 Spacer(modifier = Modifier.weight(1f))
-                                Icon(Icons.Default.Timer, null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Timer, null, tint = Color.Gray, modifier = Modifier.size(18.dp))
                                 val timeLeft = formatTimeRemaining(currentProduct.auctionEndTime - System.currentTimeMillis())
-                                Text(" $timeLeft", fontSize = 12.sp, color = if(timeLeft == "Ended") Color.Red else Color.Gray)
+                                Text(" $timeLeft", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = if(timeLeft == "Ended") Color.Red else Color.Gray)
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(currentProduct.productName, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Black)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(currentProduct.pDescription, fontSize = 14.sp, color = Color.Gray, lineHeight = 20.sp)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(currentProduct.productName, fontSize = 28.sp, fontWeight = FontWeight.Black, color = Black, lineHeight = 34.sp)
 
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), thickness = 0.5.dp)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(currentProduct.pDescription, fontSize = 15.sp, color = Color.DarkGray, lineHeight = 22.sp)
 
-                            // 3. Bidding Section
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp), thickness = 0.8.dp)
+
+                            // 3. COMPARISON SECTION: Initial Bid, Current Bid, Total Bidders
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column {
-                                    Text("Current Bid", fontSize = 12.sp, color = Color.Gray)
-                                    Text("$${currentProduct.currentBidPrice}", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Green)
+                                Column(horizontalAlignment = Alignment.Start) {
+                                    Text("Initial Bid", fontSize = 13.sp, color = Color.Gray)
+                                    Text("$${currentProduct.startingBidPrice}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
                                 }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Current Bid", fontSize = 14.sp, color = Color.Gray)
+                                    Text("$${currentProduct.currentBidPrice}", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Green)
+                                }
+
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("Started at", fontSize = 12.sp, color = Color.Gray)
-                                    Text("$${currentProduct.startingBidPrice}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Black)
+                                    Text("Total Bidders", fontSize = 14.sp, color = Color.Gray)
+                                    val totalBidders = currentProduct.bids?.size ?: 0
+                                    Text("$totalBidders", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Blue)
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
 
+                            // 4. HIGHEST BIDDER INFORMATION
+                            highestBidder?.let { bidder ->
+                                Surface(
+                                    color = Green.copy(0.1f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Green.copy(0.2f)),
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+                                ) {
+                                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text("🏆", fontSize = 24.sp)
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text("Highest Bidder", fontSize = 14.sp, color = Green, fontWeight = FontWeight.Bold)
+                                            Text(bidder.fullname, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Black)
+                                            Text("📞 ${bidder?.number ?: "No Phone"}", color = Color.Gray, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Bidding Input Logic
                             if (currentProduct.sellerId == userId) {
-                                // Seller cannot bid on their own product
-                                Text("You are the seller of this item.", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = Color.Gray)
+                                Text("You listed this item.", modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = Color.Gray, fontWeight = FontWeight.Bold)
                             } else if (currentProduct.auctionEndTime < System.currentTimeMillis()) {
-                                Text("This auction has ended.", modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = Color.Red, fontWeight = FontWeight.Bold)
+                                Text("AUCTION CLOSED", modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = Color.Red, fontWeight = FontWeight.Black, fontSize = 18.sp)
                             } else {
                                 OutlinedTextField(
                                     value = bidAmount,
                                     onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) bidAmount = it },
-                                    label = { Text("Enter higher bid") },
-                                    prefix = { Text("$ ") },
+                                    label = { Text("Your Bid Amount", fontWeight = FontWeight.Bold) },
+                                    prefix = { Text("$ ", fontWeight = FontWeight.Bold) },
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
+                                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                                    shape = RoundedCornerShape(16.dp)
                                 )
 
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -168,26 +209,42 @@ fun ProductDetailScreen(productId: String, userId: String) {
                                     onClick = {
                                         val enteredBid = bidAmount.toDoubleOrNull() ?: 0.0
                                         if (enteredBid > currentProduct.currentBidPrice) {
-                                            productViewModel.updateBid(productId, userId, enteredBid) { success, msg ->
+                                            productViewModel.updateBid(productId, userId, enteredBid) { _, msg ->
                                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                                if (success) bidAmount = ""
+                                                if (msg.contains("success", true)) bidAmount = ""
                                             }
                                         } else {
-                                            Toast.makeText(context, "Bid must be higher than current price", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Bid must be higher than $${currentProduct.currentBidPrice}", Toast.LENGTH_SHORT).show()
                                         }
                                     },
-                                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                                    modifier = Modifier.fillMaxWidth().height(60.dp),
                                     shape = RoundedCornerShape(16.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Green)
                                 ) {
                                     Icon(Icons.Default.Gavel, null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Place My Bid", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text("PLACE MY BID", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                                 }
                             }
 
+                            Spacer(modifier = Modifier.height(32.dp))
+                            HorizontalDivider(thickness = 0.5.dp)
                             Spacer(modifier = Modifier.height(24.dp))
-                            Text("Seller ID: ${currentProduct.sellerId}", fontSize = 12.sp, color = Color.Gray)
+
+                            // 5. Seller Details
+                            Text("Seller Information", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(shape = CircleShape, color = Blue.copy(0.1f), modifier = Modifier.size(56.dp)) {
+                                    Icon(Icons.Default.Person, null, modifier = Modifier.padding(12.dp), tint = Blue)
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text(seller?.fullname ?: "Loading Seller...", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
+                                    Text("📞 ${seller?.number ?: "No Phone"}", color = Color.Gray, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(50.dp))
                         }
                     }
                 }
