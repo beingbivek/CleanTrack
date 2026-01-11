@@ -312,4 +312,37 @@ class UserViewModel(
             if (success) _userPoints.postValue(points)
         }
     }
+
+    fun fetchLatestAIReview(userId: String) {
+        collectionRepo.getLatestCollectionForUser(userId) { success, _, collection ->
+            if (success) {
+                _latestCollection.postValue(collection)
+            }
+        }
+    }
+
+    // --- Add these inside UserViewModel class ---
+
+    private val _sellerData = MutableLiveData<UserModel?>()
+    val sellerData: MutableLiveData<UserModel?> get() = _sellerData
+
+    private val _highestBidderData = MutableLiveData<UserModel?>()
+    val highestBidderData: MutableLiveData<UserModel?> get() = _highestBidderData
+
+    // Function to specifically fetch Seller details
+    fun getSellerInfo(sellerId: String) {
+        repo.getUserById(sellerId) { success, _, data ->
+            if (success) _sellerData.postValue(data)
+        }
+    }
+
+    // Function to specifically fetch current Highest Bidder details
+    fun getHighestBidderInfo(bidderId: String) {
+        if (bidderId.isEmpty()) return
+        repo.getUserById(bidderId) { success, _, data ->
+            if (success) _highestBidderData.postValue(data)
+        }
+    }
+
+
 }
