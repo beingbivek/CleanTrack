@@ -30,6 +30,7 @@ import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.auth.StartActivity
 import com.example.cleantrack.view.common.LogoutDialog
+import com.example.cleantrack.view.common.TermsAndConditionActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 
 class AdminDashboardActivity : ComponentActivity() {
@@ -165,6 +166,17 @@ fun AdminDashboardScreen() {
                 ) {
                     context.startActivity(
                         Intent(context, PrivacyPolicyActivity::class.java)
+                    )
+                }
+            }
+
+            item {
+                DashboardCard(
+                    title = "Terms and Condition",
+                    icon = Icons.Default.Policy
+                ) {
+                    context.startActivity(
+                        Intent(context, TermsAndConditionActivity::class.java)
                     )
                 }
             }
