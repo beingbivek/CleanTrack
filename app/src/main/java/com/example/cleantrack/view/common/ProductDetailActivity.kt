@@ -20,7 +20,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -55,11 +54,11 @@ fun ProductDetailScreen(productId: String) {
     // Dummy Data for Preview
     val product = remember {
         ProductModel(
-            id = productId,
-            name = "Recycled PET Bottles (50kg)",
-            description = "High-quality, industrial-grade PET bottles. All bottles have been washed, caps removed, and sorted by color. Perfect for plastic manufacturing or upcycling projects.",
-            imageUrl = "https://via.placeholder.com/600/0000FF/FFFFFF?text=PET+Bottles",
-            category = "Plastic",
+            productId = productId,
+            productName = "Recycled PET Bottles (50kg)",
+            pDescription = "High-quality, industrial-grade PET bottles. All bottles have been washed, caps removed, and sorted by color. Perfect for plastic manufacturing or upcycling projects.",
+            pImageUrl = "https://via.placeholder.com/600/0000FF/FFFFFF?text=PET+Bottles",
+            pCategory = "Plastic",
             startingBidPrice = 10.0,
             currentBidPrice = 15.5,
             auctionEndTime = System.currentTimeMillis() + 3600000, // 1 hour left
@@ -108,7 +107,7 @@ fun ProductDetailScreen(productId: String) {
                     elevation = CardDefaults.cardElevation(8.dp)
                 ) {
                     AsyncImage(
-                        model = product.imageUrl,
+                        model = product.pImageUrl,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -130,7 +129,7 @@ fun ProductDetailScreen(productId: String) {
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
-                                    product.category.uppercase(),
+                                    product.pCategory.uppercase(),
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
@@ -143,10 +142,10 @@ fun ProductDetailScreen(productId: String) {
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(product.name, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Black)
+                        Text(product.productName, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Black)
 
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(product.description, fontSize = 14.sp, color = Color.Gray, lineHeight = 20.sp)
+                        Text(product.pDescription, fontSize = 14.sp, color = Color.Gray, lineHeight = 20.sp)
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), thickness = 0.5.dp)
 

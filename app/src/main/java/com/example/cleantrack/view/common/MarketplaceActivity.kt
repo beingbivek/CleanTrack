@@ -158,7 +158,7 @@ fun MarketplaceScreen() {
                         ProductCard(product = product) {
                             // TODO: Navigate to ProductDetailActivity
                             context.startActivity(Intent(context, ProductDetailActivity::class.java).apply {
-                                putExtra("PRODUCT_ID", product.id)
+                                putExtra("PRODUCT_ID", product.productId)
                             })
                         }
                     }
@@ -192,8 +192,8 @@ fun ProductCard(product: ProductModel, onClick: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             AsyncImage(
-                model = product.imageUrl,
-                contentDescription = product.name,
+                model = product.pImageUrl,
+                contentDescription = product.productName,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp)
@@ -202,7 +202,7 @@ fun ProductCard(product: ProductModel, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = product.name,
+                text = product.productName,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Black,
