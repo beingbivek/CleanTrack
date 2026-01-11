@@ -1,5 +1,6 @@
 package com.example.cleantrack.repository
 
+
 import com.example.cleantrack.model.ProductModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -9,9 +10,10 @@ import com.google.firebase.database.ValueEventListener
 
 class ProductRepoImpl : ProductRepo {
 
+    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    private val ref: DatabaseReference = database.getReference("Products")
 
-    val database : FirebaseDatabase = FirebaseDatabase.getInstance()
-    val ref : DatabaseReference = database.getReference("Products")
+
 
 
 
@@ -19,55 +21,55 @@ class ProductRepoImpl : ProductRepo {
         model: ProductModel,
         callback: (Boolean, String) -> Unit
     ) {
-        val id = ref.push().key.toString()
-        model.productId = id // Assigning the generated ID to the model field
+        val id = ref.push().key ?: return callback(false, "Failed to generate ID")
+        model.productId = id
 
-        ref.child(id).setValue(model)
+        // Using toMap() ensures the data structure matches Firebase expectations
+        ref.child(id).setValue(model.toMap())
             .addOnCompleteListener {
-                if (it.isSuccessful){
+                if (it.isSuccessful) {
                     callback(true, "Product added Successfully.")
-
-                }else{
-                    callback(false, "${it.exception?.message}")
+                } else {
+                    callback(false, it.exception?.message ?: "Unknown error")
                 }
             }
     }
 
     override fun getAllProducts(callback: (Boolean, String, List<ProductModel>?) -> Unit) {
-        // Real-time listener to keep the Marketplace updated automatically
-        ref.addValueEventListener(object : ValueEventListener{
+        ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()){
-
-                    var allProducts = mutableListOf<ProductModel>()
-
-                    for (data in snapshot.children){
-                        val product = data.getValue(ProductModel::class.java)
-                        if (product != null){
-                            allProducts.add(product)
-                        }
+                val allProducts = mutableListOf<ProductModel>()
+                for (data in snapshot.children) {
+                    val product = data.getValue(ProductModel::class.java)
+                    if (product != null) {
+                        allProducts.add(product)
                     }
-
-                    callback(true, "All product fetched", allProducts)
                 }
+                callback(true, "Products fetched", allProducts)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                callback(false, "${error.message}", emptyList())
+                callback(false, error.message, emptyList())
             }
         })
-
     }
 
 
     override fun updateBid(productId: String, bidderId: String, bidAmount: Double, callback: (Boolean, String) -> Unit) {
-        val updates = mapOf(
-            "currentBidPrice" to bidAmount,
-            "highestBidderId" to bidderId
-        )
+        // Create a map for multiple path updates
+        val updates = HashMap<String, Any>()
+
+        // Update top-level product fields
+        updates["currentBidPrice"] = bidAmount
+        updates["highestBidderId"] = bidderId
+
+        // Update the specific bidder in the 'bids' child (Your Bidders List)
+        // This will appear as Products -> productId -> bids -> bidderId : amount
+        updates["bids/$bidderId"] = bidAmount
+
         ref.child(productId).updateChildren(updates).addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                callback(true, "Bid placed!")
+                callback(true, "Bid placed successfully!")
             } else {
                 callback(false, task.exception?.message ?: "Failed to place bid")
             }
@@ -78,20 +80,24 @@ class ProductRepoImpl : ProductRepo {
         productId: String,
         callback: (Boolean, String, ProductModel?) -> Unit
     ) {
-        ref.child(productId).addValueEventListener(object : ValueEventListener{
+        ref.child(productId).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()){
-
+                if (snapshot.exists()) {
                     val product = snapshot.getValue(ProductModel::class.java)
-                    if (product != null){
-                        callback(true, "Product fetched", product)
-                    }
+                    callback(true, "Product fetched", product)
+                } else {
+                    callback(false, "Product not found", null)
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                callback(false, "${error.message}", null)
+                callback(false, error.message, null)
             }
         })
     }
+
+
+
+
+
 }
