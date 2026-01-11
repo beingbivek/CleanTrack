@@ -15,4 +15,5 @@ interface BinCollectionRepo {
         tripId: String,
         callback: (Boolean, String, List<BinCollectionModel>?) -> Unit
     )
+    fun getLatestCollectionForUser(userId: String, callback: (Boolean, String?, BinCollectionModel?) -> Unit)
 }

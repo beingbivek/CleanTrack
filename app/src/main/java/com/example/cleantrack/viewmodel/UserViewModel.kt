@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.UserRepo
 import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.view.admin.AdminDashboardActivity
@@ -18,7 +19,14 @@ import com.example.cleantrack.view.driver.DriverDashboardActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
 
 
-class UserViewModel(val repo : UserRepo) : ViewModel() {
+class UserViewModel(
+    val repo : UserRepo,
+    val collectionRepo: BinCollectionRepo = com.example.cleantrack.repository.BinCollectionRepoImpl()
+) : ViewModel() {
+
+    private val _latestCollection = MutableLiveData<com.example.cleantrack.model.BinCollectionModel?>()
+    val latestCollection: androidx.lifecycle.LiveData<com.example.cleantrack.model.BinCollectionModel?>
+        get() = _latestCollection
 
     fun login(email : String , password : String , callback : (Boolean, String?, String?, String?)-> Unit){
                 repo.login(email, password, callback)
@@ -302,6 +310,14 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
     fun fetchUserPoints(userId: String) {
         repo.getUserPoints(userId) { success, _, points ->
             if (success) _userPoints.postValue(points)
+        }
+    }
+
+    fun fetchLatestAIReview(userId: String) {
+        collectionRepo.getLatestCollectionForUser(userId) { success, _, collection ->
+            if (success) {
+                _latestCollection.postValue(collection)
+            }
         }
     }
 }
