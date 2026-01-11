@@ -8,6 +8,7 @@ data class BinCollectionModel(
     var tripId: String = "",
     var rating: Int = 0,  // Rating given by the driver (0-5)
     var remarks: String = "",
+    val aiFeedback: String = "",
     var segregatedCorrectly: Boolean = false, // Is it segregated correctly?
     var pointsAwarded: Int = 0, // Points calculated for the user
     var collectedAt: Long = System.currentTimeMillis()
@@ -21,6 +22,7 @@ data class BinCollectionModel(
             "tripId" to tripId,
             "rating" to rating,
             "remarks" to remarks,
+            "aiFeedback" to aiFeedback,
             "segregatedCorrectly" to segregatedCorrectly,
             "pointsAwarded" to pointsAwarded,
             "collectedAt" to collectedAt

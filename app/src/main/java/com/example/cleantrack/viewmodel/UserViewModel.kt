@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.UserRepo
 import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.view.admin.AdminDashboardActivity
@@ -18,7 +19,14 @@ import com.example.cleantrack.view.driver.DriverDashboardActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
 
 
-class UserViewModel(val repo : UserRepo) : ViewModel() {
+class UserViewModel(
+    val repo : UserRepo,
+    val collectionRepo: BinCollectionRepo = com.example.cleantrack.repository.BinCollectionRepoImpl()
+) : ViewModel() {
+
+    private val _latestCollection = MutableLiveData<com.example.cleantrack.model.BinCollectionModel?>()
+    val latestCollection: androidx.lifecycle.LiveData<com.example.cleantrack.model.BinCollectionModel?>
+        get() = _latestCollection
 
     fun login(email : String , password : String , callback : (Boolean, String?, String?, String?)-> Unit){
                 repo.login(email, password, callback)
@@ -302,30 +310,6 @@ class UserViewModel(val repo : UserRepo) : ViewModel() {
     fun fetchUserPoints(userId: String) {
         repo.getUserPoints(userId) { success, _, points ->
             if (success) _userPoints.postValue(points)
-        }
-    }
-
-
-    // --- Add these inside UserViewModel class ---
-
-    private val _sellerData = MutableLiveData<UserModel?>()
-    val sellerData: MutableLiveData<UserModel?> get() = _sellerData
-
-    private val _highestBidderData = MutableLiveData<UserModel?>()
-    val highestBidderData: MutableLiveData<UserModel?> get() = _highestBidderData
-
-    // Function to specifically fetch Seller details
-    fun getSellerInfo(sellerId: String) {
-        repo.getUserById(sellerId) { success, _, data ->
-            if (success) _sellerData.postValue(data)
-        }
-    }
-
-    // Function to specifically fetch current Highest Bidder details
-    fun getHighestBidderInfo(bidderId: String) {
-        if (bidderId.isEmpty()) return
-        repo.getUserById(bidderId) { success, _, data ->
-            if (success) _highestBidderData.postValue(data)
         }
     }
 }

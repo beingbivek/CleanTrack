@@ -370,4 +370,61 @@ class ActiveTripViewModel(
             }
         }
     }
+
+    fun collectBinWithAI(
+        bin: BinModel,
+        driverId: String,
+        tripId: String,
+        rating: Int,
+        remarks: String,
+        aiTip: String, // Matches the new AI tip parameter from your Activity
+        isSegregated: Boolean,
+        callback: (Boolean, String) -> Unit
+    ) {
+        _loading.postValue(true)
+
+        // 1. Fetch the user to verify ownership and route
+        userRepo.getUserById(bin.ownerUserId) { success, message, user ->
+            if (!success || user == null) {
+                _loading.postValue(false)
+                callback(false, "User not found: $message")
+                return@getUserById
+            }
+
+            val userRouteId = user.activeRouteId ?: ""
+
+            // 2. Calculate points using the Points Repository rules
+            pointsRepo.calculatePoints(bin.category, isSegregated) { calculatedPoints ->
+
+                // 3. Construct the record with the AI feedback tip
+                val collection = BinCollectionModel(
+                    binId = bin.binId,
+                    driverId = driverId,
+                    userId = bin.ownerUserId,
+                    tripId = tripId,
+                    rating = rating,
+                    remarks = remarks,
+                    aiFeedback = aiTip, // 🔹 SAVES THE GEMINI TIP TO DB
+                    segregatedCorrectly = isSegregated,
+                    pointsAwarded = calculatedPoints,
+                    collectedAt = System.currentTimeMillis()
+                )
+
+                // 4. Save the collection log to the database
+                collectionRepo.addBinCollection(collection) { saveSuccess, saveMessage ->
+                    if (saveSuccess) {
+                        // 5. Update user's point balance
+                        pointsRepo.addPointsToUser(bin.ownerUserId, calculatedPoints)
+
+                        // 6. Refresh Dashboard Stats (Collected vs Remains)
+                        if (userRouteId.isNotEmpty()) {
+                            loadBinStats(userRouteId, tripId)
+                        }
+                    }
+                    _loading.postValue(false)
+                    callback(saveSuccess, saveMessage)
+                }
+            }
+        }
+    }
 }
