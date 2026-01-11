@@ -154,7 +154,7 @@ fun TermsScreen() {
     Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
         Text("Terms & Conditions", fontWeight = FontWeight.Bold, fontSize = 24.sp)
         Spacer(modifier = Modifier.height(16.dp))
-// check for commit
+
         Card(
             modifier = Modifier.fillMaxWidth().weight(1f),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
