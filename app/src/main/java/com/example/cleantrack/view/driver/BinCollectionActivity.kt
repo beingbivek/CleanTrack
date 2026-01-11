@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.BinCollectionModel
+import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.ActiveTripRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.BinRepoImpl
@@ -26,46 +27,58 @@ import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.viewmodel.BinViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
+import kotlinx.coroutines.launch
 
 class BinCollectionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binId = intent.getStringExtra("BIN_ID") ?: ""
+        val tripId = intent.getStringExtra("TRIP_ID") ?: "" // 🔹 FETCH TRIP_ID FROM INTENT
 
         setContent {
-            BinCollectionScreen(binId) { finish() }
+            BinCollectionScreen(binId, tripId) { finish() }
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
+fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    // 🔹 Use BinViewModel to fetch bin details
+    // ViewModels
     val binVM = remember { BinViewModel(BinRepoImpl()) }
-    val collectionRepo = remember { BinCollectionRepoImpl() }
-    val userViewModel  = remember { UserViewModel(UserRepoImpl()) }
-    val activeTripViewModel = remember { ActiveTripViewModel(ActiveTripRepoImpl()) }
+    val userViewModel = remember {
+        UserViewModel(
+            UserRepoImpl(),
+            BinCollectionRepoImpl() // 🔹 Add this second parameter
+        )
+    }
 
+    // Inject all required Repositories into the ActiveTripViewModel
+    val activeTripViewModel = remember {
+        ActiveTripViewModel(
+            ActiveTripRepoImpl(),
+            UserRepoImpl(),
+            BinRepoImpl(),
+            BinCollectionRepoImpl(),
+            com.example.cleantrack.repository.PointsRepoImpl() // Add this!
+        )
+    }
 
     val binDetails by binVM.bin.observeAsState()
     val loading by binVM.loading.observeAsState(false)
 
-    // 🔹 State to hold the current Driver's ID
     var currentDriverId by remember { mutableStateOf("") }
-
-    // Form States
     var rating by remember { mutableIntStateOf(0) }
     var remarks by remember { mutableStateOf("") }
     var isSegregated by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
 
-    // Fetch data when activity starts
+    val aiRepo = remember { AIRepository() } // Initialize AI Repo
+    val scope = rememberCoroutineScope()
+
     LaunchedEffect(binId) {
         binVM.getBinById(binId)
-        // 🔹 Get the logged-in driver's ID
         currentDriverId = userViewModel.getCurrentUserId() ?: ""
     }
 
@@ -84,7 +97,7 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // --- Bin Header ---
+                // Header (Bin details)
                 binDetails?.let { bin ->
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
@@ -94,16 +107,13 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                     }
                 }
 
-                // --- Segregation Status ---
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                // Segregation Switch
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("Was waste segregated correctly?", modifier = Modifier.weight(1f))
                     Switch(checked = isSegregated, onCheckedChange = { isSegregated = it })
                 }
 
-                // --- Rating System ---
+                // Star Rating
                 Text("Rate User Performance:")
                 Row {
                     repeat(5) { index ->
@@ -119,40 +129,47 @@ fun BinCollectionScreen(binId: String, onComplete: () -> Unit) {
                     }
                 }
 
-                // --- Remarks ---
+                // Remarks
                 OutlinedTextField(
                     value = remarks,
                     onValueChange = { remarks = it },
                     label = { Text("Optional Remarks") },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("e.g. Bin was overfilled") }
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.weight(1f))
 
-                // --- Save Button ---
+                // --- NEW SAVE LOGIC ---
+                // Inside BinCollectionScreen (the UI where the driver rates)
                 Button(
                     onClick = {
-                        isSaving = true
-                        val model = BinCollectionModel(
-                            binId = binId,
-                            userId = binDetails?.ownerUserId ?: "",
-                            driverId = currentDriverId, // TODO: Get from shared preferences or auth
-                            tripId = "CURRENT_TRIP_ID",     // TODO: Pass from previous activity
-                            rating = rating,
-                            remarks = remarks,
-                            segregatedCorrectly = isSegregated,
-                            pointsAwarded = if (isSegregated) 10 else 2
-                        )
+                        val bin = binDetails
+                        if (bin != null) {
+                            isSaving = true
+                            scope.launch {
+                                // 1. Get the dynamic tip from AI using the 3 parameters
+                                val aiTip = aiRepo.generateImprovementTip(
+                                    rating = rating,
+                                    remarks = remarks,
+                                    segregatedCorrectly = isSegregated // This is your Boolean
+                                )
 
-                        collectionRepo.addBinCollection(model) { success, msg ->
-                            isSaving = false
-                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            if (success) onComplete()
+                                // 2. Pass that specific aiTip to your save function
+                                activeTripViewModel.collectBinWithAI(
+                                    bin = bin,
+                                    driverId = currentDriverId,
+                                    tripId = tripId,
+                                    rating = rating,
+                                    remarks = remarks,
+                                    aiTip = aiTip,
+                                    isSegregated = isSegregated // Boolean passed to database
+                                ) { success, msg ->
+                                    isSaving = false
+                                    if (success) onComplete()
+                                }
+                            }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isSaving && binDetails != null && rating > 0
+                    }
                 ) {
                     if (isSaving) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)

@@ -40,4 +40,7 @@
     <string name="title_activity_user_route_live_tracking">UserRouteLiveTrackingActivity</string>
     <string name="title_activity_user_schedule_list">UserScheduleListActivity</string>
     <string name="title_activity_bin_collection">BinCollectionActivity</string>
+    <string name="title_activity_driver_route_map">DriverRouteMapActivity</string>
+    <string name="title_activity_demo_driver_dash">DemoDriverDashActivity</string>
+    <string name="title_activity_drivers_trip_history">DriversTripHistoryActivity</string>
 </resources>

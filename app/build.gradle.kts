@@ -81,6 +81,9 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx:21.6.0")
 
+    // Google Vertex AI for Firebase Library
+    implementation("com.google.firebase:firebase-vertexai")
+
     // QR
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
@@ -121,6 +124,8 @@ dependencies {
     // Change from 3.3.0 to 3.2.0 or 3.0.0
     // Coil 2.x includes the network engine by default
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
 
 }
