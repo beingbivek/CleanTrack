@@ -40,6 +40,7 @@ import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.R
+import com.example.cleantrack.view.common.MarketplaceActivity
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -248,7 +249,8 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
                     QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java)) }
                     QuickIcon(Icons.Default.Route, "Routes") { context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) }
                     QuickIcon(Icons.Default.CalendarMonth, "Schedule") { context.startActivity(Intent(context, UserScheduleListActivity::class.java)) }
-                    QuickIcon(Icons.Default.ShoppingBag, "Market")
+                    QuickIcon(Icons.Default.ShoppingBag, "Market"){ context.startActivity(Intent(context,
+                        MarketplaceActivity::class.java)) }
                 }
             }
         }
