@@ -1,6 +1,8 @@
 package com.example.cleantrack.repository
 
+
 import com.example.cleantrack.model.ProductModel
+
 
 interface ProductRepo {
     fun addProduct(model: ProductModel, callback: (Boolean, String) -> Unit)
