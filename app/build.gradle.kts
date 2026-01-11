@@ -125,5 +125,7 @@ dependencies {
     // Coil 2.x includes the network engine by default
     implementation("io.coil-kt:coil-compose:2.6.0")
 
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+
 
 }
