@@ -137,10 +137,18 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                     )
                 }
 
+                // Inside MarketplaceScreen
                 val filteredProducts = products?.filter {
                     val matchesSearch = it.productName.contains(searchQuery, ignoreCase = true)
-                    val matchesSeller = if (showOnlyMyListings) it.sellerId == currentUserId else true
-                    matchesSearch && matchesSeller
+                    val matchesSeller = it.sellerId == currentUserId
+
+                    if (showOnlyMyListings) {
+                        matchesSearch && matchesSeller
+                    } else {
+                        // Only show items that are ACTIVE and haven't timed out
+                        val isNotExpired = it.auctionEndTime > System.currentTimeMillis()
+                        matchesSearch && it.productStatus == "active" && isNotExpired
+                    }
                 } ?: emptyList()
 
                 if (isLoading) {
@@ -160,6 +168,7 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                                 isOwner = product.sellerId == currentUserId,
                                 isAdmin = isAdmin,
                                 isMyListingsTab = showOnlyMyListings,
+                                productViewModel = productViewModel,
                                 onEdit = {
                                     context.startActivity(Intent(context, AddListItemActivity::class.java).apply {
                                         putExtra("USER_ID", currentUserId)
@@ -188,10 +197,12 @@ fun ProductCard(
     isOwner: Boolean,
     isAdmin: Boolean,
     isMyListingsTab: Boolean,
+    productViewModel: ProductViewModel,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -240,21 +251,48 @@ fun ProductCard(
                     )
                 }
 
+                // Inside ProductCard Row (MarketplaceActivity.kt)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    // EDIT ICON:
-                    // Shown ONLY if user is Owner AND on the "My Listings" tab
                     if (isOwner && isMyListingsTab) {
-                        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
+                        val isExpired = product.auctionEndTime < System.currentTimeMillis()
+                        val hasBids = !product.highestBidderId.isNullOrBlank()
+
+                        // RELIST: Item ended, nobody bid.
+                        if (isExpired && !hasBids) {
+                            TextButton(onClick = {
+                                val newTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000)
+                                productViewModel.relistProduct(product.productId, newTime) { _, msg ->
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }) {
+                                Text("Relist", color = Blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        // MARK AS SOLD: Item ended, there is a winner.
+                        if (isExpired && hasBids && product.productStatus != "sold") {
+                            Button(
+                                onClick = { productViewModel.updateStatus(product.productId, "sold") { _, _ -> } },
+                                colors = ButtonDefaults.buttonColors(containerColor = Green),
+                                contentPadding = PaddingValues(horizontal = 8.dp),
+                                modifier = Modifier.height(30.dp)
+                            ) {
+                                Text("Mark Sold", fontSize = 10.sp, color = White)
+                            }
+                        }
+
+                        // EDIT: Only if not sold
+                        if (product.productStatus == "active") {
+                            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
+                            }
                         }
                     }
 
-                    // DELETE ICON:
-                    // 1. Shown to Owner ONLY if they are on "My Listings" tab
-                    // 2. Shown to Admin ALWAYS (on any tab)
+                    // DELETE: Admin always or Owner on My Listings
                     if ((isOwner && isMyListingsTab) || isAdmin) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
