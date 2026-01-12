@@ -12,4 +12,8 @@ interface ProductRepo {
     fun updateBid(productId: String, bidderId: String, bidAmount: Double, callback: (Boolean, String) -> Unit)
 
     fun getProductById(productId: String, callback: (Boolean, String, ProductModel?) -> Unit)
+
+    fun updateProduct(productId: String, model: Map<String, Any>, callback: (Boolean, String) -> Unit)
+
+    fun deleteProduct(productId: String, callback: (Boolean, String) -> Unit)
 }
