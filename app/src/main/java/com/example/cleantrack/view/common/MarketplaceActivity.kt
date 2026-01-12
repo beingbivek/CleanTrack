@@ -1,6 +1,7 @@
 package com.example.cleantrack.view.common
 
 import android.app.Activity
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -39,6 +40,7 @@ import com.example.cleantrack.model.ProductModel
 import com.example.cleantrack.repository.ProductRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.viewmodel.ProductViewModel
+import java.util.Calendar
 
 class MarketplaceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,14 +63,16 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedTab by remember { mutableIntStateOf(0) }
     var productToDelete by remember { mutableStateOf<ProductModel?>(null) }
+    var productToMarkSold by remember { mutableStateOf<ProductModel?>(null) }
 
     LaunchedEffect(Unit) { productViewModel.fetchAllProducts() }
 
+    // --- DELETE CONFIRMATION ---
     if (productToDelete != null) {
         AlertDialog(
             onDismissRequest = { productToDelete = null },
             title = { Text("Delete Product?") },
-            text = { Text("Are you sure you want to remove '${productToDelete?.productName}'? This action cannot be undone.") },
+            text = { Text("Are you sure you want to remove '${productToDelete?.productName}'?") },
             confirmButton = {
                 TextButton(onClick = {
                     productViewModel.deleteProduct(productToDelete!!.productId) { _, msg ->
@@ -78,6 +82,24 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                 }) { Text("Delete", color = Color.Red) }
             },
             dismissButton = { TextButton(onClick = { productToDelete = null }) { Text("Cancel") } }
+        )
+    }
+
+    // --- MARK SOLD CONFIRMATION ---
+    if (productToMarkSold != null) {
+        AlertDialog(
+            onDismissRequest = { productToMarkSold = null },
+            title = { Text("Sell Item Now?") },
+            text = { Text("Do you want to end the auction early and sell '${productToMarkSold?.productName}' to the current highest bidder?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    productViewModel.updateStatus(productToMarkSold!!.productId, "sold") { _, msg ->
+                        Toast.makeText(context, "Item marked as Sold!", Toast.LENGTH_SHORT).show()
+                        productToMarkSold = null
+                    }
+                }) { Text("Confirm Sale", color = Green) }
+            },
+            dismissButton = { TextButton(onClick = { productToMarkSold = null }) { Text("Wait") } }
         )
     }
 
@@ -167,6 +189,7 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                                     })
                                 },
                                 onDelete = { productToDelete = product },
+                                onMarkSold = { productToMarkSold = product },
                                 onClick = {
                                     context.startActivity(Intent(context, ProductDetailActivity::class.java).apply {
                                         putExtra("PRODUCT_ID", product.productId)
@@ -192,11 +215,30 @@ fun ProductCard(
     productViewModel: ProductViewModel,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onMarkSold: () -> Unit,
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
     val isExpired = product.auctionEndTime < System.currentTimeMillis()
     val hasBids = !product.highestBidderId.isNullOrBlank()
+
+    val calendar = Calendar.getInstance()
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, day ->
+            val selectedCalendar = Calendar.getInstance()
+            selectedCalendar.set(year, month, day, 23, 59, 59)
+            val newTime = selectedCalendar.timeInMillis
+
+            productViewModel.relistProduct(product.productId, newTime) { _, msg ->
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+    datePickerDialog.datePicker.minDate = System.currentTimeMillis()
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -219,7 +261,6 @@ fun ProductCard(
                 }
             }
 
-            // --- CONTENT AREA ---
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(text = product.productName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(text = "Rs. ${product.currentBidPrice}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Green)
@@ -231,18 +272,13 @@ fun ProductCard(
                     color = if (timeLeft == "Ended" || product.productStatus == "sold") Color.Red else Color.Gray
                 )
 
-                // --- ACTION AREA (Relist / Mark Sold) ---
                 if (isOwner && isMyListingsTab) {
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // Relist logic: Only for expired items without bidders
                     if (isExpired && !hasBids) {
                         Button(
-                            onClick = {
-                                val newTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000)
-                                productViewModel.relistProduct(product.productId, newTime) { _, msg ->
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                }
-                            },
+                            onClick = { datePickerDialog.show() },
                             modifier = Modifier.fillMaxWidth().height(32.dp),
                             contentPadding = PaddingValues(0.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue),
@@ -252,9 +288,10 @@ fun ProductCard(
                         }
                     }
 
-                    if (isExpired && hasBids && product.productStatus != "sold") {
+                    // Mark Sold logic: Removed time limit. Shows as long as there is a bidder.
+                    if (hasBids && product.productStatus != "sold") {
                         Button(
-                            onClick = { productViewModel.updateStatus(product.productId, "sold") { _, _ -> } },
+                            onClick = onMarkSold,
                             modifier = Modifier.fillMaxWidth().height(32.dp),
                             contentPadding = PaddingValues(0.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Green),
@@ -264,7 +301,6 @@ fun ProductCard(
                         }
                     }
 
-                    // Edit/Delete Icon Row (Moved below the big buttons for clarity)
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.End,
@@ -280,7 +316,6 @@ fun ProductCard(
                         }
                     }
                 } else if (isAdmin) {
-                    // Admins only see Delete icon
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
                             Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
