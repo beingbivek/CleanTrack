@@ -55,6 +55,8 @@ fun AdminDashboardScreen() {
 
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     LogoutDialog(
@@ -159,7 +161,8 @@ fun AdminDashboardScreen() {
                 ) {
                     val intent = Intent(context, MarketplaceActivity::class.java).apply {
                         // Pass "admin" as the user ID so the Marketplace knows to show admin controls
-                        putExtra("USER_ID", "admin")
+                        putExtra("USER_ID", currentUserId)
+                        putExtra("IS_ADMIN", true)
                     }
                     context.startActivity(intent)
                 }
