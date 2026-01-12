@@ -114,5 +114,16 @@ class ProductRepoImpl : ProductRepo {
             }
     }
 
+    override fun updateProductFields(productId: String, fields: Map<String, Any>, callback: (Boolean, String) -> Unit) {
+        val dbRef = FirebaseDatabase.getInstance().getReference("Products").child(productId)
+        dbRef.updateChildren(fields).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                callback(true, "Product updated successfully")
+            } else {
+                callback(false, task.exception?.message ?: "Update failed")
+            }
+        }
+    }
+
 
 }
