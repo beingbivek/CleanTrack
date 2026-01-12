@@ -153,13 +153,13 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(filteredProducts) { product ->
+                            // LOGIC:
+                            // We pass whether the user is the owner and if they are an admin.
                             ProductCard(
                                 product = product,
-                                // LOGIC UPDATE:
-                                // 1. Show icons if it's "My Listings" tab (Seller Mode)
-                                // 2. OR show ONLY Delete icon if user is Admin (Admin Mode)
-                                showManagementIcons = (showOnlyMyListings && product.sellerId == currentUserId) || isAdmin,
-                                isAdminMode = isAdmin, // New parameter to hide "Edit" for Admins
+                                isOwner = product.sellerId == currentUserId,
+                                isAdmin = isAdmin,
+                                isMyListingsTab = showOnlyMyListings,
                                 onEdit = {
                                     context.startActivity(Intent(context, AddListItemActivity::class.java).apply {
                                         putExtra("USER_ID", currentUserId)
@@ -185,9 +185,9 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
 @Composable
 fun ProductCard(
     product: ProductModel,
-    showManagementIcons: Boolean,
-    // Control icons via this boolean
-    isAdminMode: Boolean = false,
+    isOwner: Boolean,
+    isAdmin: Boolean,
+    isMyListingsTab: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit
@@ -240,18 +240,22 @@ fun ProductCard(
                     )
                 }
 
-                if (showManagementIcons) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        // Admin should not edit other's products, only Delete
-                        if (!isAdminMode) {
-                            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
-                            }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    // EDIT ICON:
+                    // Shown ONLY if user is Owner AND on the "My Listings" tab
+                    if (isOwner && isMyListingsTab) {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
                         }
+                    }
 
+                    // DELETE ICON:
+                    // 1. Shown to Owner ONLY if they are on "My Listings" tab
+                    // 2. Shown to Admin ALWAYS (on any tab)
+                    if ((isOwner && isMyListingsTab) || isAdmin) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
                         }
