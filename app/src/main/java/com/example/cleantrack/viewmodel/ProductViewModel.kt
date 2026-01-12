@@ -65,4 +65,14 @@ class ProductViewModel(val repo: ProductRepo) : ViewModel() {
             callback(success, message)
         }
     }
+
+    // Add these to ProductViewModel.kt
+
+    fun updateProduct(productId: String, model: Map<String, Any>, callback: (Boolean, String) -> Unit) {
+        repo.updateProduct(productId, model, callback)
+    }
+
+    fun deleteProduct(productId: String, callback: (Boolean, String) -> Unit) {
+        repo.deleteProduct(productId, callback)
+    }
 }
