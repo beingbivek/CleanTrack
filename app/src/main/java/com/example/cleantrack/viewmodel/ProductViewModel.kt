@@ -75,4 +75,17 @@ class ProductViewModel(val repo: ProductRepo) : ViewModel() {
     fun deleteProduct(productId: String, callback: (Boolean, String) -> Unit) {
         repo.deleteProduct(productId, callback)
     }
+
+    // Inside ProductViewModel.kt
+    fun updateStatus(productId: String, status: String, callback: (Boolean, String) -> Unit) {
+        repo.updateProductFields(productId, mapOf("productStatus" to status), callback)
+    }
+
+    fun relistProduct(productId: String, newEndTime: Long, callback: (Boolean, String) -> Unit) {
+        val updates = mapOf(
+            "auctionEndTime" to newEndTime,
+            "productStatus" to "active"
+        )
+        repo.updateProductFields(productId, updates, callback)
+    }
 }
