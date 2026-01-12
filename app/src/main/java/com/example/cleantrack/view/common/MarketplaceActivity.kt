@@ -46,15 +46,17 @@ class MarketplaceActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val currentUserId = intent.getStringExtra("USER_ID") ?: ""
-        setContent { MarketplaceScreen(currentUserId) }
+        // Check for the new boolean flag
+        val isAdmin = intent.getBooleanExtra("IS_ADMIN", false)
+        setContent { MarketplaceScreen(currentUserId, isAdmin) }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarketplaceScreen(currentUserId: String) {
+fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
     val context = LocalContext.current
-    val isAdmin = currentUserId == "admin" // Power check
+
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
     val products by productViewModel.allProducts.observeAsState(emptyList())
     val isLoading by productViewModel.loading.observeAsState(false)
