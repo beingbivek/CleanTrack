@@ -3,6 +3,7 @@ package com.example.cleantrack.view.common
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,10 +13,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,24 +38,15 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.cleantrack.model.ProductModel
 import com.example.cleantrack.repository.ProductRepoImpl
-import com.example.cleantrack.ui.theme.Black
-import com.example.cleantrack.ui.theme.Blue
-import com.example.cleantrack.ui.theme.Green
-import com.example.cleantrack.ui.theme.White
-// Ensure this import exists
+import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.viewmodel.ProductViewModel
 
 class MarketplaceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        // 1. Retrieve the USER_ID passed from the Login/Dashboard
         val currentUserId = intent.getStringExtra("USER_ID") ?: ""
-
-        setContent {
-            MarketplaceScreen(currentUserId)
-        }
+        setContent { MarketplaceScreen(currentUserId) }
     }
 }
 
@@ -59,18 +54,34 @@ class MarketplaceActivity : ComponentActivity() {
 @Composable
 fun MarketplaceScreen(currentUserId: String) {
     val context = LocalContext.current
-
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
     val products by productViewModel.allProducts.observeAsState(emptyList())
     val isLoading by productViewModel.loading.observeAsState(false)
 
     var searchQuery by remember { mutableStateOf("") }
-
-    // NEW: State for the seller filter (false = show all, true = show mine)
     var showOnlyMyListings by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        productViewModel.fetchAllProducts()
+    // State for Delete Confirmation
+    var productToDelete by remember { mutableStateOf<ProductModel?>(null) }
+
+    LaunchedEffect(Unit) { productViewModel.fetchAllProducts() }
+
+    // --- Delete Confirmation Dialog ---
+    if (productToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { productToDelete = null },
+            title = { Text("Delete Product?") },
+            text = { Text("Are you sure you want to remove '${productToDelete?.productName}'? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    productViewModel.deleteProduct(productToDelete!!.productId) { success, msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        productToDelete = null
+                    }
+                }) { Text("Delete", color = Color.Red) }
+            },
+            dismissButton = { TextButton(onClick = { productToDelete = null }) { Text("Cancel") } }
+        )
     }
 
     Scaffold(
@@ -79,7 +90,7 @@ fun MarketplaceScreen(currentUserId: String) {
                 title = { Text("CleanTrack Market", color = White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { (context as? Activity)?.finish() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -88,131 +99,76 @@ fun MarketplaceScreen(currentUserId: String) {
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    val intent = Intent(context, AddListItemActivity::class.java).apply {
+                    context.startActivity(Intent(context, AddListItemActivity::class.java).apply {
                         putExtra("USER_ID", currentUserId)
-                    }
-                    context.startActivity(intent)
+                    })
                 },
-                icon = { Icon(Icons.Filled.Add, "List Item") },
-                text = { Text("List Item", fontWeight = FontWeight.SemiBold) },
+                icon = { Icon(Icons.Filled.Add, null) },
+                text = { Text("List Item") },
                 containerColor = Green,
-                contentColor = White,
-                shape = RoundedCornerShape(50)
+                contentColor = White
             )
-        },
-        containerColor = Color.Transparent
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Blue, Green, Color.White),
-                        startY = 0f,
-                        endY = 1300f
-                    )
-                )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 20.dp)
-            ) {
-                // Search Bar
+        }
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Blue, Green, White), endY = 1300f))) {
+            Column(modifier = Modifier.padding(padding).padding(horizontal = 20.dp)) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text("Search for items...", color = White.copy(alpha = 0.7f)) },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = White.copy(alpha = 0.7f)) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = White,
-                        unfocusedBorderColor = White.copy(alpha = 0.5f),
-                        cursorColor = White,
-                        focusedTextColor = White,
-                        unfocusedTextColor = White
-                    )
+                    label = { Text("Search for items...", color = White.copy(0.7f)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp).clip(RoundedCornerShape(12.dp)),
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = White.copy(0.7f)) },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = White, unfocusedTextColor = White)
                 )
 
-                // --- UPDATED: FILTER CHIPS SECTION ---
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(modifier = Modifier.padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = !showOnlyMyListings,
                         onClick = { showOnlyMyListings = false },
                         label = { Text("All Items") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Green,
-                            selectedLabelColor = White,
-                            containerColor = White.copy(alpha = 0.2f),
-                            labelColor = White
-                        ),
-                        // FIXED: Using BorderStroke directly to avoid the "enabled" parameter error
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = 1.dp,
-                            color = if (!showOnlyMyListings) Green else White.copy(alpha = 0.5f)
-                        )
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (!showOnlyMyListings) Green else White.copy(0.5f))
                     )
-
                     FilterChip(
                         selected = showOnlyMyListings,
                         onClick = { showOnlyMyListings = true },
                         label = { Text("My Listings") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Green,
-                            selectedLabelColor = White,
-                            containerColor = White.copy(alpha = 0.2f),
-                            labelColor = White
-                        ),
-                        // FIXED: Using BorderStroke directly
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = 1.dp,
-                            color = if (showOnlyMyListings) Green else White.copy(alpha = 0.5f)
-                        )
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (showOnlyMyListings) Green else White.copy(0.5f))
                     )
                 }
 
-                // Updated combined filtering logic
-                val filteredProducts = products?.filter { product ->
-                    val matchesSearch = product.productName.contains(searchQuery, ignoreCase = true)
-                    val matchesSeller = if (showOnlyMyListings) product.sellerId == currentUserId else true
+                val filteredProducts = products?.filter {
+                    val matchesSearch = it.productName.contains(searchQuery, ignoreCase = true)
+                    val matchesSeller = if (showOnlyMyListings) it.sellerId == currentUserId else true
                     matchesSearch && matchesSeller
                 } ?: emptyList()
 
-                // Content Area
                 if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = White)
-                    }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = White) }
                 } else {
-                    if (filteredProducts.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No items found", color = White, fontWeight = FontWeight.Bold)
-                        }
-                    } else {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(filteredProducts) { product ->
-                                ProductCard(product = product) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(bottom = 80.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(filteredProducts) { product ->
+                            ProductCard(
+                                product = product,
+                                isOwner = product.sellerId == currentUserId,
+                                onEdit = {
+                                    context.startActivity(Intent(context, AddListItemActivity::class.java).apply {
+                                        putExtra("USER_ID", currentUserId)
+                                        putExtra("PRODUCT_ID", product.productId)
+                                    })
+                                },
+                                onDelete = { productToDelete = product },
+                                onClick = {
                                     context.startActivity(Intent(context, ProductDetailActivity::class.java).apply {
                                         putExtra("PRODUCT_ID", product.productId)
                                         putExtra("USER_ID", currentUserId)
                                     })
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -222,7 +178,13 @@ fun MarketplaceScreen(currentUserId: String) {
 }
 
 @Composable
-fun ProductCard(product: ProductModel, onClick: () -> Unit) {
+fun ProductCard(
+    product: ProductModel,
+    isOwner: Boolean,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -231,42 +193,83 @@ fun ProductCard(product: ProductModel, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column {
+            // 1. Fixed Image Height to keep grid items uniform
             AsyncImage(
                 model = product.pImageUrl,
-                contentDescription = product.productName,
+                contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .aspectRatio(1.2f)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = product.productName,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = "Current Bid: $${product.currentBidPrice}",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Green
-            )
 
-            val timeLeft = formatTimeRemaining(product.auctionEndTime - System.currentTimeMillis())
-            Text(
-                text = timeLeft,
-                fontSize = 11.sp,
-                color = if (timeLeft == "Ended") Color.Red else Color.Gray
-            )
+            // 2. Content and Actions Row
+            Row(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically // Keeps everything aligned in the center
+            ) {
+                // Info Section (Takes up available space)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = product.productName,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "$${product.currentBidPrice}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Green
+                    )
+                    val timeLeft = formatTimeRemaining(product.auctionEndTime - System.currentTimeMillis())
+                    Text(
+                        text = timeLeft,
+                        fontSize = 10.sp,
+                        color = if (timeLeft == "Ended") Color.Red else Color.Gray
+                    )
+                }
+
+                // 3. Horizontal Actions (Row after the text)
+                if (isOwner) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        IconButton(
+                            onClick = onEdit,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = Blue,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = Color.Red,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
-
 // Keep your existing FilterButton and formatTimeRemaining functions here...
 fun formatTimeRemaining(milliseconds: Long): String {
     if (milliseconds <= 0) return "Ended"
