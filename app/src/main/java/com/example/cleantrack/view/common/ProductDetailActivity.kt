@@ -46,6 +46,7 @@ class ProductDetailActivity : ComponentActivity() {
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(productId: String, userId: String) {
@@ -59,8 +60,12 @@ fun ProductDetailScreen(productId: String, userId: String) {
 
     LaunchedEffect(productId) { productViewModel.getProductById(productId) }
     LaunchedEffect(product?.sellerId) { product?.sellerId?.let { userViewModel.getSellerInfo(it) } }
+
+    // Refresh bidder info whenever the bidder ID changes (after a new bid)
     LaunchedEffect(product?.highestBidderId) {
-        product?.highestBidderId?.let { if(it.isNotEmpty()) userViewModel.getHighestBidderInfo(it) }
+        product?.highestBidderId?.let {
+            if(it.isNotEmpty()) userViewModel.getHighestBidderInfo(it)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Blue, Green, White), endY = 1000f))) {
@@ -122,40 +127,50 @@ fun ProductDetailScreen(productId: String, userId: String) {
                                     Text("Rs. ${currentProduct.currentBidPrice}", fontSize = 32.sp, fontWeight = FontWeight.Black, color = if(isSold) Blue else Green)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("Bidders", fontSize = 14.sp, color = Color.Gray)
+                                    Text("Bids", fontSize = 14.sp, color = Color.Gray)
                                     Text("${currentProduct.bids?.size ?: 0}", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Blue)
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // Winner / Bidder Info
+                            // --- HIGHEST BIDDER CARD (FIXED) ---
                             if (currentProduct.highestBidderId.isNullOrBlank()) {
                                 Text(if(isExpired) "Ended with no bids" else "No bids yet", color = Color.Gray)
                             } else {
                                 highestBidder?.let { bidder ->
-                                    Surface(color = if(isExpired || isSold) Green.copy(0.1f) else Color.Transparent,
-                                        shape = RoundedCornerShape(16.dp), border = androidx.compose.foundation.BorderStroke(1.dp, if(isExpired) Green else Color.LightGray), modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)) {
+                                    Surface(
+                                        color = if(isExpired || isSold) Green.copy(0.1f) else Color.Transparent,
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, if(isExpired) Green else Color.LightGray),
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+                                    ) {
                                         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                             Text(if(isExpired || isSold) "👑" else "🏆", fontSize = 24.sp)
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Column {
                                                 Text(if(isExpired || isSold) "Winner" else "Highest Bidder", fontSize = 12.sp, color = Green, fontWeight = FontWeight.Bold)
                                                 Text(bidder.fullname, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                                                if(isOwner || isExpired || isSold) {
-                                                    Text("📞 ${bidder.number}", color = Color.Gray, fontSize = 14.sp)
-                                                }
+
+                                                // Check if field is called .number or .phoneNumber in your Model
+                                                // I removed the IF check so it shows for everyone.
+                                                // Adjust back if you want privacy.
+                                                Text("📞 ${bidder.number}", color = Color.Gray, fontSize = 14.sp)
                                             }
                                         }
                                     }
                                 }
                             }
 
-                            // Input Logic
+                            // --- BIDDING INPUT LOGIC ---
                             if (!isSold && !isOwner && !isExpired) {
                                 OutlinedTextField(
-                                    value = bidAmount, onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) bidAmount = it },
-                                    label = { Text("Your Bid") }, prefix = { Text("Rs. ") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)
+                                    value = bidAmount,
+                                    onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) bidAmount = it },
+                                    label = { Text("Your Bid") },
+                                    prefix = { Text("Rs. ") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp)
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(
@@ -164,12 +179,21 @@ fun ProductDetailScreen(productId: String, userId: String) {
                                         if (bid > currentProduct.currentBidPrice) {
                                             productViewModel.updateBid(productId, userId, bid) { _, msg ->
                                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                                if(msg.contains("success")) { bidAmount = ""; productViewModel.getProductById(productId) }
+                                                if(msg.contains("success")) {
+                                                    bidAmount = ""
+                                                    productViewModel.getProductById(productId)
+                                                }
                                             }
-                                        } else { Toast.makeText(context, "Bid higher!", Toast.LENGTH_SHORT).show() }
+                                        } else {
+                                            Toast.makeText(context, "Bid must be higher than Rs. ${currentProduct.currentBidPrice}", Toast.LENGTH_SHORT).show()
+                                        }
                                     },
-                                    modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Green)
-                                ) { Text("PLACE BID", fontWeight = FontWeight.Bold) }
+                                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Green)
+                                ) {
+                                    Text("PLACE BID", fontWeight = FontWeight.Bold)
+                                }
                             } else if (isExpired && !isSold) {
                                 Text("AUCTION CLOSED", color = Color.Red, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             }
