@@ -54,6 +54,7 @@ class MarketplaceActivity : ComponentActivity() {
 @Composable
 fun MarketplaceScreen(currentUserId: String) {
     val context = LocalContext.current
+    val isAdmin = currentUserId == "admin" // Power check
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
     val products by productViewModel.allProducts.observeAsState(emptyList())
     val isLoading by productViewModel.loading.observeAsState(false)
@@ -61,12 +62,10 @@ fun MarketplaceScreen(currentUserId: String) {
     var searchQuery by remember { mutableStateOf("") }
     var showOnlyMyListings by remember { mutableStateOf(false) }
 
-    // State for Delete Confirmation
     var productToDelete by remember { mutableStateOf<ProductModel?>(null) }
 
     LaunchedEffect(Unit) { productViewModel.fetchAllProducts() }
 
-    // --- Delete Confirmation Dialog ---
     if (productToDelete != null) {
         AlertDialog(
             onDismissRequest = { productToDelete = null },
@@ -154,7 +153,11 @@ fun MarketplaceScreen(currentUserId: String) {
                         items(filteredProducts) { product ->
                             ProductCard(
                                 product = product,
-                                isOwner = product.sellerId == currentUserId,
+                                // LOGIC UPDATE:
+                                // 1. Show icons if it's "My Listings" tab (Seller Mode)
+                                // 2. OR show ONLY Delete icon if user is Admin (Admin Mode)
+                                showManagementIcons = (showOnlyMyListings && product.sellerId == currentUserId) || isAdmin,
+                                isAdminMode = isAdmin, // New parameter to hide "Edit" for Admins
                                 onEdit = {
                                     context.startActivity(Intent(context, AddListItemActivity::class.java).apply {
                                         putExtra("USER_ID", currentUserId)
@@ -180,7 +183,9 @@ fun MarketplaceScreen(currentUserId: String) {
 @Composable
 fun ProductCard(
     product: ProductModel,
-    isOwner: Boolean,
+    showManagementIcons: Boolean,
+    // Control icons via this boolean
+    isAdminMode: Boolean = false,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit
@@ -194,7 +199,6 @@ fun ProductCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            // 1. Fixed Image Height to keep grid items uniform
             AsyncImage(
                 model = product.pImageUrl,
                 contentDescription = null,
@@ -205,14 +209,12 @@ fun ProductCard(
                 contentScale = ContentScale.Crop
             )
 
-            // 2. Content and Actions Row
             Row(
                 modifier = Modifier
                     .padding(12.dp)
                     .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically // Keeps everything aligned in the center
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Info Section (Takes up available space)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = product.productName,
@@ -236,33 +238,20 @@ fun ProductCard(
                     )
                 }
 
-                // 3. Horizontal Actions (Row after the text)
-                if (isOwner) {
+                if (showManagementIcons) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        IconButton(
-                            onClick = onEdit,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit",
-                                tint = Blue,
-                                modifier = Modifier.size(18.dp)
-                            )
+                        // Admin should not edit other's products, only Delete
+                        if (!isAdminMode) {
+                            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
+                            }
                         }
-                        IconButton(
-                            onClick = onDelete,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = Color.Red,
-                                modifier = Modifier.size(18.dp)
-                            )
+
+                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -270,7 +259,7 @@ fun ProductCard(
         }
     }
 }
-// Keep your existing FilterButton and formatTimeRemaining functions here...
+
 fun formatTimeRemaining(milliseconds: Long): String {
     if (milliseconds <= 0) return "Ended"
     val seconds = milliseconds / 1000
