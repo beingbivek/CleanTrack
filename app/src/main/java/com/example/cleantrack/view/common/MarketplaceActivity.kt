@@ -57,7 +57,7 @@ class MarketplaceActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarketplaceScreen(currentUserId: String) { // 2. Accept the ID as a parameter
+fun MarketplaceScreen(currentUserId: String) {
     val context = LocalContext.current
 
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
@@ -65,6 +65,9 @@ fun MarketplaceScreen(currentUserId: String) { // 2. Accept the ID as a paramete
     val isLoading by productViewModel.loading.observeAsState(false)
 
     var searchQuery by remember { mutableStateOf("") }
+
+    // NEW: State for the seller filter (false = show all, true = show mine)
+    var showOnlyMyListings by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         productViewModel.fetchAllProducts()
@@ -85,7 +88,6 @@ fun MarketplaceScreen(currentUserId: String) { // 2. Accept the ID as a paramete
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    // 3. Pass the currentUserId to AddListItemActivity
                     val intent = Intent(context, AddListItemActivity::class.java).apply {
                         putExtra("USER_ID", currentUserId)
                     }
@@ -98,7 +100,6 @@ fun MarketplaceScreen(currentUserId: String) { // 2. Accept the ID as a paramete
                 shape = RoundedCornerShape(50)
             )
         },
-        floatingActionButtonPosition = FabPosition.End,
         containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
@@ -126,25 +127,65 @@ fun MarketplaceScreen(currentUserId: String) { // 2. Accept the ID as a paramete
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp)
+                        .padding(top = 16.dp)
                         .clip(RoundedCornerShape(12.dp)),
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = White.copy(alpha = 0.7f)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = White,
                         unfocusedBorderColor = White.copy(alpha = 0.5f),
                         cursorColor = White,
-                        focusedLabelColor = White,
-                        unfocusedLabelColor = White.copy(alpha = 0.7f),
-                        focusedContainerColor = White.copy(alpha = 0.1f),
-                        unfocusedContainerColor = White.copy(alpha = 0.05f),
                         focusedTextColor = White,
                         unfocusedTextColor = White
                     )
                 )
 
-                // Filtering logic
-                val filteredProducts = products?.filter {
-                    it.productName.contains(searchQuery, ignoreCase = true)
+                // --- UPDATED: FILTER CHIPS SECTION ---
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = !showOnlyMyListings,
+                        onClick = { showOnlyMyListings = false },
+                        label = { Text("All Items") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Green,
+                            selectedLabelColor = White,
+                            containerColor = White.copy(alpha = 0.2f),
+                            labelColor = White
+                        ),
+                        // FIXED: Using BorderStroke directly to avoid the "enabled" parameter error
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = 1.dp,
+                            color = if (!showOnlyMyListings) Green else White.copy(alpha = 0.5f)
+                        )
+                    )
+
+                    FilterChip(
+                        selected = showOnlyMyListings,
+                        onClick = { showOnlyMyListings = true },
+                        label = { Text("My Listings") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Green,
+                            selectedLabelColor = White,
+                            containerColor = White.copy(alpha = 0.2f),
+                            labelColor = White
+                        ),
+                        // FIXED: Using BorderStroke directly
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = 1.dp,
+                            color = if (showOnlyMyListings) Green else White.copy(alpha = 0.5f)
+                        )
+                    )
+                }
+
+                // Updated combined filtering logic
+                val filteredProducts = products?.filter { product ->
+                    val matchesSearch = product.productName.contains(searchQuery, ignoreCase = true)
+                    val matchesSeller = if (showOnlyMyListings) product.sellerId == currentUserId else true
+                    matchesSearch && matchesSeller
                 } ?: emptyList()
 
                 // Content Area
@@ -153,19 +194,24 @@ fun MarketplaceScreen(currentUserId: String) { // 2. Accept the ID as a paramete
                         CircularProgressIndicator(color = White)
                     }
                 } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(filteredProducts) { product ->
-                            ProductCard(product = product) {
-                                // 4. Also pass currentUserId to ProductDetail (needed for bidding)
-                                context.startActivity(Intent(context, ProductDetailActivity::class.java).apply {
-                                    putExtra("PRODUCT_ID", product.productId)
-                                    putExtra("USER_ID", currentUserId)
-                                })
+                    if (filteredProducts.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No items found", color = White, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(filteredProducts) { product ->
+                                ProductCard(product = product) {
+                                    context.startActivity(Intent(context, ProductDetailActivity::class.java).apply {
+                                        putExtra("PRODUCT_ID", product.productId)
+                                        putExtra("USER_ID", currentUserId)
+                                    })
+                                }
                             }
                         }
                     }
