@@ -62,16 +62,21 @@ fun ProductDetailScreen(productId: String, userId: String) {
 
     var bidAmount by remember { mutableStateOf("") }
 
+    // 1. Initial Fetch of the product
     LaunchedEffect(productId) {
         productViewModel.getProductById(productId)
     }
 
-    LaunchedEffect(product) {
-        product?.let { currentProduct ->
-            userViewModel.getSellerInfo(currentProduct.sellerId)
-            if (currentProduct.highestBidderId.isNotEmpty()) {
-                userViewModel.getHighestBidderInfo(currentProduct.highestBidderId)
-            }
+    // 2. Fetch Seller details when product loads
+    LaunchedEffect(product?.sellerId) {
+        product?.sellerId?.let { userViewModel.getSellerInfo(it) }
+    }
+
+    // 3. Fetch Bidder details whenever the bidder ID changes
+    LaunchedEffect(product?.highestBidderId) {
+        val bidderId = product?.highestBidderId
+        if (!bidderId.isNullOrBlank()) {
+            userViewModel.getHighestBidderInfo(bidderId)
         }
     }
 
@@ -146,7 +151,7 @@ fun ProductDetailScreen(productId: String, userId: String) {
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp), thickness = 0.8.dp)
 
-                            // 3. COMPARISON SECTION: Initial Bid, Current Bid, Total Bidders
+                            // 3. COMPARISON SECTION
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(horizontalAlignment = Alignment.Start) {
                                     Text("Initial Bid", fontSize = 13.sp, color = Color.Gray)
@@ -167,23 +172,35 @@ fun ProductDetailScreen(productId: String, userId: String) {
 
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // 4. HIGHEST BIDDER INFORMATION
-                            highestBidder?.let { bidder ->
-                                Surface(
-                                    color = Green.copy(0.1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Green.copy(0.2f)),
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
-                                ) {
-                                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("🏆", fontSize = 24.sp)
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text("Highest Bidder", fontSize = 14.sp, color = Green, fontWeight = FontWeight.Bold)
-                                            Text(bidder.fullname, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Black)
-                                            Text("📞 ${bidder?.number ?: "No Phone"}", color = Color.Gray, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                            // 4. HIGHEST BIDDER INFORMATION (UPDATED LOGIC)
+                            Column {
+                                if (currentProduct.highestBidderId.isNullOrBlank()) {
+                                    Text(
+                                        "No bids yet. Be the first to bid!",
+                                        modifier = Modifier.padding(bottom = 20.dp),
+                                        color = Color.Gray,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                } else {
+                                    highestBidder?.let { bidder ->
+                                        Surface(
+                                            color = Green.copy(0.1f),
+                                            shape = RoundedCornerShape(16.dp),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, Green.copy(0.2f)),
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+                                        ) {
+                                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                Text("🏆", fontSize = 24.sp)
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Column {
+                                                    Text("Highest Bidder", fontSize = 14.sp, color = Green, fontWeight = FontWeight.Bold)
+                                                    Text(bidder.fullname, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Black)
+                                                    Text("📞 ${bidder.number ?: "No Phone"}", color = Color.Gray, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                                                }
+                                            }
                                         }
-                                    }
+                                    } ?: Text("Loading bidder details...", color = Color.Gray, modifier = Modifier.padding(bottom = 20.dp))
                                 }
                             }
 
@@ -211,7 +228,11 @@ fun ProductDetailScreen(productId: String, userId: String) {
                                         if (enteredBid > currentProduct.currentBidPrice) {
                                             productViewModel.updateBid(productId, userId, enteredBid) { _, msg ->
                                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                                if (msg.contains("success", true)) bidAmount = ""
+                                                if (msg.contains("success", true)) {
+                                                    bidAmount = ""
+                                                    // Re-fetch product to get the new highestBidderId immediately
+                                                    productViewModel.getProductById(productId)
+                                                }
                                             }
                                         } else {
                                             Toast.makeText(context, "Bid must be higher than $${currentProduct.currentBidPrice}", Toast.LENGTH_SHORT).show()
