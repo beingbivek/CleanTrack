@@ -16,4 +16,6 @@ interface ProductRepo {
     fun updateProduct(productId: String, model: Map<String, Any>, callback: (Boolean, String) -> Unit)
 
     fun deleteProduct(productId: String, callback: (Boolean, String) -> Unit)
+
+    fun updateProductFields(productId: String, fields: Map<String, Any>, callback: (Boolean, String) -> Unit)
 }
