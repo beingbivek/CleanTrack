@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -46,7 +45,6 @@ class MarketplaceActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val currentUserId = intent.getStringExtra("USER_ID") ?: ""
-        // Check for the new boolean flag
         val isAdmin = intent.getBooleanExtra("IS_ADMIN", false)
         setContent { MarketplaceScreen(currentUserId, isAdmin) }
     }
@@ -62,7 +60,9 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
     val isLoading by productViewModel.loading.observeAsState(false)
 
     var searchQuery by remember { mutableStateOf("") }
-    var showOnlyMyListings by remember { mutableStateOf(false) }
+
+    // Updated: 0 = All, 1 = My Listings, 2 = Purchased
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     var productToDelete by remember { mutableStateOf<ProductModel?>(null) }
 
@@ -75,7 +75,7 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
             text = { Text("Are you sure you want to remove '${productToDelete?.productName}'? This action cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = {
-                    productViewModel.deleteProduct(productToDelete!!.productId) { success, msg ->
+                    productViewModel.deleteProduct(productToDelete!!.productId) { _, msg ->
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         productToDelete = null
                     }
@@ -122,32 +122,46 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                     colors = OutlinedTextFieldDefaults.colors(focusedTextColor = White, unfocusedTextColor = White)
                 )
 
-                Row(modifier = Modifier.padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Updated: Filter row with three options
+                Row(
+                    modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     FilterChip(
-                        selected = !showOnlyMyListings,
-                        onClick = { showOnlyMyListings = false },
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
                         label = { Text("All Items") },
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (!showOnlyMyListings) Green else White.copy(0.5f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedTab == 0) Green else White.copy(0.5f))
                     )
                     FilterChip(
-                        selected = showOnlyMyListings,
-                        onClick = { showOnlyMyListings = true },
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
                         label = { Text("My Listings") },
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (showOnlyMyListings) Green else White.copy(0.5f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedTab == 1) Green else White.copy(0.5f))
+                    )
+                    FilterChip(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        label = { Text("Purchased") },
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedTab == 2) Green else White.copy(0.5f))
                     )
                 }
 
-                // Inside MarketplaceScreen
                 val filteredProducts = products?.filter {
                     val matchesSearch = it.productName.contains(searchQuery, ignoreCase = true)
-                    val matchesSeller = it.sellerId == currentUserId
 
-                    if (showOnlyMyListings) {
-                        matchesSearch && matchesSeller
-                    } else {
-                        // Only show items that are ACTIVE and haven't timed out
-                        val isNotExpired = it.auctionEndTime > System.currentTimeMillis()
-                        matchesSearch && it.productStatus == "active" && isNotExpired
+                    when(selectedTab) {
+                        0 -> { // ALL ITEMS: Active and not expired
+                            val isNotExpired = it.auctionEndTime > System.currentTimeMillis()
+                            matchesSearch && it.productStatus == "active" && isNotExpired
+                        }
+                        1 -> { // MY LISTINGS: Created by me
+                            matchesSearch && it.sellerId == currentUserId
+                        }
+                        2 -> { // PURCHASED: I am the highest bidder and it is marked SOLD
+                            matchesSearch && it.highestBidderId == currentUserId && it.productStatus == "sold"
+                        }
+                        else -> false
                     }
                 } ?: emptyList()
 
@@ -161,13 +175,12 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(filteredProducts) { product ->
-                            // LOGIC:
-                            // We pass whether the user is the owner and if they are an admin.
                             ProductCard(
                                 product = product,
                                 isOwner = product.sellerId == currentUserId,
                                 isAdmin = isAdmin,
-                                isMyListingsTab = showOnlyMyListings,
+                                currentUserId = currentUserId,
+                                isMyListingsTab = (selectedTab == 1),
                                 productViewModel = productViewModel,
                                 onEdit = {
                                     context.startActivity(Intent(context, AddListItemActivity::class.java).apply {
@@ -196,6 +209,7 @@ fun ProductCard(
     product: ProductModel,
     isOwner: Boolean,
     isAdmin: Boolean,
+    currentUserId: String,
     isMyListingsTab: Boolean,
     productViewModel: ProductViewModel,
     onEdit: () -> Unit,
@@ -204,63 +218,53 @@ fun ProductCard(
 ) {
     val context = LocalContext.current
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            AsyncImage(
-                model = product.pImageUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.2f)
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                contentScale = ContentScale.Crop
-            )
+            Box {
+                AsyncImage(
+                    model = product.pImageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1.2f).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Overlay Badge for Purchased Items
+                if (product.productStatus == "sold" && product.highestBidderId == currentUserId) {
+                    Surface(
+                        color = Blue,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text("WON", color = White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                    }
+                }
+            }
 
             Row(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .fillMaxWidth(),
+                modifier = Modifier.padding(12.dp).fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = product.productName,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Black,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "Rs. ${product.currentBidPrice}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Green
-                    )
+                    Text(text = product.productName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = "Rs. ${product.currentBidPrice}", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Green)
+
                     val timeLeft = formatTimeRemaining(product.auctionEndTime - System.currentTimeMillis())
                     Text(
-                        text = timeLeft,
+                        text = if (product.productStatus == "sold") "Sold" else timeLeft,
                         fontSize = 10.sp,
-                        color = if (timeLeft == "Ended") Color.Red else Color.Gray
+                        color = if (timeLeft == "Ended" || product.productStatus == "sold") Color.Red else Color.Gray
                     )
                 }
 
-                // Inside ProductCard Row (MarketplaceActivity.kt)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     if (isOwner && isMyListingsTab) {
                         val isExpired = product.auctionEndTime < System.currentTimeMillis()
                         val hasBids = !product.highestBidderId.isNullOrBlank()
 
-                        // RELIST: Item ended, nobody bid.
                         if (isExpired && !hasBids) {
                             TextButton(onClick = {
                                 val newTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000)
@@ -272,7 +276,6 @@ fun ProductCard(
                             }
                         }
 
-                        // MARK AS SOLD: Item ended, there is a winner.
                         if (isExpired && hasBids && product.productStatus != "sold") {
                             Button(
                                 onClick = { productViewModel.updateStatus(product.productId, "sold") { _, _ -> } },
@@ -284,7 +287,6 @@ fun ProductCard(
                             }
                         }
 
-                        // EDIT: Only if not sold
                         if (product.productStatus == "active") {
                             IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                                 Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
@@ -292,7 +294,6 @@ fun ProductCard(
                         }
                     }
 
-                    // DELETE: Admin always or Owner on My Listings
                     if ((isOwner && isMyListingsTab) || isAdmin) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
