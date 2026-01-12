@@ -96,8 +96,23 @@ class ProductRepoImpl : ProductRepo {
         })
     }
 
+    // Add these to ProductRepoImpl.kt
 
+    override fun updateProduct(productId: String, model: Map<String, Any>, callback: (Boolean, String) -> Unit) {
+        ref.child(productId).updateChildren(model)
+            .addOnCompleteListener {
+                if (it.isSuccessful) callback(true, "Product updated successfully")
+                else callback(false, it.exception?.message ?: "Update failed")
+            }
+    }
 
+    override fun deleteProduct(productId: String, callback: (Boolean, String) -> Unit) {
+        ref.child(productId).removeValue()
+            .addOnCompleteListener {
+                if (it.isSuccessful) callback(true, "Product deleted")
+                else callback(false, it.exception?.message ?: "Delete failed")
+            }
+    }
 
 
 }
