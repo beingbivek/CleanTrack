@@ -1,6 +1,7 @@
 package com.example.cleantrack.view.common
 
 import android.app.Activity
+import android.app.DatePickerDialog
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -17,15 +18,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,13 +36,15 @@ import com.example.cleantrack.repository.ProductRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.viewmodel.CommonImageViewModel
 import com.example.cleantrack.viewmodel.ProductViewModel
+import java.util.*
+import java.text.SimpleDateFormat
 
 class AddListItemActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val userId = intent.getStringExtra("USER_ID") ?: ""
-        val productId = intent.getStringExtra("PRODUCT_ID") // Existing ID for Edit Mode
+        val productId = intent.getStringExtra("PRODUCT_ID")
 
         setContent { AddListItemScreen(userId, productId) }
     }
@@ -57,6 +58,7 @@ fun AddListItemScreen(userId: String, productId: String?) {
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
     val imageViewModel = remember { CommonImageViewModel(CommonImageRepoImpl()) }
 
+    // Form States
     var productName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var startingPrice by remember { mutableStateOf("") }
@@ -65,6 +67,30 @@ fun AddListItemScreen(userId: String, productId: String?) {
     var existingImageUrl by remember { mutableStateOf<String?>(null) }
     var isUploading by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
+
+    // New Auction Date States
+    var auctionEndTimeStamp by remember { mutableLongStateOf(0L) }
+    var auctionDateDisplay by remember { mutableStateOf("Select End Date") }
+
+    // Date Formatter
+    val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+
+    // Setup DatePickerDialog
+    val calendar = Calendar.getInstance()
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, day ->
+            val selectedCalendar = Calendar.getInstance()
+            // Set to end of the day (11:59 PM)
+            selectedCalendar.set(year, month, day, 23, 59, 59)
+            auctionEndTimeStamp = selectedCalendar.timeInMillis
+            auctionDateDisplay = sdf.format(selectedCalendar.time)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+    datePickerDialog.datePicker.minDate = System.currentTimeMillis()
 
     // FETCH DATA IF EDITING
     LaunchedEffect(productId) {
@@ -79,6 +105,8 @@ fun AddListItemScreen(userId: String, productId: String?) {
             startingPrice = it.startingBidPrice.toString()
             selectedCategory = it.pCategory
             existingImageUrl = it.pImageUrl
+            auctionEndTimeStamp = it.auctionEndTime
+            auctionDateDisplay = sdf.format(Date(it.auctionEndTime))
         }
     }
 
@@ -126,6 +154,23 @@ fun AddListItemScreen(userId: String, productId: String?) {
 
             Spacer(modifier = Modifier.height(15.dp))
 
+            // NEW: Auction End Date Picker UI
+            OutlinedTextField(
+                value = auctionDateDisplay,
+                onValueChange = {},
+                label = { Text("Auction End Date") },
+                modifier = Modifier.fillMaxWidth().clickable { datePickerDialog.show() },
+                enabled = false,
+                trailingIcon = { Icon(Icons.Default.DateRange, null, tint = Green) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = Black,
+                    disabledBorderColor = Color.Gray,
+                    disabledLabelColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(15.dp))
+
             OutlinedTextField(value = startingPrice, onValueChange = { startingPrice = it }, label = { Text("Starting Price (Rs.)") }, modifier = Modifier.fillMaxWidth())
 
             Spacer(modifier = Modifier.height(15.dp))
@@ -136,17 +181,23 @@ fun AddListItemScreen(userId: String, productId: String?) {
 
             Button(
                 onClick = {
+                    if (auctionEndTimeStamp == 0L) {
+                        Toast.makeText(context, "Please select an auction end date", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
                     val price = startingPrice.toDoubleOrNull() ?: 0.0
                     isUploading = true
 
                     val saveProduct: (String) -> Unit = { finalUrl ->
                         if (isEditMode) {
-                            val updateData = mapOf(
+                            val updateData = mutableMapOf(
                                 "productName" to productName,
                                 "pDescription" to description,
                                 "pCategory" to selectedCategory,
                                 "startingBidPrice" to price,
-                                "pImageUrl" to finalUrl
+                                "pImageUrl" to finalUrl,
+                                "auctionEndTime" to auctionEndTimeStamp
                             )
                             productViewModel.updateProduct(productId!!, updateData) { success, msg ->
                                 isUploading = false
@@ -154,7 +205,17 @@ fun AddListItemScreen(userId: String, productId: String?) {
                                 if (success) (context as Activity).finish()
                             }
                         } else {
-                            val newProduct = ProductModel(productName = productName, pDescription = description, pImageUrl = finalUrl, pCategory = selectedCategory, startingBidPrice = price, currentBidPrice = price, sellerId = userId, auctionEndTime = System.currentTimeMillis() + 86400000)
+                            val newProduct = ProductModel(
+                                productName = productName,
+                                pDescription = description,
+                                pImageUrl = finalUrl,
+                                pCategory = selectedCategory,
+                                startingBidPrice = price,
+                                currentBidPrice = price,
+                                sellerId = userId,
+                                auctionEndTime = auctionEndTimeStamp,
+                                productStatus = "active"
+                            )
                             productViewModel.addProduct(newProduct) { success, msg ->
                                 isUploading = false
                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
