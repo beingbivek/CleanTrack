@@ -155,12 +155,12 @@ fun ProductDetailScreen(productId: String, userId: String) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(horizontalAlignment = Alignment.Start) {
                                     Text("Initial Bid", fontSize = 13.sp, color = Color.Gray)
-                                    Text("$${currentProduct.startingBidPrice}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
+                                    Text("Rs. ${currentProduct.startingBidPrice}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
                                 }
 
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Current Bid", fontSize = 14.sp, color = Color.Gray)
-                                    Text("$${currentProduct.currentBidPrice}", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Green)
+                                    Text("Rs. ${currentProduct.currentBidPrice}", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Green)
                                 }
 
                                 Column(horizontalAlignment = Alignment.End) {
@@ -214,7 +214,7 @@ fun ProductDetailScreen(productId: String, userId: String) {
                                     value = bidAmount,
                                     onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) bidAmount = it },
                                     label = { Text("Your Bid Amount", fontWeight = FontWeight.Bold) },
-                                    prefix = { Text("$ ", fontWeight = FontWeight.Bold) },
+                                    prefix = { Text("Rs. ", fontWeight = FontWeight.Bold) },
                                     modifier = Modifier.fillMaxWidth(),
                                     textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
                                     shape = RoundedCornerShape(16.dp)
@@ -235,7 +235,7 @@ fun ProductDetailScreen(productId: String, userId: String) {
                                                 }
                                             }
                                         } else {
-                                            Toast.makeText(context, "Bid must be higher than $${currentProduct.currentBidPrice}", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Bid must be higher than Rs.${currentProduct.currentBidPrice}", Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth().height(60.dp),
