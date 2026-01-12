@@ -126,7 +126,7 @@ fun AddListItemScreen(userId: String, productId: String?) {
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            OutlinedTextField(value = startingPrice, onValueChange = { startingPrice = it }, label = { Text("Starting Price ($)") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = startingPrice, onValueChange = { startingPrice = it }, label = { Text("Starting Price (Rs.)") }, modifier = Modifier.fillMaxWidth())
 
             Spacer(modifier = Modifier.height(15.dp))
 
