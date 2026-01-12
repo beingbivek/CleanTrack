@@ -42,6 +42,7 @@ import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.R
+import com.example.cleantrack.view.common.MarketplaceActivity
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,7 +64,11 @@ fun UserDashboardBody() {
         UserViewModel(UserRepoImpl(), BinCollectionRepoImpl())
     }
 
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
+
     val userProfile by userViewModel.user.observeAsState()
+
+    // 1. Observe the specific points LiveData
     val currentPoints by userViewModel.userPoints.observeAsState(0)
 
     // 2. Observe the latest collection for AI Feedback
@@ -265,7 +270,10 @@ fun HomeSection(
                     QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java)) }
                     QuickIcon(Icons.Default.Route, "Routes") { context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) }
                     QuickIcon(Icons.Default.CalendarMonth, "Schedule") { context.startActivity(Intent(context, UserScheduleListActivity::class.java)) }
-                    QuickIcon(Icons.Default.RestoreFromTrash, "Bin Collection") { context.startActivity(Intent(context, UserBinListActivity::class.java)) }
+                    QuickIcon(Icons.Default.ShoppingBag, "Market"){ context.startActivity(Intent(context,
+                        MarketplaceActivity::class.java).apply {
+                        putExtra("USER_ID", currentUserId) // Passing the ID here
+                    }) }
                 }
             }
         }

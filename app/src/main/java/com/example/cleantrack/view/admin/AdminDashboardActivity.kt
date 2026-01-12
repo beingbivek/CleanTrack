@@ -30,6 +30,7 @@ import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.auth.StartActivity
 import com.example.cleantrack.view.common.LogoutDialog
+import com.example.cleantrack.view.common.MarketplaceActivity
 import com.example.cleantrack.view.common.TermsAndConditionActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 
@@ -54,6 +55,8 @@ fun AdminDashboardScreen() {
 
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     LogoutDialog(
@@ -148,6 +151,20 @@ fun AdminDashboardScreen() {
                     context.startActivity(
                         Intent(context, AdminVehicleListActivity::class.java)
                     )
+                }
+            }
+
+            item {
+                DashboardCard(
+                    title = "Manage Marketplace",
+                    icon = Icons.Default.Storefront
+                ) {
+                    val intent = Intent(context, MarketplaceActivity::class.java).apply {
+                        // Pass "admin" as the user ID so the Marketplace knows to show admin controls
+                        putExtra("USER_ID", currentUserId)
+                        putExtra("IS_ADMIN", true)
+                    }
+                    context.startActivity(intent)
                 }
             }
 
