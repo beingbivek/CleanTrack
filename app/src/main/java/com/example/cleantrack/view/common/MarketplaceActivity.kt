@@ -54,16 +54,12 @@ class MarketplaceActivity : ComponentActivity() {
 @Composable
 fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
     val context = LocalContext.current
-
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
     val products by productViewModel.allProducts.observeAsState(emptyList())
     val isLoading by productViewModel.loading.observeAsState(false)
 
     var searchQuery by remember { mutableStateOf("") }
-
-    // Updated: 0 = All, 1 = My Listings, 2 = Purchased
     var selectedTab by remember { mutableIntStateOf(0) }
-
     var productToDelete by remember { mutableStateOf<ProductModel?>(null) }
 
     LaunchedEffect(Unit) { productViewModel.fetchAllProducts() }
@@ -122,45 +118,27 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                     colors = OutlinedTextFieldDefaults.colors(focusedTextColor = White, unfocusedTextColor = White)
                 )
 
-                // Updated: Filter row with three options
                 Row(
                     modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FilterChip(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        label = { Text("All Items") },
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedTab == 0) Green else White.copy(0.5f))
-                    )
-                    FilterChip(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        label = { Text("My Listings") },
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedTab == 1) Green else White.copy(0.5f))
-                    )
-                    FilterChip(
-                        selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 },
-                        label = { Text("Purchased") },
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedTab == 2) Green else White.copy(0.5f))
-                    )
+                    val tabs = listOf("All Items", "My Listings", "Purchased")
+                    tabs.forEachIndexed { index, title ->
+                        FilterChip(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            label = { Text(title) },
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedTab == index) Green else White.copy(0.5f))
+                        )
+                    }
                 }
 
                 val filteredProducts = products?.filter {
                     val matchesSearch = it.productName.contains(searchQuery, ignoreCase = true)
-
                     when(selectedTab) {
-                        0 -> { // ALL ITEMS: Active and not expired
-                            val isNotExpired = it.auctionEndTime > System.currentTimeMillis()
-                            matchesSearch && it.productStatus == "active" && isNotExpired
-                        }
-                        1 -> { // MY LISTINGS: Created by me
-                            matchesSearch && it.sellerId == currentUserId
-                        }
-                        2 -> { // PURCHASED: I am the highest bidder and it is marked SOLD
-                            matchesSearch && it.highestBidderId == currentUserId && it.productStatus == "sold"
-                        }
+                        0 -> matchesSearch && it.productStatus == "active" && it.auctionEndTime > System.currentTimeMillis()
+                        1 -> matchesSearch && it.sellerId == currentUserId
+                        2 -> matchesSearch && it.highestBidderId == currentUserId && it.productStatus == "sold"
                         else -> false
                     }
                 } ?: emptyList()
@@ -217,6 +195,9 @@ fun ProductCard(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val isExpired = product.auctionEndTime < System.currentTimeMillis()
+    val hasBids = !product.highestBidderId.isNullOrBlank()
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
@@ -231,71 +212,77 @@ fun ProductCard(
                     modifier = Modifier.fillMaxWidth().aspectRatio(1.2f).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                     contentScale = ContentScale.Crop
                 )
-
-                // Overlay Badge for Purchased Items
                 if (product.productStatus == "sold" && product.highestBidderId == currentUserId) {
-                    Surface(
-                        color = Blue,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
+                    Surface(color = Blue, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp), shape = RoundedCornerShape(4.dp)) {
                         Text("WON", color = White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                     }
                 }
             }
 
-            Row(
-                modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = product.productName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(text = "Rs. ${product.currentBidPrice}", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Green)
+            // --- CONTENT AREA ---
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(text = product.productName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = "Rs. ${product.currentBidPrice}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Green)
 
-                    val timeLeft = formatTimeRemaining(product.auctionEndTime - System.currentTimeMillis())
-                    Text(
-                        text = if (product.productStatus == "sold") "Sold" else timeLeft,
-                        fontSize = 10.sp,
-                        color = if (timeLeft == "Ended" || product.productStatus == "sold") Color.Red else Color.Gray
-                    )
-                }
+                val timeLeft = formatTimeRemaining(product.auctionEndTime - System.currentTimeMillis())
+                Text(
+                    text = if (product.productStatus == "sold") "Sold" else timeLeft,
+                    fontSize = 11.sp,
+                    color = if (timeLeft == "Ended" || product.productStatus == "sold") Color.Red else Color.Gray
+                )
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    if (isOwner && isMyListingsTab) {
-                        val isExpired = product.auctionEndTime < System.currentTimeMillis()
-                        val hasBids = !product.highestBidderId.isNullOrBlank()
+                // --- ACTION AREA (Relist / Mark Sold) ---
+                if (isOwner && isMyListingsTab) {
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                        if (isExpired && !hasBids) {
-                            TextButton(onClick = {
+                    if (isExpired && !hasBids) {
+                        Button(
+                            onClick = {
                                 val newTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000)
                                 productViewModel.relistProduct(product.productId, newTime) { _, msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                 }
-                            }) {
-                                Text("Relist", color = Blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        if (isExpired && hasBids && product.productStatus != "sold") {
-                            Button(
-                                onClick = { productViewModel.updateStatus(product.productId, "sold") { _, _ -> } },
-                                colors = ButtonDefaults.buttonColors(containerColor = Green),
-                                contentPadding = PaddingValues(horizontal = 8.dp),
-                                modifier = Modifier.height(30.dp)
-                            ) {
-                                Text("Mark Sold", fontSize = 10.sp, color = White)
-                            }
-                        }
-
-                        if (product.productStatus == "active") {
-                            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
-                            }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(32.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Relist Item", fontSize = 11.sp, color = White)
                         }
                     }
 
-                    if ((isOwner && isMyListingsTab) || isAdmin) {
-                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    if (isExpired && hasBids && product.productStatus != "sold") {
+                        Button(
+                            onClick = { productViewModel.updateStatus(product.productId, "sold") { _, _ -> } },
+                            modifier = Modifier.fillMaxWidth().height(32.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Green),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Mark Sold", fontSize = 11.sp, color = White)
+                        }
+                    }
+
+                    // Edit/Delete Icon Row (Moved below the big buttons for clarity)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (product.productStatus == "active") {
+                            IconButton(onClick = onEdit, modifier = Modifier.size(30.dp)) {
+                                Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                        IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
+                            Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                } else if (isAdmin) {
+                    // Admins only see Delete icon
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
                             Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
                         }
                     }
@@ -311,7 +298,6 @@ fun formatTimeRemaining(milliseconds: Long): String {
     val minutes = seconds / 60
     val hours = minutes / 60
     val days = hours / 24
-
     return when {
         days > 0 -> "${days}d left"
         hours > 0 -> "${hours}h left"
