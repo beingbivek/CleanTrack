@@ -22,35 +22,20 @@
             android:name=".view.common.AddListItemActivity"
             android:exported="true"
             android:label="@string/title_activity_add_list_item"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            android:theme="@style/Theme.CleanTrack"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".view.common.ProductDetailActivity"
             android:exported="true"
             android:label="@string/title_activity_product_detail"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            android:theme="@style/Theme.CleanTrack"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".view.common.MarketplaceActivity"
             android:exported="true"
             android:label="@string/title_activity_marketplace"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            android:theme="@style/Theme.CleanTrack"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".view.driver.DriversTripHistoryActivity"
             android:exported="true"
