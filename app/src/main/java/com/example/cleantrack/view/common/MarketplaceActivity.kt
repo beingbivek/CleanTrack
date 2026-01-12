@@ -227,7 +227,7 @@ fun ProductCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "$${product.currentBidPrice}",
+                        text = "Rs. ${product.currentBidPrice}",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Green
