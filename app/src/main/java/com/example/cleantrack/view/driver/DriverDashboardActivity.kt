@@ -44,6 +44,9 @@ import com.example.cleantrack.view.user.QuickIcon
 import com.example.cleantrack.view.user.UserAnnouncementListActivity
 import com.example.cleantrack.viewmodel.*
 import com.google.android.gms.location.LocationServices
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private lateinit var fusedLocationClient: com.google.android.gms.location.FusedLocationProviderClient
 
@@ -140,6 +143,31 @@ fun DriverDashboardBody() {
         }
     }
 
+    // --- AUTO-REFRESH/TERMINATE ON TIME EXPIRY ---
+    LaunchedEffect(assignedSchedule, activeTrip) {
+        assignedSchedule?.let { schedule ->
+            if (activeTrip?.status == "ACTIVE") {
+                val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+                val currentTime = sdf.format(Date())
+
+                if (currentTime > schedule.endTime) {
+                    // This triggers the force-end logic we wrote in the ViewModel
+                    tripViewModel.startTripWithValidation(schedule) { _, message ->
+                        Toast.makeText(context, "Shift ended: $message", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(activeTrip?.status) {
+        if (activeTrip?.status == "COMPLETED") {
+            assignedSchedule?.routeId?.let { routeId ->
+                tripViewModel.observeActiveTripByRoute(routeId)
+            }
+        }
+    }
+
     DisposableEffect(Unit) { onDispose { fusedLocationClient.removeLocationUpdates(locationCallback) } }
 
     // --- 4. UI ---
@@ -197,6 +225,10 @@ fun DriverHomeSection(
     val context = LocalContext.current
     val isTripActive = activeTrip?.status == "ACTIVE"
     val isTripCompleted = activeTrip?.status == "COMPLETED"
+    // Check if time is currently expired
+    val sdf = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val currentTime = sdf.format(Date())
+    val isTimeExpired = assignedSchedule?.let { currentTime > it.endTime } ?: false
 
     Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp).verticalScroll(rememberScrollState())) {
         Spacer(modifier = Modifier.height(20.dp))
@@ -292,15 +324,18 @@ fun DriverHomeSection(
                 onClick = {
                     if (isTripActive) onEndTrip()
                     else {
-                        // Handles both first-time start and resume-from-completed
-                        tripVM.startTripWithValidation(assignedSchedule) { _, m -> Toast.makeText(context, m, Toast.LENGTH_SHORT).show() }
+                        tripVM.startTripWithValidation(assignedSchedule!!) { _, m ->
+                            Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                        }
                     }
                 },
+                enabled = !isTimeExpired || isTripActive, // Allow stopping if active, but block starting if expired
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(15.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = when {
                         isTripActive -> Red
+                        isTimeExpired -> Color.Gray // Gray out if shift is over
                         isTripCompleted -> Blue
                         else -> Green
                     }
@@ -309,6 +344,7 @@ fun DriverHomeSection(
                 Text(
                     text = when {
                         isTripActive -> "Stop Tracking & End Route"
+                        isTimeExpired -> "Shift Time Expired"
                         isTripCompleted -> "Resume Today's Route"
                         else -> "Start Collection Route"
                     },
