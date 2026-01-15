@@ -75,8 +75,6 @@ class PaymentRepoImpl : PaymentRepo {
     override suspend fun activateSubscription(userId: String, transactionId: String): Result<Boolean> {
         return try {
             val startDate = System.currentTimeMillis()
-
-            // Calculate 30 days from now
             val calendar = Calendar.getInstance()
             calendar.add(Calendar.DAY_OF_YEAR, 30)
             val expiryDate = calendar.timeInMillis
@@ -88,11 +86,24 @@ class PaymentRepoImpl : PaymentRepo {
                 lastTransactionId = transactionId
             )
 
-            // Save to: users/{userId}/subscription
+            // 1. Update current subscription status
             userRef.child(userId).child("subscription").setValue(subscription).await()
+
+            // 2. Add to Payment History list for the user
+            // This allows the user to see ALL past receipts
+            userRef.child(userId).child("paymentHistory").push().setValue(subscription).await()
+
             Result.success(true)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    // Add this to fetch history
+    suspend fun getPaymentHistory(userId: String, callback: (List<SubscriptionModel>) -> Unit) {
+        userRef.child(userId).child("paymentHistory").get().addOnSuccessListener { snapshot ->
+            val history = snapshot.children.mapNotNull { it.getValue(SubscriptionModel::class.java) }
+            callback(history.sortedByDescending { it.startDate })
         }
     }
 
