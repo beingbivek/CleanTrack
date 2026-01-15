@@ -5,10 +5,13 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleantrack.model.SubscriptionModel
+import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.PaymentRepo
 import com.example.cleantrack.repository.UserRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 class PaymentViewModel(
     private val paymentRepo: PaymentRepo,
@@ -40,28 +43,50 @@ class PaymentViewModel(
         _paymentStatus.value = PaymentState.Loading
 
         viewModelScope.launch(Dispatchers.IO) {
-            // 1. Fetch User Details for Payment (Optional, but good practice)
-            // For now, using dummy or basic data
-            val email = "user@cleantrack.com"
-            val phone = "9800000000"
-
-            // 2. Call Payment API
-            val payResult = paymentRepo.initiatePayment(amount, email, phone)
-
-            if (payResult.isSuccess) {
-                val txnId = payResult.getOrNull() ?: "UNKNOWN"
-
-                // 3. If Payment API succeeds, Update Firebase
-                val dbResult = paymentRepo.activateSubscription(userId, txnId)
-
-                if (dbResult.isSuccess) {
-                    _paymentStatus.postValue(PaymentState.Success("Subscription Active! Valid for 30 Days."))
-                    loadSubscriptionStatus() // Refresh UI
-                } else {
-                    _paymentStatus.postValue(PaymentState.Error("Payment charged but DB update failed. Contact Support: $txnId"))
+            try {
+                // 1. Fetch user profile using your existing callback-based method
+                val user = suspendCancellableCoroutine<UserModel?> { continuation ->
+                    userRepo.getUserById(userId) { success, message, userModel ->
+                        if (success && userModel != null) {
+                            continuation.resume(userModel)
+                        } else {
+                            continuation.resume(null)
+                        }
+                    }
                 }
-            } else {
-                _paymentStatus.postValue(PaymentState.Error(payResult.exceptionOrNull()?.message ?: "Unknown Error"))
+
+                if (user == null) {
+                    _paymentStatus.postValue(PaymentState.Error("Could not retrieve user profile info"))
+                    return@launch
+                }
+
+                // 2. Extract real data (assuming UserModel has 'email' and 'phone')
+                // Using elvis operators as fallbacks to prevent API crashes
+                val email = user.email.ifEmpty { "no-email@cleantrack.com" }
+                val phone = user.number.ifEmpty { "0000000000" }
+
+                // 3. Initiate Payment with REAL user info
+                val payResult = paymentRepo.initiatePayment(amount, email, phone)
+
+                if (payResult.isSuccess) {
+                    val txnId = payResult.getOrNull() ?: "UNKNOWN"
+
+                    // 4. Update Database Subscription
+                    val dbResult = paymentRepo.activateSubscription(userId, txnId)
+
+                    if (dbResult.isSuccess) {
+                        _paymentStatus.postValue(PaymentState.Success("Subscription Active!"))
+                        loadSubscriptionStatus()
+                    } else {
+                        _paymentStatus.postValue(PaymentState.Error("Paid successfully, but failed to update status. TXN: $txnId"))
+                    }
+                } else {
+                    val errorMsg = payResult.exceptionOrNull()?.message ?: "Payment Failed"
+                    _paymentStatus.postValue(PaymentState.Error(errorMsg))
+                }
+
+            } catch (e: Exception) {
+                _paymentStatus.postValue(PaymentState.Error("System Error: ${e.localizedMessage}"))
             }
         }
     }
