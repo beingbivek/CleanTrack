@@ -142,6 +142,30 @@ fun AdminDashboardBody() {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // --- FINANCE SETTINGS SECTION (List Style) ---
+            Text(
+                text = "Finance",
+                color = Black,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 10.dp)
+            )
+
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(8.dp)) {
+                    AdminMenuItem(Icons.Default.Payments, "View Transactions") {
+                        context.startActivity(Intent(context, AdminTransactionListActivity::class.java))
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             // --- SYSTEM SETTINGS SECTION (List Style) ---
             Text(
                 text = "System Settings",
