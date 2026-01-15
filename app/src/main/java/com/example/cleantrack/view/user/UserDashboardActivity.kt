@@ -42,6 +42,7 @@ import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.view.common.MarketplaceActivity
 
 class UserDashboardActivity : ComponentActivity() {
@@ -77,12 +78,15 @@ fun UserDashboardBody() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+    val globalAiReview by userViewModel.globalAiReview.observeAsState("Analyzing your waste habits...")
+    val aiRepo = remember { AIRepository() }
+
     LaunchedEffect(userProfile?.userId) {
         userViewModel.getCurrentUserId()?.let { uid ->
             userViewModel.getUserById(uid)
             userViewModel.fetchUserPoints(uid)
             // 3. Trigger the AI fetch
-            userViewModel.fetchLatestAIReview(uid)
+            userViewModel.fetchGlobalAIReview(uid, aiRepo)
         }
     }
 
@@ -127,7 +131,7 @@ fun UserDashboardBody() {
             }
         ) { innerPadding ->
             when (selectedTab) {
-                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection)
+                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview)
                 1 -> MapTrackerSection(innerPadding, userProfile)
                 2 -> ProfileSection(innerPadding, userProfile) { showLogoutDialog = true }
             }
@@ -141,7 +145,8 @@ fun HomeSection(
     userViewModel: UserViewModel,
     userProfile: UserModel?,
     currentPoints: Int,
-    latestCollection: BinCollectionModel? // 4. Added parameter
+    latestCollection: BinCollectionModel?,
+    globalAiReview: String
 ) {
     val context = LocalContext.current
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
@@ -297,7 +302,7 @@ fun HomeSection(
                         Text(text = "AI Smart Assist", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Green)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = latestCollection?.aiFeedback ?: "Keep disposing waste responsibly to see AI insights after your next collection!",
+                            text = globalAiReview,
                             fontSize = 14.sp,
                             color = Color.DarkGray,
                             lineHeight = 20.sp
