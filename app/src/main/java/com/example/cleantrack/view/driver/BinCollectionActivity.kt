@@ -147,12 +147,6 @@ fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
                         if (bin != null) {
                             isSaving = true
                             scope.launch {
-                                // 1. Get the dynamic tip from AI using the 3 parameters
-                                val aiTip = aiRepo.generateImprovementTip(
-                                    rating = rating,
-                                    remarks = remarks,
-                                    segregatedCorrectly = isSegregated // This is your Boolean
-                                )
 
                                 // 2. Pass that specific aiTip to your save function
                                 activeTripViewModel.collectBinWithAI(
@@ -161,8 +155,8 @@ fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
                                     tripId = tripId,
                                     rating = rating,
                                     remarks = remarks,
-                                    aiTip = aiTip,
-                                    isSegregated = isSegregated // Boolean passed to database
+                                    aiTip = "Data logged for AI analysis", // Placeholder
+                                    isSegregated = isSegregated
                                 ) { success, msg ->
                                     isSaving = false
                                     if (success) onComplete()

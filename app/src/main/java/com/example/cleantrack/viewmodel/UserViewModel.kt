@@ -4,9 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.UserRepo
 import com.example.cleantrack.util.AppUtil
@@ -17,6 +20,7 @@ import com.example.cleantrack.view.auth.UserLocationMapActivity
 
 import com.example.cleantrack.view.driver.DriverDashboardActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
+import kotlinx.coroutines.launch
 
 
 class UserViewModel(
@@ -27,6 +31,8 @@ class UserViewModel(
     private val _latestCollection = MutableLiveData<com.example.cleantrack.model.BinCollectionModel?>()
     val latestCollection: androidx.lifecycle.LiveData<com.example.cleantrack.model.BinCollectionModel?>
         get() = _latestCollection
+    private val _globalAiReview = MutableLiveData<String>("Gathering your history...")
+    val globalAiReview: LiveData<String> = _globalAiReview
 
     fun login(email : String , password : String , callback : (Boolean, String?, String?, String?)-> Unit){
                 repo.login(email, password, callback)
@@ -341,6 +347,20 @@ class UserViewModel(
         if (bidderId.isEmpty()) return
         repo.getUserById(bidderId) { success, _, data ->
             if (success) _highestBidderData.postValue(data)
+        }
+    }
+
+    fun fetchGlobalAIReview(userId: String, aiRepo: AIRepository) {
+        collectionRepo.getAllCollectionsForUser(userId) { success, _, collections ->
+            if (success && !collections.isNullOrEmpty()) {
+                // We use viewModelScope to run the heavy AI call off the main thread
+                viewModelScope.launch {
+                    val review = aiRepo.generateGlobalOverview(collections)
+                    _globalAiReview.postValue(review)
+                }
+            } else {
+                _globalAiReview.postValue("Start disposing waste to see your personalized AI tips!")
+            }
         }
     }
 
