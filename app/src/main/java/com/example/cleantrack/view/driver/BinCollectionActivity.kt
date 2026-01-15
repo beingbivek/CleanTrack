@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.BinCollectionModel
+import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.ActiveTripRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.BinRepoImpl
@@ -26,6 +27,7 @@ import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.viewmodel.BinViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
+import kotlinx.coroutines.launch
 
 class BinCollectionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +47,12 @@ fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
 
     // ViewModels
     val binVM = remember { BinViewModel(BinRepoImpl()) }
-    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val userViewModel = remember {
+        UserViewModel(
+            UserRepoImpl(),
+            BinCollectionRepoImpl() // 🔹 Add this second parameter
+        )
+    }
 
     // Inject all required Repositories into the ActiveTripViewModel
     val activeTripViewModel = remember {
@@ -66,6 +73,9 @@ fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
     var remarks by remember { mutableStateOf("") }
     var isSegregated by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
+
+    val aiRepo = remember { AIRepository() } // Initialize AI Repo
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(binId) {
         binVM.getBinById(binId)
@@ -130,29 +140,30 @@ fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
                 Spacer(Modifier.weight(1f))
 
                 // --- NEW SAVE LOGIC ---
+                // Inside BinCollectionScreen (the UI where the driver rates)
                 Button(
                     onClick = {
                         val bin = binDetails
                         if (bin != null) {
                             isSaving = true
+                            scope.launch {
 
-                            // Call the ViewModel function that handles Point Calculation + Saving
-                            activeTripViewModel.collectBinWithPoints(
-                                bin = bin,
-                                driverId = currentDriverId,
-                                tripId = tripId,
-                                rating = rating,
-                                remarks = remarks,
-                                isSegregated = isSegregated
-                            ) { success, msg ->
-                                isSaving = false
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                if (success) onComplete()
+                                // 2. Pass that specific aiTip to your save function
+                                activeTripViewModel.collectBinWithAI(
+                                    bin = bin,
+                                    driverId = currentDriverId,
+                                    tripId = tripId,
+                                    rating = rating,
+                                    remarks = remarks,
+                                    aiTip = "Data logged for AI analysis", // Placeholder
+                                    isSegregated = isSegregated
+                                ) { success, msg ->
+                                    isSaving = false
+                                    if (success) onComplete()
+                                }
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isSaving && binDetails != null && rating > 0
+                    }
                 ) {
                     if (isSaving) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)

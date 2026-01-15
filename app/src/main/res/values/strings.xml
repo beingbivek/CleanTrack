@@ -44,4 +44,7 @@
     <string name="title_activity_demo_driver_dash">DemoDriverDashActivity</string>
     <string name="title_activity_drivers_trip_history">DriversTripHistoryActivity</string>
     <string name="title_activity_admin_transaction_list">AdminTransactionListActivity</string>
+    <string name="title_activity_marketplace">MarketplaceActivity</string>
+    <string name="title_activity_product_detail">ProductDetailActivity</string>
+    <string name="title_activity_add_list_item">AddListItemActivity</string>
 </resources>

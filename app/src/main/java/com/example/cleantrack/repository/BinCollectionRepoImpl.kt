@@ -8,6 +8,8 @@ import com.google.firebase.database.ValueEventListener
 
 class BinCollectionRepoImpl : BinCollectionRepo {
 
+
+
     private val ref =
         FirebaseDatabase.getInstance().getReference("BinCollections")
 
@@ -56,5 +58,47 @@ class BinCollectionRepoImpl : BinCollectionRepo {
             .addOnFailureListener {
                 callback(false, it.message ?: "Fetch failed", null)
             }
+    }
+
+    override fun getLatestCollectionForUser(
+        userId: String,
+        callback: (Boolean, String?, BinCollectionModel?) -> Unit
+    ) {
+        // Query collections where "userId" matches, ordered by timestamp
+        ref.orderByChild("userId").equalTo(userId)
+            .limitToLast(1) // We only want the most recent one
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // Firebase returns a map even for one item when using equalTo
+                        val collection = snapshot.children.first().getValue(BinCollectionModel::class.java)
+                        callback(true, "Success", collection)
+                    } else {
+                        callback(false, "No collections found", null)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
+    }
+
+    override fun getAllCollectionsForUser(userId: String, callback: (Boolean, String?, List<BinCollectionModel>?) -> Unit) {
+        ref.orderByChild("userId").equalTo(userId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val list = snapshot.children.mapNotNull { it.getValue(BinCollectionModel::class.java) }
+                        callback(true, "Success", list)
+                    } else {
+                        callback(false, "No collections found", null)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
     }
 }

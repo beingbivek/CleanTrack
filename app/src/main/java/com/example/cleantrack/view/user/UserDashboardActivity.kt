@@ -31,7 +31,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.cleantrack.model.AnnouncementModel
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.model.BinCollectionModel
 import com.example.cleantrack.repository.AnnouncementRepoImpl
+import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.AnnouncementBanner
@@ -40,6 +42,8 @@ import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.AIRepository
+import com.example.cleantrack.view.common.MarketplaceActivity
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,19 +59,35 @@ class UserDashboardActivity : ComponentActivity() {
 @Composable
 fun UserDashboardBody() {
     val context = LocalContext.current
-    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    // 1. Updated ViewModel initialization with both Repositories
+    val userViewModel = remember {
+        UserViewModel(UserRepoImpl(), BinCollectionRepoImpl())
+    }
+
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
+
     val userProfile by userViewModel.user.observeAsState()
 
     // 1. Observe the specific points LiveData
     val currentPoints by userViewModel.userPoints.observeAsState(0)
 
+    // 2. Observe the latest collection for AI Feedback
+    val latestCollection by userViewModel.latestCollection.observeAsState()
+
     var selectedTab by remember { mutableIntStateOf(0) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        userViewModel.getCurrentUserId()?.let { uid -> userViewModel.getUserById(uid)
-            // 2. Fetch points explicitly on load
-            userViewModel.fetchUserPoints(uid)}
+    val globalAiReview by userViewModel.globalAiReview.observeAsState("Analyzing your waste habits...")
+    val aiRepo = remember { AIRepository() }
+
+    LaunchedEffect(userProfile?.userId) {
+        userViewModel.getCurrentUserId()?.let { uid ->
+            userViewModel.getUserById(uid)
+            userViewModel.fetchUserPoints(uid)
+            // 3. Trigger the AI fetch
+            userViewModel.fetchGlobalAIReview(uid, aiRepo)
+        }
     }
 
     LogoutDialog(
@@ -83,7 +103,7 @@ fun UserDashboardBody() {
                 brush = Brush.verticalGradient(
                     colors = listOf(Blue, Green, Color.White),
                     startY = 0f,
-                    endY = 1400f // Extended for better background coverage
+                    endY = 1400f
                 )
             )
     ) {
@@ -93,7 +113,7 @@ fun UserDashboardBody() {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.White,
-                    tonalElevation = 8.dp, // Adds distinct separation from background
+                    tonalElevation = 8.dp,
                     shadowElevation = 15.dp
                 ) {
                     Row(
@@ -111,7 +131,7 @@ fun UserDashboardBody() {
             }
         ) { innerPadding ->
             when (selectedTab) {
-                0 -> HomeSection(innerPadding, userViewModel, userProfile,currentPoints)
+                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview)
                 1 -> MapTrackerSection(innerPadding, userProfile)
                 2 -> ProfileSection(innerPadding, userProfile) { showLogoutDialog = true }
             }
@@ -120,7 +140,14 @@ fun UserDashboardBody() {
 }
 
 @Composable
-fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfile: UserModel?, currentPoints: Int) {
+fun HomeSection(
+    padding: PaddingValues,
+    userViewModel: UserViewModel,
+    userProfile: UserModel?,
+    currentPoints: Int,
+    latestCollection: BinCollectionModel?,
+    globalAiReview: String
+) {
     val context = LocalContext.current
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
@@ -159,7 +186,7 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Good Morning ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: "User"} ☀️",
+            text = "Hello ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: "User"} ☀️",
             color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold
         )
 
@@ -187,7 +214,7 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Text(text = "Points: ${currentPoints?: 0} ✨", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(text = "Points: ${currentPoints} ✨", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -201,7 +228,7 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        // --- TRACKER CARD (With Shadow) ---
+        // --- TRACKER CARD ---
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = White),
@@ -241,42 +268,67 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
                     QuickIcon(Icons.Outlined.PhotoCamera, isOutline = true)
                     QuickIcon(Icons.Outlined.SwapVert, isOutline = true, isSpecial = true)
                     QuickIcon(Icons.Outlined.Terrain, isOutline = true)
-                    QuickIcon(Icons.Outlined.ViewStream, isOutline = true)
+                    QuickIcon(Icons.Default.RestoreFromTrash, "Manage Bins") { context.startActivity(Intent(context, UserBinListActivity::class.java)) }
                 }
                 Spacer(modifier = Modifier.height(25.dp))
                 Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
                     QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java)) }
                     QuickIcon(Icons.Default.Route, "Routes") { context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) }
                     QuickIcon(Icons.Default.CalendarMonth, "Schedule") { context.startActivity(Intent(context, UserScheduleListActivity::class.java)) }
-                    QuickIcon(Icons.Default.ShoppingBag, "Market")
+                    QuickIcon(Icons.Default.ShoppingBag, "Market"){ context.startActivity(Intent(context, MarketplaceActivity::class.java).apply {
+                        putExtra("USER_ID", currentUserId) // Passing the ID here
+                    }) }
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // --- AI CARD (RE-ADDED) ---
+        // --- 5. UPDATED DYNAMIC AI CARD ---
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = White),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            modifier = Modifier.fillMaxWidth().height(110.dp)
+            modifier = Modifier.fillMaxWidth().wrapContentHeight()
         ) {
-            Row(
-                modifier = Modifier.padding(20.dp).fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(text = "AI Smart Assist", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Green)
-                    Text(text = "Check your waste habits", fontSize = 13.sp, color = Color.Gray)
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "AI Smart Assist", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Green)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = globalAiReview,
+                            fontSize = 14.sp,
+                            color = Color.DarkGray,
+                            lineHeight = 20.sp
+                        )
+                    }
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = Green.copy(alpha = 0.5f),
+                        modifier = Modifier.size(35.dp)
+                    )
                 }
-                Icon(
-                    Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Green.copy(alpha = 0.5f),
-                    modifier = Modifier.size(35.dp)
-                )
+
+                if (latestCollection != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Rating: ", fontSize = 12.sp, color = Color.Gray)
+                        repeat(5) { index ->
+                            Icon(
+                                imageVector = if (index < latestCollection!!.rating) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = null,
+                                tint = if (index < latestCollection!!.rating) Color(0xFFFFB300) else Color.Gray,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -325,7 +377,7 @@ fun ProfileSection(padding: PaddingValues, userProfile: UserModel?, onLogout: ()
                 model = if (!userProfile?.profileImageUrl.isNullOrEmpty()) {
                     userProfile?.profileImageUrl
                 } else {
-                    R.drawable.user_logo // Consistent with your other screens
+                    R.drawable.user_logo
                 },
                 contentDescription = "Profile Picture",
                 modifier = Modifier
