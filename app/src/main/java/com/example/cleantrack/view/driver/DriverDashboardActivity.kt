@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -188,18 +189,18 @@ fun DriverDashboardBody() {
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(colors = listOf(Blue, Green, Color.White), startY = 0f, endY = 1400f))) {
+    Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(colors = listOf(Blue, Color.White), startY = 0f, endY = 1400f))) {
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
                 Surface(modifier = Modifier.fillMaxWidth(), color = Color.White, shadowElevation = 15.dp) {
                     Row(modifier = Modifier.navigationBarsPadding().padding(vertical = 12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                        BottomNavItem(Icons.Outlined.Home, "Home", active = selectedTab == 0) { selectedTab = 0 }
-                        BottomNavItem(Icons.Outlined.Map, "Route", active = selectedTab == 1) {
+                        BottomNavItems(Icons.Outlined.Home, "Home", active = selectedTab == 0) { selectedTab = 0 }
+                        BottomNavItems(Icons.Outlined.Map, "Route", active = selectedTab == 1) {
                             if (isTripActive) context.startActivity(Intent(context, DriverRouteMapActivity::class.java))
                             else Toast.makeText(context, "Start route first", Toast.LENGTH_SHORT).show()
                         }
-                        BottomNavItem(Icons.Outlined.PersonOutline, "Profile", active = selectedTab == 2) { selectedTab = 2 }
+                        BottomNavItems(Icons.Outlined.PersonOutline, "Profile", active = selectedTab == 2) { selectedTab = 2 }
                     }
                 }
             }
@@ -232,7 +233,8 @@ fun DriverHomeSection(
 
     Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp).verticalScroll(rememberScrollState())) {
         Spacer(modifier = Modifier.height(20.dp))
-        Text(text = "Duty Morning ${currentUser?.fullname?.split(" ")?.firstOrNull() ?: "Driver"} 🚛", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+        Text(text = "Hello ${currentUser?.fullname?.split(" ")?.firstOrNull() ?: "Driver"} 🚛", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Profile Row
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -272,12 +274,12 @@ fun DriverHomeSection(
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                    color = if (isTripCompleted) Color.Gray else Green,
+                    color = if (isTripCompleted) Color.Gray else Blue,
                     trackColor = Color.LightGray.copy(0.3f)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Collected: ${stats.second}", color = Green, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Collected: ${stats.second}", color = Blue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text("Remaining: ${stats.third}", color = Red, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
@@ -287,12 +289,19 @@ fun DriverHomeSection(
 
 
         // --- QUICK ACTIONS ---
-        Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(6.dp), modifier = Modifier.fillMaxWidth()) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = White),
+            elevation = CardDefaults.cardElevation(6.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text("Operations", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
-                    QuickIcon(Icons.Default.QrCodeScanner, "Scan Bin") {
+
+                    // --- SCAN BIN (BLUE) ---
+                    DriverActionItem(Icons.Default.QrCodeScanner, "Scan Bin", Blue) {
                         if (isTripActive) {
                             val intent = Intent(context, DriverScanBinActivity::class.java).apply {
                                 putExtra("TRIP_ID", activeTrip?.tripId)
@@ -301,11 +310,15 @@ fun DriverHomeSection(
                             context.startActivity(intent)
                         } else Toast.makeText(context, "Start route first", Toast.LENGTH_SHORT).show()
                     }
-                    QuickIcon(Icons.Default.Route, "Map", isOutline = true) {
+
+                    // --- MAP (BLUE) ---
+                    DriverActionItem(Icons.Default.Route, "Map", Blue) {
                         if (isTripActive) context.startActivity(Intent(context, DriverRouteMapActivity::class.java))
                         else Toast.makeText(context, "Start route first", Toast.LENGTH_SHORT).show()
                     }
-                    QuickIcon(Icons.Default.History, "History", isOutline = true) {
+
+                    // --- HISTORY (BLUE) ---
+                    DriverActionItem(Icons.Default.History, "History", Blue) {
                         context.startActivity(Intent(context, DriversTripHistoryActivity::class.java))
                     }
                 }
@@ -336,8 +349,8 @@ fun DriverHomeSection(
                     containerColor = when {
                         isTripActive -> Red
                         isTimeExpired -> Color.Gray // Gray out if shift is over
-                        isTripCompleted -> Blue
-                        else -> Green
+                        isTripCompleted -> Green
+                        else -> Blue
                     }
                 )
             ) {
@@ -390,11 +403,11 @@ fun RouteDetailCards(schedule: ScheduleModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFD4EDFA))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Route, contentDescription = null, tint = Green)
+                Icon(Icons.Default.Route, contentDescription = null, tint = Blue)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = schedule.routeName, style = TextStyle(
                     fontSize = 20.sp,
@@ -414,5 +427,41 @@ fun RouteDetailCards(schedule: ScheduleModel) {
                 }
             }
         }
+    }
+}
+
+
+@Composable
+fun DriverActionItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color, onClick: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(55.dp)
+                .clip(CircleShape)
+                .background(color) // This makes the background Blue
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color.White, // White icon on blue background
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = label, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color.Gray)
+    }
+}
+
+@Composable
+fun BottomNavItems(icon: ImageVector, label: String, active: Boolean, onClick: () -> Unit) {
+    val color = if (active) Blue else Color.Gray
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }.padding(horizontal = 12.dp)
+    ) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(26.dp))
+        Text(text = label, color = color, fontSize = 12.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
     }
 }

@@ -186,7 +186,7 @@ fun HomeSection(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Good Morning ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: "User"} ☀️",
+            text = "Hello ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: "User"} ☀️",
             color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold
         )
 
@@ -268,15 +268,14 @@ fun HomeSection(
                     QuickIcon(Icons.Outlined.PhotoCamera, isOutline = true)
                     QuickIcon(Icons.Outlined.SwapVert, isOutline = true, isSpecial = true)
                     QuickIcon(Icons.Outlined.Terrain, isOutline = true)
-                    QuickIcon(Icons.Outlined.ViewStream, isOutline = true)
+                    QuickIcon(Icons.Default.RestoreFromTrash, "Manage Bins") { context.startActivity(Intent(context, UserBinListActivity::class.java)) }
                 }
                 Spacer(modifier = Modifier.height(25.dp))
                 Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
                     QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java)) }
                     QuickIcon(Icons.Default.Route, "Routes") { context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) }
                     QuickIcon(Icons.Default.CalendarMonth, "Schedule") { context.startActivity(Intent(context, UserScheduleListActivity::class.java)) }
-                    QuickIcon(Icons.Default.ShoppingBag, "Market"){ context.startActivity(Intent(context,
-                        MarketplaceActivity::class.java).apply {
+                    QuickIcon(Icons.Default.ShoppingBag, "Market"){ context.startActivity(Intent(context, MarketplaceActivity::class.java).apply {
                         putExtra("USER_ID", currentUserId) // Passing the ID here
                     }) }
                 }
