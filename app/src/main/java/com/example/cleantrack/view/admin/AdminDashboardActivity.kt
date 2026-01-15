@@ -152,6 +152,25 @@ fun AdminDashboardScreen() {
 
             item {
                 Text(
+                    "Finance",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            item {
+                DashboardCard(
+                    title = "View Transactions",
+                    icon = Icons.Default.Payments
+                ) {
+                    context.startActivity(
+                        Intent(context, AdminTransactionListActivity::class.java)
+                    )
+                }
+            }
+
+            item {
+                Text(
                     "System",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
