@@ -52,29 +52,39 @@ class ActiveTripViewModel(
      * Start Trip with Time Validation
      * Only allows start if current time is between schedule start and end
      */
+
     fun startTripWithValidation(schedule: ScheduleModel, callback: (Boolean, String) -> Unit) {
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         val currentTime = sdf.format(Date())
 
+        // --- NEW: If time has already passed, force the status to COMPLETED and block restart ---
+        if (currentTime > schedule.endTime) {
+            repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
+                if (existingTrip?.status == "ACTIVE") {
+                    // Automatically finalize the trip in the database
+                    repo.endTrip(existingTrip.tripId) { _, _ ->
+                        _activeTrip.postValue(null)
+                    }
+                }
+            }
+            callback(false, "Shift ended at ${schedule.endTime}. You cannot start or resume now.")
+            return
+        }
+
+        // --- Existing logic for valid time window ---
         if (currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
             repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
                 when {
                     existingTrip?.status == "COMPLETED" -> {
-                        // --- NEW LOGIC: Check if all bins are already collected ---
+                        // Allow restart only if there are bins left to collect
                         userRepo.getUsersByRoute(schedule.routeId) { success, _, users ->
                             if (success && users != null) {
                                 val userIds = users.map { it.userId }
                                 binRepo.getBinsByOwnerIds(userIds) { bins ->
-                                    val totalBins = bins.size
-
-                                    collectionRepo.observeCollectionsByTrip(existingTrip.tripId) { collSuccess, _, collections ->
-                                        val collectedCount = collections?.size ?: 0
-
-                                        if (collectedCount >= totalBins && totalBins > 0) {
-                                            // Block restart because work is finished
+                                    collectionRepo.getCollectionsByTripOnce(existingTrip.tripId) { _, _, collections ->
+                                        if ((collections?.size ?: 0) >= bins.size && bins.isNotEmpty()) {
                                             callback(false, "Route fully collected. Cannot restart.")
                                         } else {
-                                            // Proceed with restart as some bins remain
                                             repo.resumeTrip(existingTrip.tripId) { s, m ->
                                                 if (s) {
                                                     val resumed = existingTrip.copy(status = "ACTIVE")
@@ -89,7 +99,6 @@ class ActiveTripViewModel(
                             }
                         }
                     }
-                    // ... Scenario 2 (ACTIVE) and Scenario 3 (New Trip) remain the same
                     existingTrip?.status == "ACTIVE" -> {
                         _activeTrip.postValue(existingTrip)
                         loadBinStats(existingTrip.routeId, existingTrip.tripId)
@@ -104,7 +113,7 @@ class ActiveTripViewModel(
                 }
             }
         } else {
-            callback(false, "Outside schedule time.")
+            callback(false, "Route starts at ${schedule.startTime}.")
         }
     }
 
@@ -206,7 +215,13 @@ class ActiveTripViewModel(
     fun endTrip(tripId: String, callback: (Boolean, String) -> Unit) {
         repo.endTrip(tripId) { success, msg ->
             if (success) {
-                _activeTrip.postValue(null)
+                // Instead of setting to null, we refresh the state
+                // so the UI knows the trip exists but is now COMPLETED
+                _activeTrip.value?.let { current ->
+                    if (current.tripId == tripId) {
+                        _activeTrip.postValue(current.copy(status = "COMPLETED"))
+                    }
+                }
             }
             callback(success, msg)
         }

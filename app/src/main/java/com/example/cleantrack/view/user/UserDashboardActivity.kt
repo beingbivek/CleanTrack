@@ -42,6 +42,8 @@ import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.AIRepository
+import com.example.cleantrack.view.common.MarketplaceActivity
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,7 +65,11 @@ fun UserDashboardBody() {
         UserViewModel(UserRepoImpl(), BinCollectionRepoImpl())
     }
 
+    val currentUserId = userViewModel.getCurrentUserId() ?: ""
+
     val userProfile by userViewModel.user.observeAsState()
+
+    // 1. Observe the specific points LiveData
     val currentPoints by userViewModel.userPoints.observeAsState(0)
 
     // 2. Observe the latest collection for AI Feedback
@@ -72,12 +78,15 @@ fun UserDashboardBody() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+    val globalAiReview by userViewModel.globalAiReview.observeAsState("Analyzing your waste habits...")
+    val aiRepo = remember { AIRepository() }
+
     LaunchedEffect(userProfile?.userId) {
         userViewModel.getCurrentUserId()?.let { uid ->
             userViewModel.getUserById(uid)
             userViewModel.fetchUserPoints(uid)
             // 3. Trigger the AI fetch
-            userViewModel.fetchLatestAIReview(uid)
+            userViewModel.fetchGlobalAIReview(uid, aiRepo)
         }
     }
 
@@ -122,7 +131,7 @@ fun UserDashboardBody() {
             }
         ) { innerPadding ->
             when (selectedTab) {
-                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection)
+                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview)
                 1 -> MapTrackerSection(innerPadding, userProfile)
                 2 -> ProfileSection(innerPadding, userProfile) { showLogoutDialog = true }
             }
@@ -136,7 +145,8 @@ fun HomeSection(
     userViewModel: UserViewModel,
     userProfile: UserModel?,
     currentPoints: Int,
-    latestCollection: BinCollectionModel? // 4. Added parameter
+    latestCollection: BinCollectionModel?,
+    globalAiReview: String
 ) {
     val context = LocalContext.current
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
@@ -176,7 +186,7 @@ fun HomeSection(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Good Morning ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: "User"} ☀️",
+            text = "Hello ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: "User"} ☀️",
             color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold
         )
 
@@ -258,14 +268,16 @@ fun HomeSection(
                     QuickIcon(Icons.Outlined.PhotoCamera, isOutline = true)
                     QuickIcon(Icons.Outlined.SwapVert, isOutline = true, isSpecial = true)
                     QuickIcon(Icons.Outlined.Terrain, isOutline = true)
-                    QuickIcon(Icons.Outlined.ViewStream, isOutline = true)
+                    QuickIcon(Icons.Default.RestoreFromTrash, "Manage Bins") { context.startActivity(Intent(context, UserBinListActivity::class.java)) }
                 }
                 Spacer(modifier = Modifier.height(25.dp))
                 Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
                     QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java)) }
                     QuickIcon(Icons.Default.Route, "Routes") { context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) }
                     QuickIcon(Icons.Default.CalendarMonth, "Schedule") { context.startActivity(Intent(context, UserScheduleListActivity::class.java)) }
-                    QuickIcon(Icons.Default.RestoreFromTrash, "Bin Collection") { context.startActivity(Intent(context, UserBinListActivity::class.java)) }
+                    QuickIcon(Icons.Default.ShoppingBag, "Market"){ context.startActivity(Intent(context, MarketplaceActivity::class.java).apply {
+                        putExtra("USER_ID", currentUserId) // Passing the ID here
+                    }) }
                 }
             }
         }
@@ -289,7 +301,7 @@ fun HomeSection(
                         Text(text = "AI Smart Assist", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Green)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = latestCollection?.aiFeedback ?: "Keep disposing waste responsibly to see AI insights after your next collection!",
+                            text = globalAiReview,
                             fontSize = 14.sp,
                             color = Color.DarkGray,
                             lineHeight = 20.sp

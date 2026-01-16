@@ -210,6 +210,9 @@ fun SettingsBody() {
                             }
                         },
                         { SettingListItem("Change Password") },
+                        { SettingListItem("Payment History", trailingContent = {
+                            context.startActivity(Intent(context, PaymentHistoryActivity::class.java))
+                        }) },
                         { SettingListItem("Delete Account", showDivider = false) }
                     )
                 )
