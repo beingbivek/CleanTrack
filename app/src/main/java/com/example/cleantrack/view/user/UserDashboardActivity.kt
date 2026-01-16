@@ -278,7 +278,7 @@ fun LockedQuickIcon(icon: ImageVector, label: String, isLocked: Boolean, onClick
                 Icon(icon, null, tint = if (isLocked) Color.Gray else Color.White, modifier = Modifier.size(26.dp))
             }
             if (isLocked) {
-                Surface(shape = CircleShape, color = Red, modifier = Modifier.size(20.dp).align(Alignment.TopEnd), border = BorderStroke(1.dp, Color.White)) {
+                Surface(shape = CircleShape, color = Green, modifier = Modifier.size(20.dp).align(Alignment.TopEnd), border = BorderStroke(1.dp, Color.White)) {
                     Icon(Icons.Default.Lock, null, tint = Color.White, modifier = Modifier.padding(3.dp))
                 }
             }
