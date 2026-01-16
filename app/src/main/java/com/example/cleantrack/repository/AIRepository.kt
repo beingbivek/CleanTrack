@@ -6,7 +6,8 @@ import com.google.ai.client.generativeai.GenerativeModel
 class AIRepository {
     private val generativeModel = GenerativeModel(
         modelName = "gemini-2.5-flash", // Using stable flash for faster summaries
-        apiKey = "AIzaSyDkShUJAephmpoqWHaP1HV5PWIOJY-O0s8"
+        apiKey = "AIzaSyCgwxy0WubzG-vpffwAZGyBegugFuA3dIo"
+
     )
 
     suspend fun generateGlobalOverview(history: List<BinCollectionModel>): String {
