@@ -7,15 +7,20 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -23,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.repository.PaymentRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.ui.theme.Green
+import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.viewmodel.PaymentState
 import com.example.cleantrack.viewmodel.PaymentViewModel
 import java.text.SimpleDateFormat
@@ -34,7 +41,6 @@ class PaymentActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Manual DI for simplicity
         val viewModel = PaymentViewModel(PaymentRepoImpl(), UserRepoImpl())
 
         setContent {
@@ -49,15 +55,17 @@ fun PaymentScreen(viewModel: PaymentViewModel) {
     val paymentState by viewModel.paymentStatus.observeAsState(PaymentState.Idle)
     val subscription by viewModel.currentSubscription.observeAsState()
 
-    // Load status when screen opens
     LaunchedEffect(Unit) {
         viewModel.loadSubscriptionStatus()
     }
 
-    // Handle Toasts for side effects
     LaunchedEffect(paymentState) {
         when (paymentState) {
-            is PaymentState.Success -> Toast.makeText(context, (paymentState as PaymentState.Success).message, Toast.LENGTH_LONG).show()
+            is PaymentState.Success -> {
+                Toast.makeText(context, (paymentState as PaymentState.Success).message, Toast.LENGTH_LONG).show()
+                // OPTIONAL: Automatically close the payment screen after success
+                // (context as? Activity)?.finish()
+            }
             is PaymentState.Error -> Toast.makeText(context, (paymentState as PaymentState.Error).message, Toast.LENGTH_LONG).show()
             else -> {}
         }
@@ -66,58 +74,79 @@ fun PaymentScreen(viewModel: PaymentViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-            .padding(20.dp)
+            .background(brush = Brush.verticalGradient(colors = listOf(Blue.copy(alpha = 0.1f), Color.White)))
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(top = 50.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            Text(
-                "CleanTrack Premium",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Spacer(modifier = Modifier.height(80.dp))
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Text("CleanTrack Premium", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Green)
+            Text("Unlock full waste management power", fontSize = 14.sp, color = Color.Gray)
 
-            // 1. Subscription Status Card
-            if (subscription?.isSubscribed == true) {
-                ActiveSubscriptionCard(expiryDate = subscription!!.expiryDate)
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // --- REFACTORED SUBSCRIPTION CHECK ---
+            val currentTime = System.currentTimeMillis()
+            // Safe access: uses the new top-level expiryDate we added to UserModel
+            val userExpiry = subscription?.expiryDate ?: 0L
+            val isActive = subscription?.isSubscribed == true && userExpiry > currentTime
+
+            if (isActive) {
+                ActiveSubscriptionCard(expiryDate = userExpiry)
             } else {
-                // 2. Purchase Card
                 SubscriptionOfferCard(
                     isLoading = paymentState is PaymentState.Loading,
-                    onSubscribe = { viewModel.processMonthlySubscription("500") } // Fixed amount example
+                    onSubscribe = { viewModel.processMonthlySubscription("500") }
                 )
             }
+            // ---------------------------------------
+
+            Spacer(modifier = Modifier.height(30.dp))
         }
 
         if (paymentState is PaymentState.Loading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(0.2f)), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Green)
+            }
         }
     }
 }
 
 @Composable
 fun ActiveSubscriptionCard(expiryDate: Long) {
-    val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    val sdf = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
     val dateString = sdf.format(Date(expiryDate))
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-        modifier = Modifier.fillMaxWidth().height(150.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(4.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(48.dp))
+            Icon(Icons.Default.Verified, null, tint = Green, modifier = Modifier.size(60.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("You are a Pro Member", fontWeight = FontWeight.Bold, fontSize = 20.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Subscription Active", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2E7D32))
-            Text("Valid until: $dateString", color = Color.Gray)
+            Text("Your premium benefits are active.", color = Color.Gray)
+            Text("Valid until: $dateString", fontWeight = FontWeight.SemiBold, color = Color.Black)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedButton(
+                onClick = { /* Could implement renewal or cancel logic */ },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Manage Subscription", color = Green)
+            }
         }
     }
 }
@@ -125,7 +154,8 @@ fun ActiveSubscriptionCard(expiryDate: Long) {
 @Composable
 fun SubscriptionOfferCard(isLoading: Boolean, onSubscribe: () -> Unit) {
     Card(
-        elevation = CardDefaults.cardElevation(8.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -133,29 +163,59 @@ fun SubscriptionOfferCard(isLoading: Boolean, onSubscribe: () -> Unit) {
             modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(40.dp))
+            Surface(
+                color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    "BEST VALUE",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = Color(0xFFB8860B),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
+            Text("Rs. 500", fontSize = 36.sp, fontWeight = FontWeight.Black)
+            Text("per month", color = Color.Gray)
 
-            Text("Monthly Plan", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text("Rs. 500 / month", fontSize = 18.sp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                "• Daily Waste Collection\n• Priority Support\n• Detailed Analytics",
-                lineHeight = 24.sp,
-                color = Color.DarkGray
-            )
+            // Updated benefits list to match your dashboard locks
+            BenefitItem("Access to Live Routes & Tracking")
+            BenefitItem("Automated Collection Schedule")
+            BenefitItem("Advanced Bin Management")
+            BenefitItem("Priority AI Analysis & Feedback")
+            BenefitItem("Ad-free Marketplace Posting")
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = onSubscribe,
                 enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Green)
             ) {
-                Text(if (isLoading) "Processing..." else "Subscribe Now")
+                Text(
+                    if (isLoading) "Securing Payment..." else "Upgrade to Premium",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
+    }
+}
+
+@Composable
+fun BenefitItem(text: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.CheckCircle, null, tint = Green, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(text, fontSize = 14.sp, color = Color.DarkGray)
     }
 }
