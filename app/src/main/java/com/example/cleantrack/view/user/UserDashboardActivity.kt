@@ -76,6 +76,9 @@ fun UserDashboardBody() {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showPremiumDialog by remember { mutableStateOf(false) }
 
+    // Logic to check premium status
+    val isPremium = remember(userProfile) { userViewModel.isPremiumUser(userProfile) }
+
     val aiRepo = remember { AIRepository() }
 
     LaunchedEffect(Unit) {
@@ -126,7 +129,14 @@ fun UserDashboardBody() {
                 Surface(modifier = Modifier.fillMaxWidth(), color = Color.White, tonalElevation = 8.dp, shadowElevation = 15.dp) {
                     Row(modifier = Modifier.navigationBarsPadding().padding(vertical = 12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                         BottomNavItem(Icons.Outlined.Home, "Home", active = selectedTab == 0) { selectedTab = 0 }
-                        BottomNavItem(Icons.Outlined.Explore, "Tracker", active = selectedTab == 1) { selectedTab = 1 }
+                        // PREMIUM GATE: Bottom Navigation Tracker
+                        BottomNavItem(Icons.Outlined.Explore, "Tracker", active = selectedTab == 1) {
+                            if (isPremium) {
+                                selectedTab = 1
+                            } else {
+                                showPremiumDialog = true
+                            }
+                        }
                         BottomNavItem(Icons.Outlined.PersonOutline, "Profile", active = selectedTab == 2) { selectedTab = 2 }
                     }
                 }
@@ -193,18 +203,50 @@ fun HomeSection(
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        // Live Tracker Card
-        Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(6.dp), modifier = Modifier.fillMaxWidth().height(200.dp).clickable { userProfile?.activeRouteId?.let { id -> context.startActivity(Intent(context, UserLiveTrackingActivity::class.java).apply { putExtra("ROUTE_ID", id) }) } }) {
+        // PREMIUM GATE: Live Tracker Card
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = White),
+            elevation = CardDefaults.cardElevation(6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clickable {
+                    if (isPremium) {
+                        userProfile?.activeRouteId?.let { id ->
+                            context.startActivity(Intent(context, UserLiveTrackingActivity::class.java).apply {
+                                putExtra("ROUTE_ID", id)
+                            })
+                        }
+                    } else {
+                        onShowPremiumGate()
+                    }
+                }
+        ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Live Garbage Truck Tracker", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Black)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Live Garbage Truck Tracker", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Black)
+                    if (!isPremium) {
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = Green, modifier = Modifier.size(16.dp))
+                    }
+                }
                 Spacer(modifier = Modifier.height(10.dp))
                 Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
                     if (isLoading) {
                         CircularProgressIndicator(color = Green, modifier = Modifier.size(30.dp))
-                    } else if (!userProfile?.activeRouteId.isNullOrEmpty()) {
+                    } else if (isPremium && !userProfile?.activeRouteId.isNullOrEmpty()) {
                         UserLiveMapScreen(routeId = userProfile!!.activeRouteId)
                     } else {
-                        Text("No active route selected", fontSize = 13.sp, color = Color.Gray)
+                        // Blurred or placeholder view for non-premium
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Map, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(40.dp))
+                            Text(
+                                text = if (isPremium) "No active route selected" else "Upgrade to see live location",
+                                fontSize = 13.sp,
+                                color = Color.Gray
+                            )
+                        }
                     }
                 }
             }
