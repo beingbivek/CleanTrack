@@ -69,13 +69,16 @@ fun UserDashboardBody() {
     val latestCollection by userViewModel.latestCollection.observeAsState()
     val globalAiReview by userViewModel.globalAiReview.observeAsState("Analyzing your waste habits...")
 
+    // NEW: Observe loading state from ViewModel
+    val isLoadingUser by userViewModel.loading.observeAsState(true)
+
     var selectedTab by remember { mutableIntStateOf(0) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showPremiumDialog by remember { mutableStateOf(false) }
 
     val aiRepo = remember { AIRepository() }
 
-    LaunchedEffect(userProfile?.userId) {
+    LaunchedEffect(Unit) {
         userViewModel.getCurrentUserId()?.let { uid ->
             userViewModel.getUserById(uid)
             userViewModel.fetchUserPoints(uid)
@@ -85,9 +88,7 @@ fun UserDashboardBody() {
 
     LaunchedEffect(lifecycleState) {
         val uid = userViewModel.getCurrentUserId()
-        // When returning to the app from PaymentActivity
         if (uid != null && lifecycleState == androidx.lifecycle.Lifecycle.State.RESUMED) {
-            // We use refreshUser to ensure the _user LiveData is pushed again
             userViewModel.refreshUser(uid)
             userViewModel.fetchUserPoints(uid)
         }
@@ -130,7 +131,8 @@ fun UserDashboardBody() {
             }
         ) { innerPadding ->
             when (selectedTab) {
-                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview) { showPremiumDialog = true }
+                // Pass isLoadingUser to HomeSection
+                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview, isLoadingUser) { showPremiumDialog = true }
                 1 -> MapTrackerSection(innerPadding, userProfile)
                 2 -> ProfileSection(innerPadding, userProfile) { showLogoutDialog = true }
             }
@@ -139,11 +141,22 @@ fun UserDashboardBody() {
 }
 
 @Composable
-fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfile: UserModel?, currentPoints: Int, latestCollection: BinCollectionModel?, globalAiReview: String, onShowPremiumGate: () -> Unit) {
+fun HomeSection(
+    padding: PaddingValues,
+    userViewModel: UserViewModel,
+    userProfile: UserModel?,
+    currentPoints: Int,
+    latestCollection: BinCollectionModel?,
+    globalAiReview: String,
+    isLoading: Boolean, // Added parameter
+    onShowPremiumGate: () -> Unit
+) {
     val context = LocalContext.current
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
     val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
+
+    // Determine premium status
     val isPremium = remember(userProfile) { userViewModel.isPremiumUser(userProfile) }
 
     var showAnnouncement by remember { mutableStateOf(false) }
@@ -165,6 +178,7 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
         Spacer(modifier = Modifier.height(20.dp))
         Text(text = "Hello ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: "User"} ☀️", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
         Spacer(modifier = Modifier.height(15.dp))
+
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Surface(shape = CircleShape, color = Color.White.copy(0.4f), modifier = Modifier.size(45.dp), border = BorderStroke(1.dp, Color.White.copy(0.5f))) {
                 AsyncImage(model = if (!userProfile?.profileImageUrl.isNullOrEmpty()) userProfile?.profileImageUrl else R.drawable.user_logo, contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
@@ -174,44 +188,66 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = { context.startActivity(Intent(context, UserAnnouncementListActivity::class.java)) }) { Icon(Icons.Outlined.Campaign, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
         }
+
         Spacer(modifier = Modifier.height(25.dp))
+
+        // Live Tracker Card
         Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(6.dp), modifier = Modifier.fillMaxWidth().height(200.dp).clickable { userProfile?.activeRouteId?.let { id -> context.startActivity(Intent(context, UserLiveTrackingActivity::class.java).apply { putExtra("ROUTE_ID", id) }) } }) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Live Garbage Truck Tracker", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Black)
                 Spacer(modifier = Modifier.height(10.dp))
                 Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
-                    if (!userProfile?.activeRouteId.isNullOrEmpty()) { UserLiveMapScreen(routeId = userProfile!!.activeRouteId) }
-                    else { Text("No active route selected", fontSize = 13.sp, color = Color.Gray) }
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Green, modifier = Modifier.size(30.dp))
+                    } else if (!userProfile?.activeRouteId.isNullOrEmpty()) {
+                        UserLiveMapScreen(routeId = userProfile!!.activeRouteId)
+                    } else {
+                        Text("No active route selected", fontSize = 13.sp, color = Color.Gray)
+                    }
                 }
             }
         }
+
         Spacer(modifier = Modifier.height(20.dp))
+
+        // Operations Card with Loading Prevention
         Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(6.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text("Operations", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(20.dp))
-                Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
-                    QuickIcon(Icons.Outlined.PhotoCamera, "Scan", isOutline = true)
-                    QuickIcon(Icons.Outlined.SwapVert, "Exchange", isOutline = true, isSpecial = true)
-                    QuickIcon(Icons.Outlined.Terrain, "Landfill", isOutline = true)
-                    LockedQuickIcon(icon = Icons.Default.RestoreFromTrash, label = "Manage Bins", isLocked = !isPremium) {
-                        if (isPremium) context.startActivity(Intent(context, UserBinListActivity::class.java)) else onShowPremiumGate()
+
+                if (isLoading) {
+                    // Show a clean placeholder while checking subscription to avoid flickering icons
+                    Box(Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Green, strokeWidth = 2.dp)
                     }
-                }
-                Spacer(modifier = Modifier.height(25.dp))
-                Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
-                    QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java)) }
-                    LockedQuickIcon(icon = Icons.Default.Route, label = "Routes", isLocked = !isPremium) {
-                        if (isPremium) context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) else onShowPremiumGate()
+                } else {
+                    Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
+                        QuickIcon(Icons.Outlined.PhotoCamera, "Scan", isOutline = true)
+                        QuickIcon(Icons.Outlined.SwapVert, "Exchange", isOutline = true, isSpecial = true)
+                        QuickIcon(Icons.Outlined.Terrain, "Landfill", isOutline = true)
+                        LockedQuickIcon(icon = Icons.Default.RestoreFromTrash, label = "Manage Bins", isLocked = !isPremium) {
+                            if (isPremium) context.startActivity(Intent(context, UserBinListActivity::class.java)) else onShowPremiumGate()
+                        }
                     }
-                    LockedQuickIcon(icon = Icons.Default.CalendarMonth, label = "Schedule", isLocked = !isPremium) {
-                        if (isPremium) context.startActivity(Intent(context, UserScheduleListActivity::class.java)) else onShowPremiumGate()
+                    Spacer(modifier = Modifier.height(25.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
+                        QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java)) }
+                        LockedQuickIcon(icon = Icons.Default.Route, label = "Routes", isLocked = !isPremium) {
+                            if (isPremium) context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) else onShowPremiumGate()
+                        }
+                        LockedQuickIcon(icon = Icons.Default.CalendarMonth, label = "Schedule", isLocked = !isPremium) {
+                            if (isPremium) context.startActivity(Intent(context, UserScheduleListActivity::class.java)) else onShowPremiumGate()
+                        }
+                        QuickIcon(Icons.Default.ShoppingBag, "Market") { context.startActivity(Intent(context, MarketplaceActivity::class.java).apply { putExtra("USER_ID", currentUserId) }) }
                     }
-                    QuickIcon(Icons.Default.ShoppingBag, "Market") { context.startActivity(Intent(context, MarketplaceActivity::class.java).apply { putExtra("USER_ID", currentUserId) }) }
                 }
             }
         }
+
         Spacer(modifier = Modifier.height(20.dp))
+
+        // AI Card
         Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(6.dp), modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
@@ -227,6 +263,8 @@ fun HomeSection(padding: PaddingValues, userViewModel: UserViewModel, userProfil
         Spacer(modifier = Modifier.height(30.dp))
     }
 }
+
+// ... Rest of your composables (LockedQuickIcon, MapTrackerSection, etc.) remain the same ...
 
 @Composable
 fun LockedQuickIcon(icon: ImageVector, label: String, isLocked: Boolean, onClick: () -> Unit) {
