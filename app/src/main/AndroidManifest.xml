@@ -22,24 +22,17 @@
             android:name=".view.driver.DriversTripHistoryActivity"
             android:exported="true"
             android:label="@string/title_activity_drivers_trip_history"
-            android:theme="@style/Theme.CleanTrack">
-
-        </activity>
-
+            android:theme="@style/Theme.CleanTrack"></activity>
         <activity
             android:name=".view.driver.DriverRouteMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_route_map"
-            android:theme="@style/Theme.CleanTrack">
-
-        </activity>
+            android:theme="@style/Theme.CleanTrack"></activity>
         <activity
             android:name=".view.driver.BinCollectionActivity"
             android:exported="true"
             android:label="@string/title_activity_bin_collection"
-            android:theme="@style/Theme.CleanTrack">
-
-        </activity>
+            android:theme="@style/Theme.CleanTrack"></activity>
         <activity
             android:name=".view.user.UserScheduleListActivity"
             android:exported="true"
@@ -210,6 +203,11 @@
             android:name=".view.common.ContactSupportActivity"
             android:exported="true"
             android:label="@string/title_activity_contact_support"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.LeaderboardActivity"
+            android:exported="true"
+            android:label="LeaderBoardActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.auth.StartActivity"
