@@ -279,8 +279,8 @@ fun HomeSection(
                         QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java).apply {
                             putExtra("USER_ID", userProfile?.userId) // PASSING ID HERE
                         }) }
-                        LockedQuickIcon(icon = Icons.Default.Route, label = "Routes", isLocked = !isPremium) {
-                            if (isPremium) context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) else onShowPremiumGate()
+                        QuickIcon(icon = Icons.Default.Route, label = "Routes") {
+                             context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java))
                         }
                         LockedQuickIcon(icon = Icons.Default.CalendarMonth, label = "Schedule", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserScheduleListActivity::class.java)) else onShowPremiumGate()
