@@ -103,7 +103,9 @@ fun UserDashboardBody() {
                 Button(
                     onClick = {
                         showPremiumDialog = false
-                        context.startActivity(Intent(context, PaymentActivity::class.java))
+                        context.startActivity(Intent(context, PaymentActivity::class.java).apply {
+                            putExtra("USER_ID", userProfile?.userId) // PASSING ID HERE
+                        })
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Green)
                 ) { Text("Upgrade Now", color = Color.White) }
@@ -232,7 +234,9 @@ fun HomeSection(
                     }
                     Spacer(modifier = Modifier.height(25.dp))
                     Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
-                        QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java)) }
+                        QuickIcon(Icons.Default.CreditCard, "Payments") { context.startActivity(Intent(context, PaymentActivity::class.java).apply {
+                            putExtra("USER_ID", userProfile?.userId) // PASSING ID HERE
+                        }) }
                         LockedQuickIcon(icon = Icons.Default.Route, label = "Routes", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java)) else onShowPremiumGate()
                         }
