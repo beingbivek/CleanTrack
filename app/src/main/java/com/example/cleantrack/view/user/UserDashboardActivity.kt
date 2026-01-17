@@ -336,7 +336,7 @@ fun MapTrackerSection(padding: PaddingValues, userProfile: UserModel?) {
         Text("Vehicle Tracking", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(20.dp))
         Card(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp)), elevation = CardDefaults.cardElevation(8.dp), colors = CardDefaults.cardColors(containerColor = White)) {
-            if (!userProfile?.activeRouteId.isNullOrEmpty()) { UserLiveMapScreen(routeId = userProfile!!.activeRouteId) }
+            if (!userProfile?.activeRouteId.isNullOrEmpty()) { TruckLiveMapScreen(routeId = userProfile!!.activeRouteId) }
             else { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Select a route in Home to start tracking", color = Color.Gray) } }
         }
     }

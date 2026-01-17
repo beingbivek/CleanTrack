@@ -115,7 +115,7 @@ fun PaymentScreen(
 
                 if (isPremium) {
                     // Extract expiry from nested model as you described
-                    val expiryDate = userProfile?.subscription?.expiryDate ?: userProfile?.expiryDate ?: 0L
+                    val expiryDate = userProfile?.subscription?.expiryDate ?: 0L
                     ActiveSubscriptionCard(expiryDate = expiryDate)
                 } else {
                     SubscriptionOfferCard(
