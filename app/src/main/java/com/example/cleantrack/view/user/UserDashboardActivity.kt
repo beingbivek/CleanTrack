@@ -1,6 +1,5 @@
 package com.example.cleantrack.view.user
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -235,7 +234,7 @@ fun HomeSection(
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
             modifier = Modifier.fillMaxWidth().height(200.dp).clickable {
                 userProfile?.activeRouteId?.let { id ->
-                    context.startActivity(Intent(context, UserLiveTrackingActivity::class.java).apply { putExtra("ROUTE_ID", id) })
+                    context.startActivity(Intent(context, TruckLiveTrackingActivity::class.java).apply { putExtra("ROUTE_ID", id) })
                 }
             }
         ) {
@@ -244,7 +243,7 @@ fun HomeSection(
                 Spacer(modifier = Modifier.height(10.dp))
                 Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
                     if (!userProfile?.activeRouteId.isNullOrEmpty()) {
-                        UserLiveMapScreen(routeId = userProfile!!.activeRouteId)
+                        TruckLiveMapScreen(routeId = userProfile!!.activeRouteId)
                     } else {
                         Text("No active route selected", fontSize = 13.sp, color = Color.Gray)
                     }
@@ -348,7 +347,7 @@ fun MapTrackerSection(padding: PaddingValues, userProfile: UserModel?) {
             colors = CardDefaults.cardColors(containerColor = White)
         ) {
             if (!userProfile?.activeRouteId.isNullOrEmpty()) {
-                UserLiveMapScreen(routeId = userProfile!!.activeRouteId)
+                TruckLiveMapScreen(routeId = userProfile!!.activeRouteId)
             } else {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Select a route in Home to start tracking", color = Color.Gray)
