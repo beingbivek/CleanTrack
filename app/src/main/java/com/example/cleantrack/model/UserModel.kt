@@ -2,8 +2,10 @@ package com.example.cleantrack.model
 
 import android.os.Parcelable
 import com.google.firebase.database.Exclude
+import com.google.firebase.database.PropertyName
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
+import retrofit2.http.GET
 
 
 @Parcelize
@@ -13,7 +15,9 @@ data class UserModel(
     val number : String = "",
     val role : String = "USER",
     var subscribed: Boolean? = null,
-    var stability: Int? = null,
+    @get:PropertyName("userStability")
+    @set:PropertyName("userStability")
+    var userStability: Int? = null,
     var points: Int = 0,
     val userId : String = "",
 
@@ -55,7 +59,7 @@ data class UserModel(
         )
 
         subscribed?.let { data["subscribed"] = it }
-        stability?.let { data["stability"] = it }
+        userStability?.let { data["stability"] = it }
         subscription?.let { data["subscription"] = it }
 
         return data
