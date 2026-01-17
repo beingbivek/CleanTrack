@@ -214,7 +214,7 @@ fun HomeSection(
                 .clickable {
                     if (isPremium) {
                         userProfile?.activeRouteId?.let { id ->
-                            context.startActivity(Intent(context, UserLiveTrackingActivity::class.java).apply {
+                            context.startActivity(Intent(context, TruckLiveTrackingActivity::class.java).apply {
                                 putExtra("ROUTE_ID", id)
                             })
                         }
@@ -236,7 +236,7 @@ fun HomeSection(
                     if (isLoading) {
                         CircularProgressIndicator(color = Green, modifier = Modifier.size(30.dp))
                     } else if (isPremium && !userProfile?.activeRouteId.isNullOrEmpty()) {
-                        UserLiveMapScreen(routeId = userProfile!!.activeRouteId)
+                        TruckLiveMapScreen(routeId = userProfile!!.activeRouteId)
                     } else {
                         // Blurred or placeholder view for non-premium
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {

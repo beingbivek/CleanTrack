@@ -1,17 +1,27 @@
 package com.example.cleantrack.repository
 import android.util.Log
 import com.example.cleantrack.model.BinCollectionModel
+import com.example.cleantrack.util.ApiTokenUtil
 import com.google.ai.client.generativeai.GenerativeModel
 
 class AIRepository {
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-2.5-flash", // Using stable flash for faster summaries
-        apiKey = "AIzaSyCgwxy0WubzG-vpffwAZGyBegugFuA3dIo"
-
-    )
+    private suspend fun buildGenerativeModel(): GenerativeModel? {
+        val apiKey = ApiTokenUtil.getGeminiApiKey()
+        if (apiKey.isNullOrBlank()) {
+            Log.e("AI_ERROR", "Gemini API key missing from Remote Config")
+            return null
+        }
+        return GenerativeModel(
+            modelName = "gemini-2.5-flash", // Using stable flash for faster summaries
+            apiKey = apiKey
+        )
+    }
 
     suspend fun generateGlobalOverview(history: List<BinCollectionModel>): String {
         if (history.isEmpty()) return "Start your collection journey to see AI insights!"
+
+        val generativeModel = buildGenerativeModel()
+            ?: return "AI Error: Gemini API key is not configured."
 
         // Create a summary string of all bin data for the AI
         val summaryData = history.joinToString("\n") {
