@@ -1,6 +1,7 @@
 package com.example.cleantrack.repository
 
 import android.util.Log
+import com.example.cleantrack.model.SubscriptionModel
 import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.model.UserPointsModel
 import com.google.firebase.auth.FirebaseAuth
@@ -246,16 +247,15 @@ class UserRepoImpl : UserRepo{
         model: UserModel,
         callback: (Boolean, String) -> Unit
     ) {
-
+        // We update the whole map, which now includes the subscription object
         ref.child(userId).updateChildren(model.toMap())
             .addOnCompleteListener {
-                if (it.isSuccessful){
+                if (it.isSuccessful) {
                     callback(true, "User Account updated")
-                }else{
+                } else {
                     callback(false, "${it.exception?.message}")
                 }
             }
-
     }
 
     override fun deleteUser(
@@ -406,6 +406,22 @@ class UserRepoImpl : UserRepo{
             .addOnFailureListener {
                 callback(false, it.message ?: "Error", 0)
             }
+    }
+
+    override fun updateSubscription(
+        userId: String,
+        subscription: SubscriptionModel,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val updates = mapOf(
+        "isSubscribed" to true,           // Root level
+        "expiryDate" to subscription.expiryDate, // Root level (for easy access)
+        "subscription" to subscription    // Nested object
+    )
+        ref.child(userId).updateChildren(updates).addOnCompleteListener { task ->
+            if (task.isSuccessful) callback(true, "Subscription Activated")
+            else callback(false, task.exception?.message ?: "Update Failed")
+        }
     }
 
 

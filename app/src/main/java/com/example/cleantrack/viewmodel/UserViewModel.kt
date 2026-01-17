@@ -4,9 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.UserRepo
 import com.example.cleantrack.util.AppUtil
@@ -17,6 +20,7 @@ import com.example.cleantrack.view.auth.UserLocationMapActivity
 
 import com.example.cleantrack.view.driver.DriverDashboardActivity
 import com.example.cleantrack.view.user.UserDashboardActivity
+import kotlinx.coroutines.launch
 
 
 class UserViewModel(
@@ -27,6 +31,8 @@ class UserViewModel(
     private val _latestCollection = MutableLiveData<com.example.cleantrack.model.BinCollectionModel?>()
     val latestCollection: androidx.lifecycle.LiveData<com.example.cleantrack.model.BinCollectionModel?>
         get() = _latestCollection
+    private val _globalAiReview = MutableLiveData<String>("Gathering your history...")
+    val globalAiReview: LiveData<String> = _globalAiReview
 
     fun login(email : String , password : String , callback : (Boolean, String?, String?, String?)-> Unit){
                 repo.login(email, password, callback)
@@ -320,4 +326,82 @@ class UserViewModel(
             }
         }
     }
+
+    // --- Add these inside UserViewModel class ---
+
+    private val _sellerData = MutableLiveData<UserModel?>()
+    val sellerData: MutableLiveData<UserModel?> get() = _sellerData
+
+    private val _highestBidderData = MutableLiveData<UserModel?>()
+    val highestBidderData: MutableLiveData<UserModel?> get() = _highestBidderData
+
+    // Function to specifically fetch Seller details
+    fun getSellerInfo(sellerId: String) {
+        repo.getUserById(sellerId) { success, _, data ->
+            if (success) _sellerData.postValue(data)
+        }
+    }
+
+    // Function to specifically fetch current Highest Bidder details
+    fun getHighestBidderInfo(bidderId: String) {
+        if (bidderId.isEmpty()) return
+        repo.getUserById(bidderId) { success, _, data ->
+            if (success) _highestBidderData.postValue(data)
+        }
+    }
+
+    fun fetchGlobalAIReview(userId: String, aiRepo: AIRepository) {
+        collectionRepo.getAllCollectionsForUser(userId) { success, _, collections ->
+            if (success && !collections.isNullOrEmpty()) {
+                // We use viewModelScope to run the heavy AI call off the main thread
+                viewModelScope.launch {
+                    val review = aiRepo.generateGlobalOverview(collections)
+                    _globalAiReview.postValue(review)
+                }
+            } else {
+                _globalAiReview.postValue("Start disposing waste to see your personalized AI tips!")
+            }
+        }
+    }
+
+
+    /**
+     * Logic to check if the user has an active premium subscription.
+     * It checks the boolean flag and validates that the expiry date hasn't passed.
+     */
+    fun isPremiumUser(user: UserModel?): Boolean {
+        if (user == null) return false
+
+        val currentTime = System.currentTimeMillis()
+
+        // Check root flag
+        val hasFlag = user.isSubscribed
+
+        // Check root expiry OR nested expiry
+        val expiry = user.expiryDate ?: user.subscription?.expiryDate ?: 0L
+
+        // Check if the subscription object itself exists (backup check)
+        val hasSubscriptionObject = user.subscription != null
+
+        // It is premium if (Flag is true OR Subscription object exists) AND it's not expired
+        return (hasFlag || hasSubscriptionObject) && expiry > currentTime
+    }
+
+    /**
+     * Returns a user-friendly string of days remaining
+     */
+    fun getSubscriptionDaysRemaining(user: UserModel?): Long {
+        val expiry = user?.subscription?.expiryDate ?: return 0L
+        val diff = expiry - System.currentTimeMillis()
+        return if (diff > 0) diff / (24 * 60 * 60 * 1000) else 0L
+    }
+
+    // Add a check in your existing getUserById to refresh the local _user state
+    fun refreshUser(userId: String) {
+        repo.getUserById(userId) { success, _, data ->
+            if (success) _user.postValue(data)
+        }
+    }
+
+
 }

@@ -19,27 +19,45 @@
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
         <activity
+            android:name=".view.user.PaymentHistoryActivity"
+            android:exported="false"
+            android:label="@string/title_activity_payment_history"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.AddListItemActivity"
+            android:exported="true"
+            android:label="@string/title_activity_add_list_item"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.ProductDetailActivity"
+            android:exported="true"
+            android:label="@string/title_activity_product_detail"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.MarketplaceActivity"
+            android:exported="true"
+            android:label="@string/title_activity_marketplace"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.admin.AdminTransactionListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_transaction_list"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
             android:name=".view.driver.DriversTripHistoryActivity"
             android:exported="true"
             android:label="@string/title_activity_drivers_trip_history"
-            android:theme="@style/Theme.CleanTrack">
-
-        </activity>
-
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.DriverRouteMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_route_map"
-            android:theme="@style/Theme.CleanTrack">
-
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.BinCollectionActivity"
             android:exported="true"
             android:label="@string/title_activity_bin_collection"
-            android:theme="@style/Theme.CleanTrack">
-
-        </activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.user.UserScheduleListActivity"
             android:exported="true"
