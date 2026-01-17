@@ -8,6 +8,7 @@ import kotlinx.parcelize.RawValue
 import retrofit2.http.GET
 
 
+
 @Parcelize
 data class UserModel(
     val email : String = "",
