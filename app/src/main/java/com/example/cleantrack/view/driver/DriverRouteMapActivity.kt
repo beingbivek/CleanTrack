@@ -62,6 +62,7 @@ fun DriverRouteMapScreen(savedInstanceState: Bundle?) {
     val mapView = remember { MapView(context).apply { onCreate(savedInstanceState) } }
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var currentPolyline by remember { mutableStateOf<Polyline?>(null) }
+    var baatoApiKey by remember { mutableStateOf<String?>(null) }
 
     // 1. Initial Fetch: Get Driver's assigned Schedule
     LaunchedEffect(Unit) {
@@ -70,6 +71,20 @@ fun DriverRouteMapScreen(savedInstanceState: Bundle?) {
             scheduleVM.getScheduleByDriver(uid)
             routeVM.loadRoutes() // Load all routes so we can pick the assigned one
         }
+    }
+
+    LaunchedEffect(Unit) {
+        baatoApiKey = ApiTokenUtil.getBaatoApiKey()
+    }
+
+    LaunchedEffect(mapInstance, baatoApiKey) {
+        val map = mapInstance
+        val apiKey = baatoApiKey
+        if (map == null || apiKey.isNullOrBlank()) {
+            return@LaunchedEffect
+        }
+        val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=$apiKey"
+        map.setStyle(styleUrl)
     }
 
     // 2. Logic: Draw the specific route assigned to this driver
@@ -131,8 +146,6 @@ fun DriverRouteMapScreen(savedInstanceState: Bundle?) {
             ) { view ->
                 view.getMapAsync { m ->
                     mapInstance = m
-                    val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
-                    m.setStyle(styleUrl)
 
                     // Optional: Enable current location dot
                     m.uiSettings.isCompassEnabled = true

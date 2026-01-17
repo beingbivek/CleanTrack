@@ -115,9 +115,9 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
     var suggestions by remember { mutableStateOf(listOf<MapSearchResultModel>()) }
     var expanded by remember { mutableStateOf(false) }
     var debounceJob by remember { mutableStateOf<Job?>(null) }
+    var baatoApiKey by remember { mutableStateOf<String?>(null) }
 
     val mapView = remember { MapView(context).apply { onCreate(savedInstanceState) } }
-    val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
 
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var markerInstance by remember { mutableStateOf<Marker?>(null) }
@@ -173,33 +173,46 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        baatoApiKey = ApiTokenUtil.getBaatoApiKey()
+    }
+
     // Map init
     DisposableEffect(mapView) {
         mapView.getMapAsync { map ->
             mapInstance = map
-            map.setStyle(styleUrl) {
-                val pos = LatLng(currentLat, currentLon)
-                map.cameraPosition = CameraPosition.Builder().target(pos).zoom(12.0).build()
-
-                // Main marker
-                markerInstance = map.addMarker(
-                    MarkerOptions()
-                        .position(pos)
-                        .title("Selected Location")
-                )
-
-                // Map click listener
-                map.addOnMapClickListener { point ->
-                    markerInstance?.position = point
-                    currentLat = point.latitude
-                    currentLon = point.longitude
-                    inputLatText = point.latitude.toString()
-                    inputLonText = point.longitude.toString()
-                    true
-                }
-            }
         }
         onDispose { }
+    }
+
+    LaunchedEffect(mapInstance, baatoApiKey) {
+        val map = mapInstance
+        val apiKey = baatoApiKey
+        if (map == null || apiKey.isNullOrBlank()) {
+            return@LaunchedEffect
+        }
+        val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=$apiKey"
+        map.setStyle(styleUrl) {
+            val pos = LatLng(currentLat, currentLon)
+            map.cameraPosition = CameraPosition.Builder().target(pos).zoom(12.0).build()
+
+            // Main marker
+            markerInstance = map.addMarker(
+                MarkerOptions()
+                    .position(pos)
+                    .title("Selected Location")
+            )
+
+            // Map click listener
+            map.addOnMapClickListener { point ->
+                markerInstance?.position = point
+                currentLat = point.latitude
+                currentLon = point.longitude
+                inputLatText = point.latitude.toString()
+                inputLonText = point.longitude.toString()
+                true
+            }
+        }
     }
 
     // Lifecycle
@@ -230,9 +243,14 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
 
     // Search function
     fun onSuggestionClick(placeId: Int, mapInstance: MapLibreMap?, markerInstance: Marker?) {
+        val apiKey = baatoApiKey
+        if (apiKey.isNullOrBlank()) {
+            Toast.makeText(context, "Baato API key unavailable.", Toast.LENGTH_SHORT).show()
+            return
+        }
         scope.launch(Dispatchers.IO) {
             try {
-                val url = "https://api.baato.io/api/v1/places?key=${ApiTokenUtil.BAATO_API_KEY}&placeId=$placeId"
+                val url = "https://api.baato.io/api/v1/places?key=$apiKey&placeId=$placeId"
                 val client = OkHttpClient()
                 val req = Request.Builder().url(url).build()
                 val res = client.newCall(req).execute()
@@ -279,7 +297,14 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
                                     expanded = true
                                     launch(Dispatchers.IO) {
                                         try {
-                                            val url = "https://api.baato.io/api/v1/search?key=${ApiTokenUtil.BAATO_API_KEY}&q=$it&limit=8"
+                                            val apiKey = baatoApiKey
+                                            if (apiKey.isNullOrBlank()) {
+                                                withContext(Dispatchers.Main) {
+                                                    Toast.makeText(context, "Baato API key unavailable.", Toast.LENGTH_SHORT).show()
+                                                }
+                                                return@launch
+                                            }
+                                            val url = "https://api.baato.io/api/v1/search?key=$apiKey&q=$it&limit=8"
                                             val client = OkHttpClient()
                                             val req = Request.Builder().url(url).build()
                                             val res = client.newCall(req).execute()

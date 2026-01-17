@@ -1,5 +1,18 @@
 package com.example.cleantrack.util
 
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import kotlinx.coroutines.tasks.await
+
 object ApiTokenUtil {
-    const val BAATO_API_KEY = "bpk.-IncMARAWfec42oAnnd-pIeWya884-wCYvQNbGg1TfFi" //api for baato maps
+    private const val BAATO_API_KEY_PARAM = "baato_api_key"
+
+    suspend fun getBaatoApiKey(): String? {
+        return try {
+            val remoteConfig = FirebaseRemoteConfig.getInstance()
+            remoteConfig.fetchAndActivate().await()
+            remoteConfig.getString(BAATO_API_KEY_PARAM).takeIf { it.isNotBlank() }
+        } catch (_: Exception) {
+            null
+        }
+    }
 }

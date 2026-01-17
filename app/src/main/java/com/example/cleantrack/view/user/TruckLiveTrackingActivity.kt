@@ -14,14 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DepartureBoard
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -94,12 +90,19 @@ fun TruckLiveMapScreen(routeId: String) {
     var truckMarker by remember { mutableStateOf<Marker?>(null) }
     var currentPolyline by remember { mutableStateOf<Polyline?>(null) }
     var isStyleLoaded by remember { mutableStateOf(false) }
+    var baatoApiKey by remember { mutableStateOf<String?>(null) }
 
-    val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
+    val styleUrl = baatoApiKey?.let {
+        "https://api.baato.io/api/v1/styles/breeze_cdn?key=$it"
+    }
 
     // 1. Observe Trip Data
     LaunchedEffect(routeId) {
         vm.observeActiveTripByRoute(routeId)
+    }
+
+    LaunchedEffect(Unit) {
+        baatoApiKey = ApiTokenUtil.getBaatoApiKey()
     }
 
     LaunchedEffect(activeTrip?.scheduleId) {
@@ -153,7 +156,11 @@ fun TruckLiveMapScreen(routeId: String) {
     }
 
     // 3. Initialize Map and Style
-    LaunchedEffect(mapView) {
+    LaunchedEffect(mapView, styleUrl) {
+        if (styleUrl == null) {
+            isStyleLoaded = false
+            return@LaunchedEffect
+        }
         mapView.getMapAsync { m ->
             mapInstance = m
             m.setStyle(styleUrl) {
