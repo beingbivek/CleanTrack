@@ -60,7 +60,7 @@ data class UserModel(
         )
 
         subscribed?.let { data["subscribed"] = it }
-        userStability?.let { data["stability"] = it }
+        userStability?.let { data["userStability"] = it }
         subscription?.let { data["subscription"] = it }
 
         return data
