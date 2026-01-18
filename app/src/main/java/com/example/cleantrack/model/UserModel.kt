@@ -15,7 +15,6 @@ data class UserModel(
     val fullname : String = "",
     val number : String = "",
     val role : String = "USER",
-    var subscribed: Boolean? = null,
     @get:PropertyName("userStability")
     @set:PropertyName("userStability")
     var userStability: Int? = null,
@@ -59,7 +58,6 @@ data class UserModel(
             "profileImageUrl" to profileImageUrl
         )
 
-        subscribed?.let { data["subscribed"] = it }
         userStability?.let { data["userStability"] = it }
         subscription?.let { data["subscription"] = it }
 
