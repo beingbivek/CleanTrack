@@ -19,13 +19,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.BinCollectionModel
+import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.ActiveTripRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.BinRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.viewmodel.BinViewModel
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 
@@ -64,6 +67,7 @@ fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
             com.example.cleantrack.repository.PointsRepoImpl() // Add this!
         )
     }
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     val binDetails by binVM.bin.observeAsState()
     val loading by binVM.loading.observeAsState(false)
@@ -159,7 +163,18 @@ fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
                                     isSegregated = isSegregated
                                 ) { success, msg ->
                                     isSaving = false
-                                    if (success) onComplete()
+                                    if (success) {
+                                        notificationViewModel.notifyUser(
+                                            bin.ownerUserId,
+                                            NotificationPayload(
+                                                title = "Bin rated",
+                                                message = "Your bin was rated by the driver.",
+                                                type = "bin_rating",
+                                                actionType = "bin_rating"
+                                            )
+                                        )
+                                        onComplete()
+                                    }
                                 }
                             }
                         }

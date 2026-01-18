@@ -36,9 +36,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.model.ProductModel
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.ProductRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.ProductViewModel
 import java.util.Calendar
 
@@ -57,6 +61,7 @@ class MarketplaceActivity : ComponentActivity() {
 fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
     val context = LocalContext.current
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
     val products by productViewModel.allProducts.observeAsState(emptyList())
     val isLoading by productViewModel.loading.observeAsState(false)
 
@@ -95,6 +100,31 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                 TextButton(onClick = {
                     productViewModel.updateStatus(productToMarkSold!!.productId, "sold") { _, msg ->
                         Toast.makeText(context, "Item marked as Sold!", Toast.LENGTH_SHORT).show()
+                        val bidders = productToMarkSold?.bids?.keys?.toSet().orEmpty()
+                        if (bidders.isNotEmpty()) {
+                            notificationViewModel.notifyUsersByIds(
+                                bidders,
+                                NotificationPayload(
+                                    title = "Auction ended",
+                                    message = "${productToMarkSold?.productName} has been sold.",
+                                    type = "marketplace",
+                                    actionType = "marketplace",
+                                    productId = productToMarkSold?.productId.orEmpty()
+                                )
+                            )
+                        }
+                        productToMarkSold?.highestBidderId?.takeIf { it.isNotBlank() }?.let { winnerId ->
+                            notificationViewModel.notifyUser(
+                                winnerId,
+                                NotificationPayload(
+                                    title = "You won the bid!",
+                                    message = "You won ${productToMarkSold?.productName}.",
+                                    type = "marketplace",
+                                    actionType = "product_detail",
+                                    productId = productToMarkSold?.productId.orEmpty()
+                                )
+                            )
+                        }
                         productToMarkSold = null
                     }
                 }) { Text("Confirm Sale", color = Green) }

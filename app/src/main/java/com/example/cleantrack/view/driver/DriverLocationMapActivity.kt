@@ -24,14 +24,17 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.cleantrack.model.BinCollectionModel
 import com.example.cleantrack.model.BinModel
+import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.repository.ActiveTripRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.BinRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.PointsRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.util.ApiTokenUtil
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.google.android.gms.location.*
@@ -49,6 +52,7 @@ class DriverLocationMapActivity : ComponentActivity() {
     private lateinit var activeTripViewModel: ActiveTripViewModel
     private var tripId: String = ""
     private var driverMapViewState: MapView? = null
+    private val notificationViewModel = NotificationViewModel(NotificationRepoImpl(), UserRepoImpl())
 
     private val scanLauncher =
         registerForActivityResult(ScanContract()) { result ->
@@ -87,6 +91,15 @@ class DriverLocationMapActivity : ComponentActivity() {
 
         activeTripViewModel.addBinCollection(collectionModel) { success, message ->
             if (success) {
+                notificationViewModel.notifyUser(
+                    bin.ownerUserId,
+                    NotificationPayload(
+                        title = "Bin rated",
+                        message = "Your bin was rated by the driver.",
+                        type = "bin_rating",
+                        actionType = "bin_rating"
+                    )
+                )
                 Toast.makeText(this, "Bin rated successfully", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()

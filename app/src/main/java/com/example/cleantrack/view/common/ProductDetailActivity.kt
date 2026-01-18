@@ -30,9 +30,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.cleantrack.model.NotificationPayload
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.ProductRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.ProductViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 
@@ -53,6 +56,7 @@ fun ProductDetailScreen(productId: String, userId: String) {
     val context = LocalContext.current
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
     val product by productViewModel.product.observeAsState()
     val seller by userViewModel.sellerData.observeAsState()
     val highestBidder by userViewModel.highestBidderData.observeAsState()
@@ -177,11 +181,21 @@ fun ProductDetailScreen(productId: String, userId: String) {
                                     onClick = {
                                         val bid = bidAmount.toDoubleOrNull() ?: 0.0
                                         if (bid > currentProduct.currentBidPrice) {
-                                            productViewModel.updateBid(productId, userId, bid) { _, msg ->
+                                            productViewModel.updateBid(productId, userId, bid) { success, msg ->
                                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                                if(msg.contains("success")) {
+                                                if(success) {
                                                     bidAmount = ""
                                                     productViewModel.getProductById(productId)
+                                                    notificationViewModel.notifyUser(
+                                                        currentProduct.sellerId,
+                                                        NotificationPayload(
+                                                            title = "New bid received",
+                                                            message = "You received a bid on ${currentProduct.productName}.",
+                                                            type = "marketplace",
+                                                            actionType = "product_detail",
+                                                            productId = currentProduct.productId
+                                                        )
+                                                    )
                                                 }
                                             }
                                         } else {

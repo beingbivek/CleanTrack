@@ -37,9 +37,12 @@ import coil.compose.AsyncImage
 import com.example.cleantrack.R
 import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.*
+import com.example.cleantrack.model.NotificationPayload
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.EditProfileActivity
 import com.example.cleantrack.view.common.LogoutDialog
+import com.example.cleantrack.view.common.NotificationCenterActivity
 import com.example.cleantrack.view.user.BottomNavItem
 import com.example.cleantrack.view.user.ProfileMenuItem
 import com.example.cleantrack.view.user.QuickIcon
@@ -72,6 +75,7 @@ fun DriverDashboardBody() {
     val tripViewModel = remember {
         ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl(), PointsRepoImpl())
     }
+    val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     // --- STATE OBSERVERS ---
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
@@ -86,6 +90,7 @@ fun DriverDashboardBody() {
 
     var showEndTripDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var scheduleArrivalNotified by remember { mutableStateOf(false) }
 
     val isTripActive = activeTrip?.status == "ACTIVE"
 
@@ -162,6 +167,28 @@ fun DriverDashboardBody() {
         }
     }
 
+    LaunchedEffect(assignedSchedule) {
+        scheduleArrivalNotified = false
+    }
+
+    LaunchedEffect(assignedSchedule, scheduleArrivalNotified) {
+        val schedule = assignedSchedule ?: return@LaunchedEffect
+        val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        if (!scheduleArrivalNotified && currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
+            val payload = NotificationPayload(
+                title = "Schedule arrived",
+                message = "${schedule.routeName} pickup starts now.",
+                type = "schedule",
+                actionType = "schedule",
+                routeId = schedule.routeId,
+                scheduleId = schedule.scheduleId
+            )
+            notificationVM.notifyUsersByRoute(schedule.routeId, payload)
+            notificationVM.notifyDriver(schedule.driverId, payload)
+            scheduleArrivalNotified = true
+        }
+    }
+
     LaunchedEffect(activeTrip?.status) {
         if (activeTrip?.status == "COMPLETED") {
             assignedSchedule?.routeId?.let { routeId ->
@@ -183,7 +210,23 @@ fun DriverDashboardBody() {
             confirmButton = {
                 Button(onClick = {
                     showEndTripDialog = false
-                    activeTrip?.let { tripViewModel.endTrip(it.tripId) { _, m -> Toast.makeText(context, m, Toast.LENGTH_SHORT).show() } }
+                    activeTrip?.let { trip ->
+                        tripViewModel.endTrip(trip.tripId) { _, m ->
+                            Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                            assignedSchedule?.let { schedule ->
+                                val payload = NotificationPayload(
+                                    title = "Route completed",
+                                    message = "${schedule.routeName} route has ended.",
+                                    type = "trip",
+                                    actionType = "schedule",
+                                    routeId = schedule.routeId,
+                                    scheduleId = schedule.scheduleId
+                                )
+                                notificationVM.notifyUsersByRoute(schedule.routeId, payload)
+                                notificationVM.notifyDriver(schedule.driverId, payload)
+                            }
+                        }
+                    }
                 }, colors = ButtonDefaults.buttonColors(containerColor = Red)) { Text("End Route", color = Color.White) }
             },
             dismissButton = { TextButton(onClick = { showEndTripDialog = false }) { Text("Cancel") } }
@@ -207,7 +250,7 @@ fun DriverDashboardBody() {
             }
         ) { innerPadding ->
             when (selectedTab) {
-                0 -> DriverHomeSection(innerPadding, currentUser, activeTrip, assignedSchedule, stats, sLoading, tripViewModel) { showEndTripDialog = true }
+                0 -> DriverHomeSection(innerPadding, currentUser, activeTrip, assignedSchedule, stats, sLoading,tripViewModel,notificationVM) { showEndTripDialog = true }
                 2 -> DriverProfileSection(innerPadding, currentUser, currentUserId) { showLogoutDialog = true }
             }
         }
@@ -222,6 +265,7 @@ fun DriverHomeSection(
     stats: Triple<Int, Int, Int>,
     isLoading: Boolean,
     tripVM: ActiveTripViewModel,
+    notificationVM: NotificationViewModel,
     onEndTrip: () -> Unit
 ) {
     val context = LocalContext.current
@@ -248,8 +292,13 @@ fun DriverHomeSection(
             Spacer(modifier = Modifier.width(12.dp))
             Text(text = "Status: ${if(isTripActive) "On Route" else "Idle"}", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { context.startActivity(Intent(context, UserAnnouncementListActivity::class.java)) }) {
-                Icon(Icons.Outlined.Campaign, null, tint = Color.White, modifier = Modifier.size(28.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { context.startActivity(Intent(context, NotificationCenterActivity::class.java)) }) {
+                    Icon(Icons.Outlined.Notifications, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                }
+                IconButton(onClick = { context.startActivity(Intent(context, UserAnnouncementListActivity::class.java)) }) {
+                    Icon(Icons.Outlined.Campaign, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
             }
         }
 
@@ -345,8 +394,21 @@ fun DriverHomeSection(
                 onClick = {
                     if (isTripActive) onEndTrip()
                     else {
-                        tripVM.startTripWithValidation(assignedSchedule!!) { _, m ->
+                        tripVM.startTripWithValidation(assignedSchedule!!) { success, m ->
                             Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                            if (success) {
+                                val schedule = assignedSchedule!!
+                                val payload = NotificationPayload(
+                                    title = "Route started",
+                                    message = "${schedule.routeName} route is now active.",
+                                    type = "trip",
+                                    actionType = "schedule",
+                                    routeId = schedule.routeId,
+                                    scheduleId = schedule.scheduleId
+                                )
+                                notificationVM.notifyUsersByRoute(schedule.routeId, payload)
+                                notificationVM.notifyDriver(schedule.driverId, payload)
+                            }
                         }
                     }
                 },

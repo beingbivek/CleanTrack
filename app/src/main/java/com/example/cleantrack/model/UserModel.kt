@@ -36,8 +36,9 @@ data class UserModel(
 
     val profileImageUrl: String = "",
     val subscription: @RawValue SubscriptionModel? = null,
+    val fcmToken: String = ""
 
-    ) : Parcelable{
+) : Parcelable{
 
     @Exclude
     fun toMap() : Map<String, Any?>{
@@ -55,7 +56,8 @@ data class UserModel(
             "activeRouteId" to activeRouteId,
             "latitude" to latitude,
             "longitude" to longitude,
-            "profileImageUrl" to profileImageUrl
+            "profileImageUrl" to profileImageUrl,
+            "fcmToken" to fcmToken
         )
 
         userStability?.let { data["userStability"] = it }

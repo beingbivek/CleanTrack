@@ -31,8 +31,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.cleantrack.model.ContactSupportModel
+import com.example.cleantrack.model.NotificationPayload
+import com.example.cleantrack.repository.NotificationRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.viewmodel.ContactSupportViewModel
+import com.example.cleantrack.viewmodel.NotificationViewModel
 
 class AdminContactSupportViewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +52,7 @@ class AdminContactSupportViewActivity : ComponentActivity() {
 @Composable
 fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit) {
     val issues by viewModel.allIssues.observeAsState(emptyList())
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     // --- STATES ---
     var showFilters by remember { mutableStateOf(false) } // Toggle for filter panel
@@ -175,7 +180,7 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(filteredIssues) { issue ->
-                        AdminIssueCard(issue = issue, viewModel = viewModel)
+                        AdminIssueCard(issue = issue, viewModel = viewModel, notificationViewModel)
                     }
                 }
             }
@@ -184,7 +189,7 @@ fun AdminDashboardScreen(viewModel: ContactSupportViewModel, onBack: () -> Unit)
 }
 
 @Composable
-fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel) {
+fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewModel, notificationViewModel: NotificationViewModel) {
     var showReplyField by remember { mutableStateOf(false) }
     var adminReplyText by remember { mutableStateOf("") }
     var expandedStatus by remember { mutableStateOf(false) }
@@ -272,6 +277,16 @@ fun AdminIssueCard(issue: ContactSupportModel, viewModel: ContactSupportViewMode
                         onClick = {
                             if (adminReplyText.isNotBlank()) {
                                 viewModel.adminReplyToTicket(issue, adminReplyText)
+                                notificationViewModel.notifyUser(
+                                    issue.userId,
+                                    NotificationPayload(
+                                        title = "Support reply",
+                                        message = "Admin replied to your support ticket.",
+                                        type = "support_ticket",
+                                        actionType = "ticket_detail",
+                                        ticketId = issue.ticketId
+                                    )
+                                )
                                 adminReplyText = ""
                                 showReplyField = false
                             }

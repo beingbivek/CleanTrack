@@ -42,6 +42,7 @@ import com.example.cleantrack.view.common.AnnouncementBanner
 import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.view.common.MarketplaceActivity
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
+import com.example.cleantrack.view.common.NotificationCenterActivity
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 
@@ -198,7 +199,14 @@ fun HomeSection(
             Spacer(modifier = Modifier.width(12.dp))
             Text(text = "Points: $currentPoints ✨", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { context.startActivity(Intent(context, UserAnnouncementListActivity::class.java)) }) { Icon(Icons.Outlined.Campaign, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { context.startActivity(Intent(context, NotificationCenterActivity::class.java)) }) {
+                    Icon(Icons.Outlined.Notifications, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                }
+                IconButton(onClick = { context.startActivity(Intent(context, UserAnnouncementListActivity::class.java)) }) {
+                    Icon(Icons.Outlined.Campaign, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(25.dp))
@@ -280,7 +288,7 @@ fun HomeSection(
                             putExtra("USER_ID", userProfile?.userId) // PASSING ID HERE
                         }) }
                         QuickIcon(icon = Icons.Default.Route, label = "Routes") {
-                             context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java))
+                            context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java))
                         }
                         LockedQuickIcon(icon = Icons.Default.CalendarMonth, label = "Schedule", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserScheduleListActivity::class.java)) else onShowPremiumGate()

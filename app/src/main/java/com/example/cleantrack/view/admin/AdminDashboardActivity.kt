@@ -34,6 +34,7 @@ import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.common.TermsAndConditionActivity
 import com.example.cleantrack.view.common.MarketplaceActivity
+import com.example.cleantrack.view.common.NotificationCenterActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 
 class AdminDashboardActivity : ComponentActivity() {
@@ -86,12 +87,18 @@ fun AdminDashboardBody() {
             Spacer(modifier = Modifier.height(20.dp))
 
             // --- HEADER SECTION ---
-            Text(
-                text = "Hello Admin ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: ""} 👋",
-                color = Color.White,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Hello Admin ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: ""} 👋",
+                    color = Color.White,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { context.startActivity(Intent(context, NotificationCenterActivity::class.java)) }) {
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.White)
+                }
+            }
             Text(
                 text = "System Control Center",
                 color = Color.White.copy(alpha = 0.8f),

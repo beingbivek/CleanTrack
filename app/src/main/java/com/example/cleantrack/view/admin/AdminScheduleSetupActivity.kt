@@ -20,10 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.cleantrack.model.ScheduleModel
+import com.example.cleantrack.model.NotificationPayload
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.RouteRepoImpl
 import com.example.cleantrack.repository.ScheduleRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.repository.VehicleRepoImpl
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.RouteViewModel
 import com.example.cleantrack.viewmodel.ScheduleViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
@@ -55,6 +58,7 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
     val routeVM = remember { RouteViewModel(RouteRepoImpl()) }
     val vehicleVM = remember { VehicleViewModel(VehicleRepoImpl()) }
     val userVM = remember { UserViewModel(UserRepoImpl()) }
+    val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     val selectedSchedule by scheduleVM.schedule.observeAsState(null)
     val schedules by scheduleVM.schedules.observeAsState(null)
@@ -300,12 +304,36 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
                             if (scheduleId == null) {
                                 scheduleVM.addSchedule(model) { success, msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                    if (success) activity.finish()
+                                    if (success) {
+                                        val payload = NotificationPayload(
+                                            title = "Schedule added",
+                                            message = "${model.routeName} schedule added for ${model.dayOfWeek} ${model.startTime}.",
+                                            type = "schedule",
+                                            actionType = "schedule",
+                                            routeId = model.routeId,
+                                            scheduleId = model.scheduleId
+                                        )
+                                        notificationVM.notifyUsersByRoute(model.routeId, payload)
+                                        notificationVM.notifyDriver(model.driverId, payload)
+                                        activity.finish()
+                                    }
                                 }
                             } else {
                                 scheduleVM.updateSchedule(model) { success, msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                    if (success) activity.finish()
+                                    if (success) {
+                                        val payload = NotificationPayload(
+                                            title = "Schedule updated",
+                                            message = "${model.routeName} schedule updated for ${model.dayOfWeek} ${model.startTime}.",
+                                            type = "schedule",
+                                            actionType = "schedule",
+                                            routeId = model.routeId,
+                                            scheduleId = model.scheduleId
+                                        )
+                                        notificationVM.notifyUsersByRoute(model.routeId, payload)
+                                        notificationVM.notifyDriver(model.driverId, payload)
+                                        activity.finish()
+                                    }
                                 }
                             }
                         }
