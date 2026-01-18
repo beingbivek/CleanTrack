@@ -45,6 +45,7 @@ import com.example.cleantrack.view.user.QuickIcon
 import com.example.cleantrack.view.user.UserAnnouncementListActivity
 import com.example.cleantrack.viewmodel.*
 import com.google.android.gms.location.LocationServices
+import com.example.cleantrack.util.NotificationTypes
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -71,6 +72,8 @@ fun DriverDashboardBody() {
     val tripViewModel = remember {
         ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl(), PointsRepoImpl())
     }
+    val notificationRepo = remember { NotificationRepoImpl() }
+    val userRepo = remember { UserRepoImpl() }
 
     // --- STATE OBSERVERS ---
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
@@ -85,6 +88,7 @@ fun DriverDashboardBody() {
 
     var showEndTripDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val notifiedScheduleIds = remember { mutableStateListOf<String>() }
 
     val isTripActive = activeTrip?.status == "ACTIVE"
 
@@ -155,6 +159,42 @@ fun DriverDashboardBody() {
                     // This triggers the force-end logic we wrote in the ViewModel
                     tripViewModel.startTripWithValidation(schedule) { _, message ->
                         Toast.makeText(context, "Shift ended: $message", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(assignedSchedule, activeTrip?.status) {
+        assignedSchedule?.let { schedule ->
+            val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+            val currentTime = sdf.format(Date())
+            val scheduleActive = currentTime >= schedule.startTime && currentTime <= schedule.endTime
+
+            if (scheduleActive && activeTrip?.status != "ACTIVE" && !notifiedScheduleIds.contains(schedule.scheduleId)) {
+                notifiedScheduleIds.add(schedule.scheduleId)
+                val title = "Schedule arriving"
+                val message = "Pickup schedule for ${schedule.routeName} is starting now."
+                val metadata = mapOf("scheduleId" to schedule.scheduleId, "routeId" to schedule.routeId)
+
+                notificationRepo.sendNotification(
+                    recipientId = schedule.driverId,
+                    recipientRole = "DRIVER",
+                    title = title,
+                    message = message,
+                    type = NotificationTypes.SCHEDULE_ARRIVED,
+                    metadata = metadata
+                )
+                userRepo.getUsersByRoute(schedule.routeId) { success, _, users ->
+                    if (success && users != null) {
+                        notificationRepo.sendToUsers(
+                            users.map { it.userId },
+                            "USER",
+                            title,
+                            message,
+                            NotificationTypes.SCHEDULE_ARRIVED,
+                            metadata
+                        )
                     }
                 }
             }
@@ -387,6 +427,12 @@ fun DriverProfileSection(padding: PaddingValues, userProfile: com.example.cleant
 
         Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(8.dp)) {
+                ProfileMenuItem(Icons.Default.Notifications, "Notifications") {
+                    context.startActivity(Intent(context, com.example.cleantrack.view.common.NotificationListActivity::class.java).apply {
+                        putExtra("ROLE", "DRIVER")
+                    })
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
                 ProfileMenuItem(Icons.Default.Edit, "Edit Profile") {
                     val intent = Intent(context, EditProfileActivity::class.java).apply { putExtra("USER_ID", uid) }
                     context.startActivity(intent)

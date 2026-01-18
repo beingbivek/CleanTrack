@@ -1,6 +1,8 @@
 package com.example.cleantrack.repository
 
 import com.example.cleantrack.model.AnnouncementModel
+import com.example.cleantrack.repository.NotificationRepoImpl
+import com.example.cleantrack.util.NotificationTypes
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -22,8 +24,17 @@ class AnnouncementRepoImpl : AnnouncementRepo {
         val finalModel = model.copy(id = id)
 
         ref.child(id).setValue(finalModel).addOnCompleteListener {
-            if (it.isSuccessful) callback(true, "Announcement Posted")
-            else callback(false, it.exception?.message ?: "Error")
+            if (it.isSuccessful) {
+                val notificationRepo = NotificationRepoImpl()
+                val title = "New announcement"
+                val message = finalModel.title.ifBlank { "A new announcement is available." }
+                val metadata = mapOf("announcementId" to id)
+                notificationRepo.sendToRole("USER", title, message, NotificationTypes.ANNOUNCEMENT, metadata)
+                notificationRepo.sendToRole("DRIVER", title, message, NotificationTypes.ANNOUNCEMENT, metadata)
+                callback(true, "Announcement Posted")
+            } else {
+                callback(false, it.exception?.message ?: "Error")
+            }
         }
     }
 

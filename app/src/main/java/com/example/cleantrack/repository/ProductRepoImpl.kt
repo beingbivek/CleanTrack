@@ -7,11 +7,13 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.example.cleantrack.util.NotificationTypes
 
 class ProductRepoImpl : ProductRepo {
 
     private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
     private val ref: DatabaseReference = database.getReference("Products")
+    private val notificationRepo = NotificationRepoImpl()
 
 
 
@@ -56,23 +58,35 @@ class ProductRepoImpl : ProductRepo {
 
 
     override fun updateBid(productId: String, bidderId: String, bidAmount: Double, callback: (Boolean, String) -> Unit) {
-        // Create a map for multiple path updates
-        val updates = HashMap<String, Any>()
+        ref.child(productId).get().addOnSuccessListener { snapshot ->
+            val product = snapshot.getValue(ProductModel::class.java)
+            val sellerId = product?.sellerId.orEmpty()
+            val productName = product?.productName.orEmpty().ifBlank { "item" }
 
-        // Update top-level product fields
-        updates["currentBidPrice"] = bidAmount
-        updates["highestBidderId"] = bidderId
+            val updates = HashMap<String, Any>()
+            updates["currentBidPrice"] = bidAmount
+            updates["highestBidderId"] = bidderId
+            updates["bids/$bidderId"] = bidAmount
 
-        // Update the specific bidder in the 'bids' child (Your Bidders List)
-        // This will appear as Products -> productId -> bids -> bidderId : amount
-        updates["bids/$bidderId"] = bidAmount
-
-        ref.child(productId).updateChildren(updates).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                callback(true, "Bid placed successfully!")
-            } else {
-                callback(false, task.exception?.message ?: "Failed to place bid")
+            ref.child(productId).updateChildren(updates).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    if (sellerId.isNotBlank() && sellerId != bidderId) {
+                        notificationRepo.sendNotification(
+                            recipientId = sellerId,
+                            recipientRole = "USER",
+                            title = "New bid placed",
+                            message = "Someone placed a bid on your $productName.",
+                            type = NotificationTypes.BID_PLACED,
+                            metadata = mapOf("productId" to productId)
+                        )
+                    }
+                    callback(true, "Bid placed successfully!")
+                } else {
+                    callback(false, task.exception?.message ?: "Failed to place bid")
+                }
             }
+        }.addOnFailureListener { error ->
+            callback(false, error.message ?: "Failed to place bid")
         }
     }
 
@@ -116,11 +130,49 @@ class ProductRepoImpl : ProductRepo {
 
     override fun updateProductFields(productId: String, fields: Map<String, Any>, callback: (Boolean, String) -> Unit) {
         val dbRef = FirebaseDatabase.getInstance().getReference("Products").child(productId)
-        dbRef.updateChildren(fields).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                callback(true, "Product updated successfully")
-            } else {
-                callback(false, task.exception?.message ?: "Update failed")
+        val newStatus = fields["productStatus"] as? String
+
+        if (newStatus == "sold") {
+            dbRef.get().addOnSuccessListener { snapshot ->
+                val product = snapshot.getValue(ProductModel::class.java)
+                dbRef.updateChildren(fields).addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        product?.let { current ->
+                            val bidders = (current.bids?.keys ?: emptySet()).toMutableSet()
+                            if (current.highestBidderId.isNotBlank()) {
+                                bidders.add(current.highestBidderId)
+                            }
+                            bidders.forEach { bidderId ->
+                                val isWinner = bidderId == current.highestBidderId
+                                notificationRepo.sendNotification(
+                                    recipientId = bidderId,
+                                    recipientRole = "USER",
+                                    title = if (isWinner) "You won the bid!" else "Auction ended",
+                                    message = if (isWinner) {
+                                        "You won ${current.productName} for Rs. ${current.currentBidPrice}."
+                                    } else {
+                                        "${current.productName} was sold. Thanks for participating."
+                                    },
+                                    type = NotificationTypes.BID_WON,
+                                    metadata = mapOf("productId" to productId)
+                                )
+                            }
+                        }
+                        callback(true, "Product updated successfully")
+                    } else {
+                        callback(false, task.exception?.message ?: "Update failed")
+                    }
+                }
+            }.addOnFailureListener { error ->
+                callback(false, error.message ?: "Update failed")
+            }
+        } else {
+            dbRef.updateChildren(fields).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    callback(true, "Product updated successfully")
+                } else {
+                    callback(false, task.exception?.message ?: "Update failed")
+                }
             }
         }
     }

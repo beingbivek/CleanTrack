@@ -2,6 +2,7 @@ package com.example.cleantrack.repository
 
 import com.example.cleantrack.model.ScheduleModel
 import com.google.firebase.database.*
+import com.example.cleantrack.util.NotificationTypes
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -10,6 +11,8 @@ class ScheduleRepoImpl : ScheduleRepo {
 
     private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
     private val ref: DatabaseReference = database.getReference("Schedules")
+    private val notificationRepo = NotificationRepoImpl()
+    private val userRepo = UserRepoImpl()
 
     /* -------------------- CREATE -------------------- */
 
@@ -22,6 +25,12 @@ class ScheduleRepoImpl : ScheduleRepo {
             .setValue(model)
             .addOnCompleteListener {
                 if (it.isSuccessful) {
+                    notifyScheduleChange(
+                        model,
+                        NotificationTypes.SCHEDULE_ADDED,
+                        "Schedule added",
+                        "New pickup schedule for ${model.routeName} on ${model.dayOfWeek} at ${model.startTime}."
+                    )
                     callback(true, "Schedule added successfully")
                 } else {
                     callback(false, it.exception?.message ?: "Error")
@@ -117,6 +126,12 @@ class ScheduleRepoImpl : ScheduleRepo {
             .setValue(model)
             .addOnCompleteListener {
                 if (it.isSuccessful) {
+                    notifyScheduleChange(
+                        model,
+                        NotificationTypes.SCHEDULE_UPDATED,
+                        "Schedule updated",
+                        "Pickup schedule updated for ${model.routeName} on ${model.dayOfWeek}."
+                    )
                     callback(true, "Schedule updated successfully")
                 } else {
                     callback(false, it.exception?.message ?: "Error")
@@ -130,15 +145,28 @@ class ScheduleRepoImpl : ScheduleRepo {
         scheduleId: String,
         callback: (Boolean, String) -> Unit
     ) {
-        ref.child(scheduleId)
-            .removeValue()
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    callback(true, "Schedule deleted successfully")
-                } else {
-                    callback(false, it.exception?.message ?: "Error")
+        ref.child(scheduleId).get().addOnSuccessListener { snapshot ->
+            val schedule = snapshot.getValue(ScheduleModel::class.java)
+            ref.child(scheduleId)
+                .removeValue()
+                .addOnCompleteListener {
+                    if (it.isSuccessful) {
+                        schedule?.let {
+                            notifyScheduleChange(
+                                it,
+                                NotificationTypes.SCHEDULE_DELETED,
+                                "Schedule deleted",
+                                "Pickup schedule for ${it.routeName} on ${it.dayOfWeek} was removed."
+                            )
+                        }
+                        callback(true, "Schedule deleted successfully")
+                    } else {
+                        callback(false, it.exception?.message ?: "Error")
+                    }
                 }
-            }
+        }.addOnFailureListener { error ->
+            callback(false, error.message ?: "Error")
+        }
     }
 
     override fun getScheduleByDriver(driverId: String, callback: (ScheduleModel?) -> Unit) {
@@ -178,6 +206,40 @@ class ScheduleRepoImpl : ScheduleRepo {
             currentTime <= endTime
         } catch (e: Exception) {
             false
+        }
+    }
+
+    private fun notifyScheduleChange(
+        schedule: ScheduleModel,
+        type: String,
+        title: String,
+        message: String
+    ) {
+        val metadata = mapOf(
+            "scheduleId" to schedule.scheduleId,
+            "routeId" to schedule.routeId
+        )
+        if (schedule.driverId.isNotBlank()) {
+            notificationRepo.sendNotification(
+                recipientId = schedule.driverId,
+                recipientRole = "DRIVER",
+                title = title,
+                message = message,
+                type = type,
+                metadata = metadata
+            )
+        }
+        userRepo.getUsersByRoute(schedule.routeId) { success, _, users ->
+            if (success && users != null) {
+                notificationRepo.sendToUsers(
+                    users.map { it.userId },
+                    "USER",
+                    title,
+                    message,
+                    type,
+                    metadata
+                )
+            }
         }
     }
 }

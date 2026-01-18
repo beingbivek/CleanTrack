@@ -182,6 +182,13 @@ fun AdminDashboardBody() {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
+                    AdminMenuItem(Icons.Default.Notifications, "Notifications") {
+                        context.startActivity(Intent(context, com.example.cleantrack.view.common.NotificationListActivity::class.java).apply {
+                            putExtra("ROLE", "ADMIN")
+                        })
+                    }
+                    HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray, modifier = Modifier.padding(horizontal = 16.dp))
+
                     AdminMenuItem(Icons.Default.Policy, "Privacy Policy") {
                         context.startActivity(Intent(context, PrivacyPolicyActivity::class.java))
                     }

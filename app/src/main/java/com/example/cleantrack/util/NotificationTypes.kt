@@ -1,0 +1,19 @@
+package com.example.cleantrack.util
+
+object NotificationTypes {
+    const val ANNOUNCEMENT = "ANNOUNCEMENT"
+    const val ROUTE_STARTED = "ROUTE_STARTED"
+    const val ROUTE_ENDED = "ROUTE_ENDED"
+    const val SCHEDULE_ADDED = "SCHEDULE_ADDED"
+    const val SCHEDULE_UPDATED = "SCHEDULE_UPDATED"
+    const val SCHEDULE_DELETED = "SCHEDULE_DELETED"
+    const val SCHEDULE_ARRIVED = "SCHEDULE_ARRIVED"
+    const val BID_PLACED = "BID_PLACED"
+    const val BID_WON = "BID_WON"
+    const val POLICY_UPDATED = "POLICY_UPDATED"
+    const val TERMS_UPDATED = "TERMS_UPDATED"
+    const val BIN_RATED = "BIN_RATED"
+    const val SUPPORT_TICKET_CREATED = "SUPPORT_TICKET_CREATED"
+    const val SUPPORT_TICKET_REPLY = "SUPPORT_TICKET_REPLY"
+    const val SUBSCRIPTION_ACTIVATED = "SUBSCRIPTION_ACTIVATED"
+}

@@ -14,9 +14,11 @@ import com.example.cleantrack.model.TripHistoryUiModel
 import com.example.cleantrack.repository.ActiveTripRepo
 import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.BinRepo
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.PointsRepo
 import com.example.cleantrack.repository.UserRepo
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.example.cleantrack.util.NotificationTypes
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -28,6 +30,7 @@ class ActiveTripViewModel(
     private val collectionRepo: BinCollectionRepo,
     private val pointsRepo: PointsRepo // ADD THIS
 ) : ViewModel() {
+    private val notificationRepo = NotificationRepoImpl()
 
     // Active Trip State
     private val _activeTrip = MutableLiveData<ActiveTripModel?>()
@@ -90,6 +93,12 @@ class ActiveTripViewModel(
                                                     val resumed = existingTrip.copy(status = "ACTIVE")
                                                     _activeTrip.postValue(resumed)
                                                     loadBinStats(resumed.routeId, resumed.tripId)
+                                                    notifyRouteUsersAndDriver(
+                                                        schedule.routeId,
+                                                        schedule.driverId,
+                                                        "Route started",
+                                                        "Collection route for ${schedule.routeName} has started."
+                                                    )
                                                 }
                                                 callback(s, m)
                                             }
@@ -106,7 +115,15 @@ class ActiveTripViewModel(
                     }
                     else -> {
                         repo.startTrip(schedule.scheduleId) { s, m ->
-                            if (s) observeActiveTripByRoute(schedule.routeId)
+                            if (s) {
+                                observeActiveTripByRoute(schedule.routeId)
+                                notifyRouteUsersAndDriver(
+                                    schedule.routeId,
+                                    schedule.driverId,
+                                    "Route started",
+                                    "Collection route for ${schedule.routeName} has started."
+                                )
+                            }
                             callback(s, m)
                         }
                     }
@@ -220,6 +237,12 @@ class ActiveTripViewModel(
                 _activeTrip.value?.let { current ->
                     if (current.tripId == tripId) {
                         _activeTrip.postValue(current.copy(status = "COMPLETED"))
+                        notifyRouteUsersAndDriver(
+                            current.routeId,
+                            current.driverId,
+                            "Route completed",
+                            "Collection route for ${current.routeName} has ended."
+                        )
                     }
                 }
             }
@@ -328,6 +351,14 @@ class ActiveTripViewModel(
                         if (userRouteId.isNotEmpty()) {
                             loadBinStats(userRouteId, tripId)
                         }
+                        notificationRepo.sendNotification(
+                            recipientId = bin.ownerUserId,
+                            recipientRole = "USER",
+                            title = "Bin rated",
+                            message = "Your bin was rated $rating/5 by the driver.",
+                            type = NotificationTypes.BIN_RATED,
+                            metadata = mapOf("binId" to bin.binId, "tripId" to tripId)
+                        )
                     }
                     _loading.postValue(false)
                     callback(saveSuccess, saveMessage)
@@ -435,10 +466,54 @@ class ActiveTripViewModel(
                         if (userRouteId.isNotEmpty()) {
                             loadBinStats(userRouteId, tripId)
                         }
+                        notificationRepo.sendNotification(
+                            recipientId = bin.ownerUserId,
+                            recipientRole = "USER",
+                            title = "Bin rated",
+                            message = "Your bin was rated $rating/5 by the driver.",
+                            type = NotificationTypes.BIN_RATED,
+                            metadata = mapOf("binId" to bin.binId, "tripId" to tripId)
+                        )
                     }
                     _loading.postValue(false)
                     callback(saveSuccess, saveMessage)
                 }
+            }
+        }
+    }
+
+    private fun notifyRouteUsersAndDriver(
+        routeId: String,
+        driverId: String,
+        title: String,
+        message: String
+    ) {
+        val metadata = mapOf("routeId" to routeId)
+        val type = if (title.contains("completed", ignoreCase = true)) {
+            NotificationTypes.ROUTE_ENDED
+        } else {
+            NotificationTypes.ROUTE_STARTED
+        }
+        if (driverId.isNotBlank()) {
+            notificationRepo.sendNotification(
+                recipientId = driverId,
+                recipientRole = "DRIVER",
+                title = title,
+                message = message,
+                type = type,
+                metadata = metadata
+            )
+        }
+        userRepo.getUsersByRoute(routeId) { success, _, users ->
+            if (success && users != null) {
+                notificationRepo.sendToUsers(
+                    users.map { it.userId },
+                    "USER",
+                    title,
+                    message,
+                    type,
+                    metadata
+                )
             }
         }
     }

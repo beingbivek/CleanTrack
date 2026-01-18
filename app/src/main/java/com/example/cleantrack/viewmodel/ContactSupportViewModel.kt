@@ -5,6 +5,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.ContactSupportModel
 import com.example.cleantrack.repository.ContactSupportRepo
+import com.example.cleantrack.repository.NotificationRepoImpl
+import com.example.cleantrack.util.NotificationTypes
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -14,6 +16,7 @@ class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
     val currentUserData = MutableLiveData<ContactSupportModel?>()
     val allIssues = MutableLiveData<List<ContactSupportModel>>()
     val adminMessage = MutableLiveData<String>()
+    private val notificationRepo = NotificationRepoImpl()
 
     fun fetchInitialData() {
         repo.getCurrentUserDetails { user ->
@@ -30,7 +33,18 @@ class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
         val ticket = ContactSupportModel(fullname = fullname, email = email, category = category, message = message, userId = userId,
             userType = userType,
             attachmentUrl = attachmentUrl)
-        repo.submitIssue(ticket) { s, m -> loading.value = false; callback(s, m) }
+        repo.submitIssue(ticket) { success, msg ->
+            loading.value = false
+            if (success) {
+                notificationRepo.sendToRole(
+                    "ADMIN",
+                    "New support ticket",
+                    "$fullname submitted a $category support ticket.",
+                    NotificationTypes.SUPPORT_TICKET_CREATED
+                )
+            }
+            callback(success, msg)
+        }
     }
 
     fun fetchAllTickets() = repo.getAllIssues { s, m, d -> if(s) allIssues.postValue(d) }
@@ -62,7 +76,16 @@ class ContactSupportViewModel(val repo: ContactSupportRepo) : ViewModel() {
         )
 
         repo.sendAdminReply(updatedIssue) { success ->
-            if (success) fetchAllTickets()
+            if (success) {
+                notificationRepo.sendNotification(
+                    recipientId = issue.userId,
+                    recipientRole = "USER",
+                    title = "Support reply",
+                    message = "Admin replied to your support ticket in $timestamp.",
+                    type = NotificationTypes.SUPPORT_TICKET_REPLY
+                )
+                fetchAllTickets()
+            }
         }
     }
 }

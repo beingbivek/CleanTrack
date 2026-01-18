@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.cleantrack.model.SubscriptionModel
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.example.cleantrack.util.NotificationTypes
 import kotlinx.coroutines.tasks.await
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
@@ -16,6 +17,7 @@ class PaymentRepoImpl : PaymentRepo {
     private val client = OkHttpClient()
     private val db = FirebaseDatabase.getInstance()
     private val userRef = db.getReference("Users")
+    private val notificationRepo = NotificationRepoImpl()
 
     // 1. Networking Logic (Moved from Activity)
     override suspend fun initiatePayment(amount: String, userEmail: String, userPhone: String): Result<String> {
@@ -92,6 +94,20 @@ class PaymentRepoImpl : PaymentRepo {
             // 2. Add to Payment History list for the user
             // This allows the user to see ALL past receipts
             userRef.child(userId).child("paymentHistory").push().setValue(subscription).await()
+
+            notificationRepo.sendNotification(
+                recipientId = userId,
+                recipientRole = "USER",
+                title = "Subscription activated",
+                message = "Your subscription is now active until ${java.text.SimpleDateFormat("MMM dd, yyyy").format(java.util.Date(expiryDate))}.",
+                type = NotificationTypes.SUBSCRIPTION_ACTIVATED
+            )
+            notificationRepo.sendToRole(
+                "ADMIN",
+                "New subscription",
+                "A user activated a new subscription.",
+                NotificationTypes.SUBSCRIPTION_ACTIVATED
+            )
 
             Result.success(true)
         } catch (e: Exception) {
