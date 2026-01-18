@@ -64,13 +64,11 @@ fun AdminRouteSetupScreen(
 
     var routeName by remember { mutableStateOf("") }
     var points by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var baatoApiKey by remember { mutableStateOf<String?>(null) }
 
     val mapView = remember {
         MapView(context).apply { onCreate(savedInstanceState) }
     }
-
-    val styleUrl =
-        "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
 
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var polyline by remember { mutableStateOf<Polyline?>(null) }
@@ -79,6 +77,10 @@ fun AdminRouteSetupScreen(
 
     LaunchedEffect(routeId) {
         routeId?.let { viewModel.getRouteById(it) }
+    }
+
+    LaunchedEffect(Unit) {
+        baatoApiKey = ApiTokenUtil.getBaatoApiKey()
     }
 
     LaunchedEffect(selectedRoute) {
@@ -93,22 +95,31 @@ fun AdminRouteSetupScreen(
     DisposableEffect(mapView) {
         mapView.getMapAsync { m ->
             map = m
-            m.setStyle(styleUrl) {
-
-                m.cameraPosition = CameraPosition.Builder()
-                    .target(LatLng(27.7172, 85.3240))
-                    .zoom(12.0)
-                    .build()
-
-                m.addOnMapClickListener { latLng ->
-                    points = points + latLng
-                    true
-                }
-            }
         }
 
         onDispose {
             mapView.onDestroy()
+        }
+    }
+
+    LaunchedEffect(map, baatoApiKey) {
+        val mapInstance = map
+        val apiKey = baatoApiKey
+        if (mapInstance == null || apiKey.isNullOrBlank()) {
+            return@LaunchedEffect
+        }
+        val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=$apiKey"
+        mapInstance.setStyle(styleUrl) {
+
+            mapInstance.cameraPosition = CameraPosition.Builder()
+                .target(LatLng(27.7172, 85.3240))
+                .zoom(12.0)
+                .build()
+
+            mapInstance.addOnMapClickListener { latLng ->
+                points = points + latLng
+                true
+            }
         }
     }
 

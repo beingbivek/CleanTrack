@@ -36,6 +36,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.google.android.gms.location.*
 
+import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.annotations.Marker
@@ -97,6 +98,7 @@ class DriverLocationMapActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        MapLibre.getInstance(applicationContext)
         tripId = intent.getStringExtra("TRIP_ID") ?: ""
 
         activeTripViewModel = ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(),
@@ -134,10 +136,9 @@ class DriverLocationMapActivity : ComponentActivity() {
 
         var currentLat by remember { mutableStateOf(27.7172) }
         var currentLon by remember { mutableStateOf(85.3240) }
+        var baatoApiKey by remember { mutableStateOf<String?>(null) }
 
         val mapView = remember { MapView(context).apply { onCreate(savedInstanceState) } }
-        // Ensure this API key is valid or the map won't load
-        val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
 
         var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
         var markerInstance by remember { mutableStateOf<Marker?>(null) }
@@ -221,16 +222,29 @@ class DriverLocationMapActivity : ComponentActivity() {
             }
         }
 
+        LaunchedEffect(Unit) {
+            baatoApiKey = ApiTokenUtil.getBaatoApiKey()
+        }
+
         DisposableEffect(mapView) {
             mapView.getMapAsync { map ->
                 mapInstance = map
-                map.setStyle(styleUrl) {
-                    val pos = LatLng(currentLat, currentLon)
-                    map.cameraPosition =
-                        CameraPosition.Builder().target(pos).zoom(12.0).build()
-                }
             }
             onDispose {}
+        }
+
+        LaunchedEffect(mapInstance, baatoApiKey) {
+            val map = mapInstance
+            val apiKey = baatoApiKey
+            if (map == null || apiKey.isNullOrBlank()) {
+                return@LaunchedEffect
+            }
+            val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=$apiKey"
+            map.setStyle(styleUrl) {
+                val pos = LatLng(currentLat, currentLon)
+                map.cameraPosition =
+                    CameraPosition.Builder().target(pos).zoom(12.0).build()
+            }
         }
 
         val lifecycleOwner = LocalLifecycleOwner.current

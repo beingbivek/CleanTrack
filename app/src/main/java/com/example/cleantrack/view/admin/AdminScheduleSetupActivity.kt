@@ -104,9 +104,18 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
             vehicleId = it.vehicleId
             vehicleNumber = it.vehicleNumber
             driverId = it.driverId
+            driverName = ""
             dayOfWeek = it.dayOfWeek
             startTime = it.startTime
             endTime = it.endTime
+        }
+    }
+    LaunchedEffect(drivers, driverId) {
+        if (driverId.isNotBlank()) {
+            val matchedDriverName = drivers?.firstOrNull { it.userId == driverId }?.fullname
+            if (!matchedDriverName.isNullOrBlank() && matchedDriverName != driverName) {
+                driverName = matchedDriverName
+            }
         }
     }
 
@@ -172,12 +181,12 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
                     DropdownField(
                         label = "Driver",
                         value = driverName,
-                        options = drivers!!.map { it.fullname },
+                        options = drivers?.map { it.fullname },
                         onSelect = { name ->
-                            val driver = drivers!!.first {
+                            val driver = drivers?.first {
                                 it.fullname == name
                             }
-                            driverId = driver.userId
+                            driverId = driver!!.userId
                             driverName = name
                         }
                     )
@@ -314,7 +323,7 @@ fun AdminScheduleSetupScreen(scheduleId: String?) {
 fun DropdownField(
     label: String,
     value: String,
-    options: List<String>,
+    options: List<String>?,
     onSelect: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -340,7 +349,7 @@ fun DropdownField(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            options.forEach {
+            options?.forEach {
                 DropdownMenuItem(
                     text = { Text(it) },
                     onClick = {
