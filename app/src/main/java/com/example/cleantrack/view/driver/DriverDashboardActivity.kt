@@ -1,3 +1,4 @@
+
 package com.example.cleantrack.view.driver
 
 import android.content.Intent
@@ -315,6 +316,13 @@ fun DriverHomeSection(
                     DriverActionItem(Icons.Default.Route, "Map", Blue) {
                         if (isTripActive) context.startActivity(Intent(context, DriverRouteMapActivity::class.java))
                         else Toast.makeText(context, "Start route first", Toast.LENGTH_SHORT).show()
+                    }
+
+                    DriverActionItem(Icons.Default.CalendarToday, "Routine", Blue) {
+                        val intent = Intent(context, DriverRoutineActivity::class.java).apply {
+                            putExtra("DRIVER_ID", currentUser?.userId) // Pass the logged-in driver ID
+                        }
+                        context.startActivity(intent)
                     }
 
                     // --- HISTORY (BLUE) ---
