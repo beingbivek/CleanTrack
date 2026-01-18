@@ -317,6 +317,13 @@ fun DriverHomeSection(
                         else Toast.makeText(context, "Start route first", Toast.LENGTH_SHORT).show()
                     }
 
+                    DriverActionItem(Icons.Default.CalendarToday, "Routine", Blue) {
+                        val intent = Intent(context, DriverRoutineActivity::class.java).apply {
+                            putExtra("DRIVER_ID", currentUser?.userId) // Pass the logged-in driver ID
+                        }
+                        context.startActivity(intent)
+                    }
+
                     // --- HISTORY (BLUE) ---
                     DriverActionItem(Icons.Default.History, "History", Blue) {
                         context.startActivity(Intent(context, DriversTripHistoryActivity::class.java))
