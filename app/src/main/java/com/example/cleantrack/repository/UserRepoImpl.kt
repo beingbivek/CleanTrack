@@ -1,7 +1,9 @@
 package com.example.cleantrack.repository
 
 import android.util.Log
+import com.example.cleantrack.model.SubscriptionModel
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.model.UserPointsModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
@@ -18,12 +20,14 @@ class UserRepoImpl : UserRepo{
 
     val ref : DatabaseReference = database.getReference("Users")
 
+    private val pointsRef: DatabaseReference = database.getReference("UserPoints")
+
 
 
     override fun login(
         email: String,
         password: String,
-        callback: (Boolean, String?, String?) -> Unit
+        callback: (Boolean, String?, String?, String?) -> Unit
     ) {
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener {
@@ -40,29 +44,29 @@ class UserRepoImpl : UserRepo{
                                     val role = snapshot.getValue(String::class.java)
 
                                     if (role != null){
-                                        callback(true, "login successfull",role)
+                                        callback(true, "login successfull",role, userId)
                                     }else{
-                                        callback(false, "Login successful, but user role not defined.", null)
+                                        callback(false, "Login successful, but user role not defined.", null, null)
                                     }
 
                                 }
                                 .addOnFailureListener { e ->
-                                    callback(false, "Login successful, but failed to fetch role: ${e.localizedMessage}", null)
+                                    callback(false, "Login successful, but failed to fetch role: ${e.localizedMessage}", null, null)
                                 }
 
                         }
                         else {
-                            callback(false, "Login successful, but userID is missing.", null)
+                            callback(false, "Login successful, but userID is missing.", null, null)
                         }
 
 
                     }else{
-                        callback(false, "${it.exception?.message}", null)
+                        callback(false, "${it.exception?.message}", null, null)
                     }
                 }
     }
 
-    override fun signInWithGoogle(idToken: String, callback: (Boolean, String?, String?) -> Unit) {
+    override fun signInWithGoogle(idToken: String, callback: (Boolean, String?,UserModel?, String?) -> Unit) {
         val credential = GoogleAuthProvider.getCredential(idToken,null)
 
         auth.signInWithCredential(credential)
@@ -75,16 +79,23 @@ class UserRepoImpl : UserRepo{
 
                         // checks if user document already exists in firestore
 
-                        val roleRefr = ref.child(userId).child("role")
+                        val roleRefr = ref.child(userId)
 
                         roleRefr
                             .get()
                             .addOnSuccessListener { documentSnapshot ->
-                                if(documentSnapshot.exists()){
+                                val userModel = documentSnapshot.getValue(UserModel::class.java)
 
-                                    // user exists, retrieve their role
-                                    val role = documentSnapshot.getValue(String::class.java)
-                                    callback(true, null, role)
+
+                                if(documentSnapshot.exists() && userModel != null){
+
+                                    if (userModel.number.isNullOrEmpty()) {
+                                        // User exists but mandatory field is missing -> Navigate to Registration
+                                        callback(true, null, userModel, null) // success, null, userModel (for pre-fill), null
+                                    } else {
+                                        // User exists and registration is complete -> Proceed to Login/Dashboard
+                                        callback(true, null, userModel  , userModel.role) // success, null, null, role
+                                    }
                                 } else  {
 
                                     // New user : create its firestore document
@@ -95,27 +106,33 @@ class UserRepoImpl : UserRepo{
                                         number = "",
                                         role = defaultRole,
                                         userId = userId
+                                        ,
+                                        // Initialize with empty strings so the keys exist in the DB
+                                        province = "",
+                                        district = "",
+                                        municipality = "",
+                                        ward = ""
                                     )
 
                                     ref.child(userId).setValue(userModel)
                                         .addOnSuccessListener {
-                                           callback (true, null, defaultRole)
+                                           callback (true, null,userModel, null)
                                         }
                                         .addOnFailureListener { dbError ->
-                                            callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}", null)
+                                            callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}",null, null)
                                         }
                                 }
                             }
                             .addOnFailureListener { fetchError ->
-                                callback(false, "Google sign-in succeeded, but failed to check user document: ${fetchError.localizedMessage}", null)
+                                callback(false, "Google sign-in succeeded, but failed to check user document: ${fetchError.localizedMessage}", null, null)
                             }
 
                     }else{
-                        callback(false, "Google sign-in succeeded, but missing required user details (ID/Email).", null)
+                        callback(false, "Google sign-in succeeded, but missing required user details (ID/Email).", null, null)
                     }
 
                 }else{
-                    callback(false, authTask.exception?.localizedMessage, null)
+                    callback(false, authTask.exception?.localizedMessage, null, null)
                 }
             }
     }
@@ -144,7 +161,7 @@ class UserRepoImpl : UserRepo{
             .addOnCompleteListener {
                 if (it.isSuccessful){
 
-                    callback(true, "Registration success")
+                    callback(true, "Registration successful. Now confirm your location.")
 
                 }else{
                     callback(false, "${it.exception?.message}")
@@ -171,7 +188,7 @@ class UserRepoImpl : UserRepo{
         callback: (Boolean, String, UserModel?) -> Unit
     ) {
 
-        ref.child(userId).addValueEventListener(object : ValueEventListener{
+        ref.child(userId).addListenerForSingleValueEvent(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
 
                 if(snapshot.exists()){
@@ -230,16 +247,15 @@ class UserRepoImpl : UserRepo{
         model: UserModel,
         callback: (Boolean, String) -> Unit
     ) {
-
+        // We update the whole map, which now includes the subscription object
         ref.child(userId).updateChildren(model.toMap())
             .addOnCompleteListener {
-                if (it.isSuccessful){
+                if (it.isSuccessful) {
                     callback(true, "User Account updated")
-                }else{
+                } else {
                     callback(false, "${it.exception?.message}")
                 }
             }
-
     }
 
     override fun deleteUser(
@@ -255,4 +271,158 @@ class UserRepoImpl : UserRepo{
                 }
             }
     }
+
+    override fun saveUserLocation(
+        userId: String,
+        latitude: Double,
+        longitude: Double,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val loactionUpdates = mapOf<String, Any?>(
+            "latitude" to latitude,
+            "longitude" to longitude
+        )
+
+        ref.child(userId).updateChildren(loactionUpdates)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "User location saved successfully.")
+                } else {
+                    callback(false, "Failed to save location: ${it.exception?.message}")
+                }
+            }
+    }
+
+    override fun getAllDrivers(
+        callback: (Boolean, String, List<UserModel>?) -> Unit
+    ) {
+        ref.orderByChild("role")
+            .equalTo("DRIVER")
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+
+                override fun onDataChange(snapshot: DataSnapshot) {
+
+                    val list = mutableListOf<UserModel>()
+
+                    for (child in snapshot.children) {
+                        val user = child.getValue(UserModel::class.java)
+                        if (user != null) list.add(user)
+                    }
+
+                    callback(true, "Drivers fetched", list)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
+    }
+
+    override fun logout() {
+        auth.signOut()
+    }
+
+    override fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
+    override fun updateActiveRoute(
+        userId: String,
+        routeId: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        // This saves the routeId as a child under the user's specific node
+        ref.child(userId).child("activeRouteId").setValue(routeId)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    callback(true, "Route saved successfully")
+                } else {
+                    callback(false, task.exception?.message ?: "Failed to save route")
+                }
+            }
+    }
+
+    override fun getUsersByRoute(
+        routeId: String,
+        callback: (Boolean, String, List<UserModel>?) -> Unit
+    ) {
+        // ref points to "Users" node
+        ref.orderByChild("activeRouteId").equalTo(routeId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val userList = mutableListOf<UserModel>()
+                    if (snapshot.exists()) {
+                        for (child in snapshot.children) {
+                            val user = child.getValue(UserModel::class.java)
+                            if (user != null) {
+                                userList.add(user)
+                            }
+                        }
+                        callback(true, "Users fetched successfully", userList)
+                    } else {
+                        callback(false, "No users found for this route", emptyList())
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, error.message, null)
+                }
+            })
+    }
+
+    override fun addUserPoints(userId: String, points: Int, callback: (Boolean, String) -> Unit) {
+        // 1. Fetch current points first
+        pointsRef.child(userId).get().addOnSuccessListener { snapshot ->
+            val currentPoints = snapshot.child("totalPoints").getValue(Int::class.java) ?: 0
+            val newTotal = currentPoints + points
+
+            // 2. Create the model
+            val pointsUpdate = UserPointsModel(
+                userId = userId,
+                totalPoints = newTotal,
+                lastUpdated = System.currentTimeMillis()
+            )
+
+            // 3. Save to database
+            pointsRef.child(userId).setValue(pointsUpdate)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        callback(true, "Points awarded: $points")
+                    } else {
+                        callback(false, task.exception?.message ?: "Failed to update points")
+                    }
+                }
+        }.addOnFailureListener {
+            callback(false, it.message ?: "Database error")
+        }
+    }
+
+    override fun getUserPoints(userId: String, callback: (Boolean, String, Int) -> Unit) {
+        pointsRef.child(userId).child("totalPoints").get()
+            .addOnSuccessListener { snapshot ->
+                val pts = snapshot.getValue(Int::class.java) ?: 0
+                callback(true, "Success", pts)
+            }
+            .addOnFailureListener {
+                callback(false, it.message ?: "Error", 0)
+            }
+    }
+
+    override fun updateSubscription(
+        userId: String,
+        subscription: SubscriptionModel,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val updates = mapOf(
+        "isSubscribed" to true,           // Root level
+        "expiryDate" to subscription.expiryDate, // Root level (for easy access)
+        "subscription" to subscription    // Nested object
+    )
+        ref.child(userId).updateChildren(updates).addOnCompleteListener { task ->
+            if (task.isSuccessful) callback(true, "Subscription Activated")
+            else callback(false, task.exception?.message ?: "Update Failed")
+        }
+    }
+
+
 }

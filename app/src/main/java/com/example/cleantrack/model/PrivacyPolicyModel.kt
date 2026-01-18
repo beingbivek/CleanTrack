@@ -1,10 +1,10 @@
 package com.example.cleantrack.model
 
-import java.sql.Timestamp
+import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
 
+@Parcelize
 data class PrivacyPolicyModel(
-    val date : Timestamp,
-    val description : String,
-    val privacypolicyId : String,
-
-)
+    val content: String = "",
+    val lastUpdated: Long = System.currentTimeMillis()
+) : Parcelable

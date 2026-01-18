@@ -29,9 +29,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.cleantrack.model.MapSearchResultModel
+import com.example.cleantrack.model.map.MapSearchResultModel
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.util.ApiTokenUtil
+import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
@@ -49,10 +51,14 @@ import org.maplibre.android.maps.MapView
 private var mapViewState: MapView? = null
 
 class UserLocationMapActivity : ComponentActivity() {
+
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         MapLibre.getInstance(applicationContext)
+
         setContent { MapViewComposable(savedInstanceState) }
     }
 
@@ -76,7 +82,29 @@ fun hasLocationPermission(context: Context): Boolean {
 @SuppressLint("MissingPermission")
 @Composable
 fun MapViewComposable(savedInstanceState: Bundle?) {
+
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
     val context = LocalContext.current
+    val activity = context as ComponentActivity
+
+    // 1. Retrieve the flag
+    val isNewRegistration = remember {
+        activity.intent.getBooleanExtra("IS_NEW_REGISTRATION", false)
+    }
+
+    // --- FIX: Get userId directly from the Intent ---
+    // The activity's intent is available immediately.
+    val userId = remember {
+        activity.intent.getStringExtra("userId")
+            ?: run {
+                // If ID is truly missing, finish the activity and show an error.
+                Toast.makeText(context, "Error: User ID is missing. Cannot save location.", Toast.LENGTH_LONG).show()
+                activity.finish()
+                "" // Return empty string as a placeholder, though activity is finishing.
+            }
+    }
+
     val scope = rememberCoroutineScope()
 
     var currentLat by remember { mutableStateOf(27.7172) }
@@ -320,7 +348,21 @@ fun MapViewComposable(savedInstanceState: Bundle?) {
 
                         Button(
                             onClick = {
-                                Toast.makeText(context, "Location Confirmed:\nLat: $currentLat\nLon: $currentLon", Toast.LENGTH_SHORT).show()
+                                userViewModel.saveLocationAndFinalNavigate(
+                                    userId = userId,
+                                    latitude = currentLat,
+                                    longitude = currentLon,
+                                    isNewRegistration = isNewRegistration, // <-- PASS THE FLAG
+                                    context = context,
+                                    activity = activity
+                                ) { success, message ->
+                                    if (!success) {
+                                        // Show error toast only if saving/navigation failed
+                                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                    }
+                                    // Success toasts/navigation are handled inside the ViewModel
+                                }
+
                             },
                             modifier = Modifier.weight(1f).background(Brush.horizontalGradient(ButtonColor), shape = RoundedCornerShape(12.dp)),
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)

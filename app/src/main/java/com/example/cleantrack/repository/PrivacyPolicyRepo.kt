@@ -1,7 +1,7 @@
 package com.example.cleantrack.repository
 
-import com.example.cleantrack.model.PrivacyPolicyModel
 
 interface PrivacyPolicyRepo {
-    suspend fun getPrivacyPolicy(): PrivacyPolicyModel?
+    fun updatePrivacyPolicy(content: String, callback: (Boolean, String) -> Unit)
+    fun getPrivacyPolicy(callback: (Boolean, String, String?) -> Unit)
 }

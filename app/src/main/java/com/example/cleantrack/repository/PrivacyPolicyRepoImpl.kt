@@ -1,21 +1,30 @@
 package com.example.cleantrack.repository
 
-import com.example.cleantrack.model.PrivacyPolicyModel
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
-class PrivacyPolicyRepoImpl :  PrivacyPolicyRepo {
+class PrivacyPolicyRepoImpl : PrivacyPolicyRepo {
+    private val db = FirebaseDatabase.getInstance().getReference("PrivacyPolicy")
 
-    private val db = FirebaseFirestore.getInstance()
+    override fun updatePrivacyPolicy(content: String, callback: (Boolean, String) -> Unit) {
+        db.child("current").setValue(content)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) callback(true, "Privacy Policy updated!")
+                else callback(false, task.exception?.message ?: "Update failed")
+            }
+    }
 
-    override suspend fun getPrivacyPolicy(): PrivacyPolicyModel? {
-        return try {
-            val snapshot = db.collection("privacy_policy").limit(1).get().await()
-            if (!snapshot.isEmpty) {
-                snapshot.documents[0].toObject(PrivacyPolicyModel::class.java)
-            } else null
-        } catch (e: Exception) {
-            null
-        }
+    override fun getPrivacyPolicy(callback: (Boolean, String, String?) -> Unit) {
+        db.child("current").addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val content = snapshot.getValue(String::class.java)
+                callback(true, "Loaded", content)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
+            }
+        })
     }
 }

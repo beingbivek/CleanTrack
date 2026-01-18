@@ -32,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -66,9 +68,8 @@ import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.view.admin.AdminDashboardActivity
-import com.example.cleantrack.view.driver.DriverDashboardActivity
-import com.example.cleantrack.view.user.UserDashboardActivity
+import com.example.cleantrack.view.common.ContactSupportActivity
+
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -103,12 +104,14 @@ fun LoginBody() {
     var showForgotPasswordDialog by remember { mutableStateOf(false ) }
     var forgotPasswordEmail by remember { mutableStateOf("") }
 
+    val webClientId = stringResource(id = R.string.default_web_client_id)
+
     // 1. Configure Google Sign-In Options
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
 
         // IMPORTANT: Request the ID token for Firebase authentication i.e. sign with google
-            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestIdToken(webClientId)
             .requestEmail()
             .build()
     }
@@ -128,24 +131,19 @@ fun LoginBody() {
                 val idToken = account.idToken
                 if (idToken != null){
 
-                    userViewModel.signInWithGoogle(idToken ){
-                        Success, errorMessage, role ->
-                        if (Success){
-                            val destinationActivity = when (role) {
-                                "ADMIN" -> AdminDashboardActivity::class.java
-                                "DRIVER" -> DriverDashboardActivity::class.java // Use DriverDashboardActivity
-                                "USER" -> UserDashboardActivity::class.java
-                                else -> UserDashboardActivity::class.java
+                    // --- UPDATED CALL HERE ---
+                    userViewModel.signInWithGoogle(idToken, context, activity) { success, errorMessage ->
+                        if (success) {
+                            // If successful, the ViewModel handles navigation (either to Dashboard or Registration).
+                            if (errorMessage != null && errorMessage != "Login successful!") {
+                                AppUtil.showToast(context, errorMessage)
                             }
-                            val intent = Intent(context, destinationActivity)
-                            context.startActivity(intent)
-                            activity.finish()
-
-                        }else{
-                            AppUtil.showToast(context, errorMessage ?: "Google Sign-In failed.")
-
+                        } else {
+                            // Failure to sign in or failure in repo logic
+                            AppUtil.showToast(context, errorMessage ?: "Google Sign-In process failed.")
                         }
                     }
+                    // --- END UPDATED CALL ---
 
                 }else{
                     AppUtil.showToast(context  ,"Google Sign-In token missing.")
@@ -263,7 +261,7 @@ fun LoginBody() {
                 placeholder = {
                     Text("Enter your password")
                 },
-
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = TextBoxColor,
                     unfocusedContainerColor = TextBoxColor,
@@ -286,7 +284,7 @@ fun LoginBody() {
                     .padding(horizontal = 15.dp)
                     .clickable{
 
-                        forgotPasswordEmail = email
+                        forgotPasswordEmail = email.trim()
                         showForgotPasswordDialog = true
                     }
             )
@@ -299,22 +297,15 @@ fun LoginBody() {
             ) {
                 Button(
                     onClick = {
-                       userViewModel.login(email, password){
-                           Success, errorMessage, role->
+                       userViewModel.login(email.trim(), password.trim()){
+                           Success, errorMessage, role, userId->
                            if (Success){
 
-                               val destinationActivity = when (role){
-                                   "ADMIN"-> AdminDashboardActivity::class.java
-                                   "DRIVER"-> DriverDashboardActivity::class.java
-                                   "USER"-> UserDashboardActivity::class.java
-                                   else -> UserDashboardActivity::class.java
-
+                               if (userId != null) {
+                                   userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
+                               } else {
+                                   AppUtil.showToast(context, "Login successful, but User ID is missing.")
                                }
-
-                               val intent = Intent(context, destinationActivity)
-
-                               context.startActivity(intent)
-                               activity.finish()
 
 
 
@@ -383,8 +374,13 @@ fun LoginBody() {
             ) {
                 Button(
                     onClick = {
-                        val signIntent = googleSignInClient.signInIntent
-                        googleSignInLauncher.launch(signIntent)
+                        // 1. Sign out of the Google Client first
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            // 2. Once the sign-out is complete, get a fresh Intent
+                            val signIntent = googleSignInClient.signInIntent
+                            // 3. Launch the picker
+                            googleSignInLauncher.launch(signIntent)
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -418,7 +414,37 @@ fun LoginBody() {
                 }
             }
 
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // --- NAVIGATION TO CONTACT SUPPORT ---
+            TextButton(
+                onClick = {
+                    val intent = Intent(context, ContactSupportActivity::class.java)
+                    intent.putExtra("IS_LOGGED_IN", false) // Since user is at Login, they aren't logged in
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.padding(bottom = 20.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_help_24),
+                        contentDescription = null,
+                        tint = Color(0xFF4F96D8),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Need help? Contact Support",
+                        color = Color(0xFF4F96D8),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+
         }
+
 
         if (showForgotPasswordDialog){
             ForgotPasswordDialog(
@@ -481,7 +507,7 @@ fun ForgotPasswordDialog(
                     if (emailInput.isNotBlank()){
                         onSendReset(emailInput)
                     }else{
-                        AppUtil.showToast(context , "Email fiels cannot be empty.")
+                        AppUtil.showToast(context , "Email fields cannot be empty.")
                     }
                 }
             ){

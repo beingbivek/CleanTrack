@@ -1,18 +1,22 @@
 package com.example.cleantrack.view.user
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +28,13 @@ import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.view.common.ContactSupportActivity
+import com.example.cleantrack.view.common.PrivacyPolicyActivity
+import com.example.cleantrack.view.common.EditProfileActivity
+import com.example.cleantrack.view.common.TermsAndConditionActivity
+import com.example.cleantrack.viewmodel.UserViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -132,11 +143,15 @@ fun NotificationSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
 
 @Composable
 fun SettingsBody() {
+    val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
     var truckNearAlerts by remember { mutableStateOf(true) }
     var pickupReminder by remember { mutableStateOf(true) }
     var paymentAlerts by remember { mutableStateOf(true) }
     var wasteRatingNotifications by remember { mutableStateOf(true) }
     var municipalityAnnouncements by remember { mutableStateOf(true) }
+
 
     // 2. State variable for the "Toggle All" switch
     val allNotificationsChecked = truckNearAlerts && pickupReminder && paymentAlerts && wasteRatingNotifications && municipalityAnnouncements
@@ -183,8 +198,21 @@ fun SettingsBody() {
                 SettingsSectionHeader(R.drawable.baseline_account_circle_24, "Account")
                 SettingsCard(
                     items = listOf(
-                        { SettingListItem("Edit Profile") },
+                        {
+                            Box(
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(context, EditProfileActivity::class.java)
+                                    intent.putExtra("USER_ID", currentUser?.uid)
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                SettingListItem("Edit Profile")
+                            }
+                        },
                         { SettingListItem("Change Password") },
+                        { SettingListItem("Payment History", trailingContent = {
+                            context.startActivity(Intent(context, PaymentHistoryActivity::class.java))
+                        }) },
                         { SettingListItem("Delete Account", showDivider = false) }
                     )
                 )
@@ -242,19 +270,48 @@ fun SettingsBody() {
                 SettingsSectionHeader(R.drawable.baseline_lock_24, "Privacy")
                 SettingsCard(
                     items = listOf(
-                        { SettingListItem("Privacy Policy") },
-                        { SettingListItem("Terms & Conditions", showDivider = false) }
+                        {
+                            Box(
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(context, PrivacyPolicyActivity::class.java)
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                SettingListItem("Privacy Policy")
+                            }
+                            Box(
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(context, TermsAndConditionActivity::class.java)
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                SettingListItem("Terms and Condition")
+                            }
+                        },
+
                     )
+
                 )
 
                 // Help Section
                 SettingsSectionHeader(R.drawable.baseline_help_24, "Help")
                 SettingsCard(
                     items = listOf(
-                        { SettingListItem("Contact Support") },
+                        {
+                            Box(
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(context, ContactSupportActivity::class.java)
+                                    intent.putExtra("USER_ID", currentUser?.uid)
+                                    context.startActivity(intent)
+                                }
+                            ) {
+                                SettingListItem("Contact Support")
+                            }
+                        },
                         { SettingListItem("FAQs", showDivider = false) }
                     )
                 )
+
 
                 // About Section
                 SettingsSectionHeader(R.drawable.baseline_info_24, "About")
