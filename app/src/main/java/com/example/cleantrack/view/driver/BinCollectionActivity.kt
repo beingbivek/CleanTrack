@@ -37,15 +37,15 @@ class BinCollectionActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val binId = intent.getStringExtra("BIN_ID") ?: ""
         val tripId = intent.getStringExtra("TRIP_ID") ?: "" // 🔹 FETCH TRIP_ID FROM INTENT
+        val actualRouteName = intent.getStringExtra("ROUTE_NAME") ?: "Unknown Route"
 
         setContent {
-            BinCollectionScreen(binId, tripId) { finish() }
-        }
+            BinCollectionScreen(binId, tripId, actualRouteName) { finish() }        }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
+fun BinCollectionScreen(binId: String, tripId: String, actualRouteName: String, onComplete: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     // ViewModels
@@ -148,37 +148,66 @@ fun BinCollectionScreen(binId: String, tripId: String, onComplete: () -> Unit) {
                 Button(
                     onClick = {
                         val bin = binDetails
-                        if (bin != null) {
+                        if (bin != null && rating > 0) { // Ensure rating is selected
                             isSaving = true
                             scope.launch {
+                                // 1. Generate an AI Review/Tip for this specific scan
+                                // We use generateGlobalOverview as a base to create the feedback
+                                val temporaryHistoryList = listOf(
+                                    BinCollectionModel(
+                                        rating = rating,
+                                        segregatedCorrectly = isSegregated,
+                                        remarks = remarks
+                                    )
+                                )
 
-                                // 2. Pass that specific aiTip to your save function
+                                val aiFeedback = aiRepo.generateGlobalOverview(temporaryHistoryList)
+
+                                // 2. Save the regular collection log
                                 activeTripViewModel.collectBinWithAI(
                                     bin = bin,
                                     driverId = currentDriverId,
                                     tripId = tripId,
                                     rating = rating,
                                     remarks = remarks,
-                                    aiTip = "Data logged for AI analysis", // Placeholder
+                                    aiTip = aiFeedback, // Store AI's thought in the collection itself
                                     isSegregated = isSegregated
                                 ) { success, msg ->
-                                    isSaving = false
                                     if (success) {
+                                        // 3. IMPORTANT: Feed the Admin's Route Strategy!
+                                        // This saves to the "RouteInsights" table we created
+                                        aiRepo.saveProcessedInsight(
+                                            collection = BinCollectionModel(
+                                                tripId = tripId,
+                                                rating = rating,
+                                                segregatedCorrectly = isSegregated
+                                            ),
+                                            aiReview = aiFeedback,
+                                            routeName = actualRouteName // Use the route name, not bin.label ("Nice bin")
+                                        )
+
                                         notificationViewModel.notifyUser(
                                             bin.ownerUserId,
                                             NotificationPayload(
-                                                title = "Bin rated",
-                                                message = "Your bin was rated by the driver.",
+                                                title = "Bin Collected!",
+                                                message = "AI Feedback: $aiFeedback",
                                                 type = "bin_rating",
                                                 actionType = "bin_rating"
                                             )
                                         )
+                                        isSaving = false
                                         onComplete()
+                                    } else {
+                                        isSaving = false
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
+                        } else {
+                            Toast.makeText(context, "Please provide a rating", Toast.LENGTH_SHORT).show()
                         }
-                    }
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     if (isSaving) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
