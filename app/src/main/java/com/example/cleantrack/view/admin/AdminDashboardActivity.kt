@@ -30,6 +30,7 @@ import com.example.cleantrack.R
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.ui.theme.*
+import com.example.cleantrack.view.common.LeaderboardActivity
 import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.common.TermsAndConditionActivity
@@ -134,8 +135,11 @@ fun AdminDashboardBody() {
                             }
                             context.startActivity(intent)
                         }
+                        AdminQuickIcon(Icons.Default.Leaderboard, "Leaderboard") {
+                            context.startActivity(Intent(context, LeaderboardActivity::class.java))
+                        }
                         // Placeholder to maintain grid alignment
-                        Box(modifier = Modifier.size(56.dp)) {}
+//                        Box(modifier = Modifier.size(56.dp)) {}
                     }
                 }
             }

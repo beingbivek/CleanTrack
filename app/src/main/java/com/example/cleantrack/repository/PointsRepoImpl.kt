@@ -1,6 +1,8 @@
 package com.example.cleantrack.repository
 
+import com.example.cleantrack.model.LeaderboardModel
 import com.example.cleantrack.model.PointsRuleModel
+import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.model.UserPointsModel
 import com.google.firebase.database.FirebaseDatabase
 
@@ -41,6 +43,40 @@ class PointsRepoImpl : PointsRepo {
                 // CRITICAL FIX: If Firebase fails, return 0 so the UI can finish
                 callback(0)
             }
+    }
+
+    override fun getLeaderboardData(callback: (List<LeaderboardModel>) -> Unit) {
+        val usersRef = db.getReference("Users") // Assuming your UserModel is here
+        val userPointsRef = db.getReference("UserPoints")
+
+        // 1. Fetch all points
+        userPointsRef.get().addOnSuccessListener { pointsSnapshot ->
+            val pointsMap = mutableMapOf<String, Int>()
+            pointsSnapshot.children.forEach { child ->
+                val model = child.getValue(UserPointsModel::class.java)
+                if (model != null) pointsMap[model.userId] = model.totalPoints
+            }
+
+            // 2. Fetch user details to get names and images
+            usersRef.get().addOnSuccessListener { usersSnapshot ->
+                val leaderboardList = mutableListOf<LeaderboardModel>()
+                usersSnapshot.children.forEach { child ->
+                    val userModel = child.getValue(UserModel::class.java)
+                    if (userModel != null) {
+                        leaderboardList.add(
+                            LeaderboardModel(
+                                userId = userModel.userId,
+                                fullname = userModel.fullname,
+                                points = pointsMap[userModel.userId] ?: 0,
+                                profileImageUrl = userModel.profileImageUrl
+                            )
+                        )
+                    }
+                }
+                // 3. Sort by points descending
+                callback(leaderboardList.sortedByDescending { it.points })
+            }
+        }
     }
 
     override fun addPointsToUser(userId: String, points: Int) {
