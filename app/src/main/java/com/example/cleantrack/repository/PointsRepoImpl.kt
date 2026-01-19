@@ -1,6 +1,6 @@
 package com.example.cleantrack.repository
 
-import com.example.cleantrack.model.LeaderBoardUser
+import com.example.cleantrack.model.LeaderboardModel
 import com.example.cleantrack.model.PointsRuleModel
 import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.model.UserPointsModel
@@ -45,7 +45,7 @@ class PointsRepoImpl : PointsRepo {
             }
     }
 
-    override fun getLeaderboardData(callback: (List<LeaderBoardUser>) -> Unit) {
+    override fun getLeaderboardData(callback: (List<LeaderboardModel>) -> Unit) {
         val usersRef = db.getReference("Users") // Assuming your UserModel is here
         val userPointsRef = db.getReference("UserPoints")
 
@@ -59,12 +59,12 @@ class PointsRepoImpl : PointsRepo {
 
             // 2. Fetch user details to get names and images
             usersRef.get().addOnSuccessListener { usersSnapshot ->
-                val leaderboardList = mutableListOf<LeaderBoardUser>()
+                val leaderboardList = mutableListOf<LeaderboardModel>()
                 usersSnapshot.children.forEach { child ->
                     val userModel = child.getValue(UserModel::class.java)
                     if (userModel != null) {
                         leaderboardList.add(
-                            LeaderBoardUser(
+                            LeaderboardModel(
                                 userId = userModel.userId,
                                 fullname = userModel.fullname,
                                 points = pointsMap[userModel.userId] ?: 0,
