@@ -36,6 +36,7 @@ import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.AnnouncementRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.AnnouncementBanner
@@ -43,8 +44,10 @@ import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.view.common.MarketplaceActivity
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.common.NotificationCenterActivity
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
+import com.example.cleantrack.util.NotificationHelper
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +64,7 @@ class UserDashboardActivity : ComponentActivity() {
 fun UserDashboardBody() {
     val context = LocalContext.current
     val userViewModel = remember { UserViewModel(UserRepoImpl(), BinCollectionRepoImpl()) }
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
@@ -69,6 +73,8 @@ fun UserDashboardBody() {
     val currentPoints by userViewModel.userPoints.observeAsState(0)
     val latestCollection by userViewModel.latestCollection.observeAsState()
     val globalAiReview by userViewModel.globalAiReview.observeAsState("Analyzing your waste habits...")
+    val notifications by notificationViewModel.notifications.observeAsState(emptyList())
+    var shownNotificationIds by remember { mutableStateOf(setOf<String>()) }
 
     // NEW: Observe loading state from ViewModel
     val isLoadingUser by userViewModel.loading.observeAsState(true)
@@ -87,6 +93,17 @@ fun UserDashboardBody() {
             userViewModel.getUserById(uid)
             userViewModel.fetchUserPoints(uid)
             userViewModel.fetchGlobalAIReview(uid, aiRepo)
+            notificationViewModel.observeNotifications(uid)
+        }
+    }
+
+    LaunchedEffect(notifications) {
+        val newItems = notifications.filter { it.notificationId !in shownNotificationIds }
+        newItems.forEach { item ->
+            NotificationHelper.showSystemNotification(context, item.title, item.message)
+        }
+        if (newItems.isNotEmpty()) {
+            shownNotificationIds = shownNotificationIds + newItems.map { it.notificationId }
         }
     }
 

@@ -48,6 +48,7 @@ import com.example.cleantrack.view.user.ProfileMenuItem
 import com.example.cleantrack.view.user.QuickIcon
 import com.example.cleantrack.view.user.UserAnnouncementListActivity
 import com.example.cleantrack.viewmodel.*
+import com.example.cleantrack.util.NotificationHelper
 import com.google.android.gms.location.LocationServices
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -84,6 +85,7 @@ fun DriverDashboardBody() {
     val assignedSchedule by scheduleViewModel.schedule.observeAsState()
     val stats by tripViewModel.binStats.observeAsState(Triple(0, 0, 0))
     val sLoading by scheduleViewModel.loading.observeAsState(false)
+    val notifications by notificationVM.notifications.observeAsState(emptyList())
 
     // Used to keep the location callback synced with the latest trip state
     val currentTripState = rememberUpdatedState(activeTrip)
@@ -91,6 +93,7 @@ fun DriverDashboardBody() {
     var showEndTripDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var scheduleArrivalNotified by remember { mutableStateOf(false) }
+    var shownNotificationIds by remember { mutableStateOf(setOf<String>()) }
 
     val isTripActive = activeTrip?.status == "ACTIVE"
 
@@ -121,6 +124,22 @@ fun DriverDashboardBody() {
     // --- 3. LIFECYCLE EFFECTS ---
     LaunchedEffect(Unit) {
         permissionLauncher.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
+    }
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNotEmpty()) {
+            notificationVM.observeNotifications(currentUserId)
+        }
+    }
+
+    LaunchedEffect(notifications) {
+        val newItems = notifications.filter { it.notificationId !in shownNotificationIds }
+        newItems.forEach { item ->
+            NotificationHelper.showSystemNotification(context, item.title, item.message)
+        }
+        if (newItems.isNotEmpty()) {
+            shownNotificationIds = shownNotificationIds + newItems.map { it.notificationId }
+        }
     }
 
     LaunchedEffect(currentUserId) {
@@ -250,7 +269,7 @@ fun DriverDashboardBody() {
             }
         ) { innerPadding ->
             when (selectedTab) {
-                0 -> DriverHomeSection(innerPadding, currentUser, activeTrip, assignedSchedule, stats, sLoading,tripViewModel,notificationVM) { showEndTripDialog = true }
+                0 -> DriverHomeSection(innerPadding, currentUser, activeTrip, assignedSchedule, stats, sLoading, tripViewModel,notificationVM) { showEndTripDialog = true }
                 2 -> DriverProfileSection(innerPadding, currentUser, currentUserId) { showLogoutDialog = true }
             }
         }

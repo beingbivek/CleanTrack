@@ -29,13 +29,16 @@ import androidx.compose.ui.unit.sp
 import com.example.cleantrack.R
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.example.cleantrack.view.common.TermsAndConditionActivity
 import com.example.cleantrack.view.common.MarketplaceActivity
 import com.example.cleantrack.view.common.NotificationCenterActivity
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
+import com.example.cleantrack.util.NotificationHelper
 
 class AdminDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,12 +54,26 @@ class AdminDashboardActivity : ComponentActivity() {
 fun AdminDashboardBody() {
     val context = LocalContext.current
     val userViewModel = remember { UserViewModel(UserRepoImpl(), BinCollectionRepoImpl()) }
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
     val userProfile by userViewModel.user.observeAsState()
+    val notifications by notificationViewModel.notifications.observeAsState(emptyList())
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var shownNotificationIds by remember { mutableStateOf(setOf<String>()) }
 
     LaunchedEffect(Unit) {
         userViewModel.getCurrentUserId()?.let { uid ->
             userViewModel.getUserById(uid)
+            notificationViewModel.observeNotifications(uid)
+        }
+    }
+
+    LaunchedEffect(notifications) {
+        val newItems = notifications.filter { it.notificationId !in shownNotificationIds }
+        newItems.forEach { item ->
+            NotificationHelper.showSystemNotification(context, item.title, item.message)
+        }
+        if (newItems.isNotEmpty()) {
+            shownNotificationIds = shownNotificationIds + newItems.map { it.notificationId }
         }
     }
 
