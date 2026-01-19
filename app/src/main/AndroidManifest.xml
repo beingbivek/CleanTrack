@@ -119,7 +119,7 @@
             android:label="@string/title_activity_admin_points_rule_list"
             android:theme="@style/Theme.CleanTrack" />
         <activity
-            android:name=".view.user.UserLiveTrackingActivity"
+            android:name=".view.user.TruckLiveTrackingActivity"
             android:exported="true"
             android:label="@string/title_activity_user_live_tracking"
             android:theme="@style/Theme.CleanTrack" />

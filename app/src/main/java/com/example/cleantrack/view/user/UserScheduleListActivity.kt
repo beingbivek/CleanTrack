@@ -107,8 +107,8 @@ fun UserScheduleListScreen() {
                     userProfile?.activeRouteId.isNullOrEmpty() -> {
                         EmptyStateView(
                             title = "No Route Selected",
-                            description = "Please go to 'Live Tracking' and confirm your neighborhood route."
-                        )
+                            description = "Please go to 'Routes' and confirm your neighborhood route.")
+
                     }
                     mySchedules.isEmpty() -> {
                         EmptyStateView(
@@ -261,12 +261,12 @@ fun EmptyStateView(title: String, description: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.White)
+        Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Gray)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             description,
             textAlign = TextAlign.Center,
-            color = Color.White.copy(0.8f),
+            color = Color.Gray.copy(0.8f),
             fontSize = 14.sp
         )
     }

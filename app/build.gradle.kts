@@ -104,6 +104,7 @@ dependencies {
     // IMPORTANT if you use Tasks.await() anywhere
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.ui)
 
     // Tests
     testImplementation("junit:junit:4.13.2")

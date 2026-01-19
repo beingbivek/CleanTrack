@@ -365,4 +365,43 @@ class UserViewModel(
     }
 
 
+    /**
+     * Logic to check if the user has an active premium subscription.
+     * It checks the boolean flag and validates that the expiry date hasn't passed.
+     */
+    fun isPremiumUser(user: UserModel?): Boolean {
+        if (user == null) return false
+
+        val currentTime = System.currentTimeMillis()
+
+        // Check root flag
+        val hasFlag = user.subscription?.isSubscribed
+
+        // Check root expiry OR nested expiry
+        val expiry = user.subscription?.expiryDate ?: 0L
+
+        // Check if the subscription object itself exists (backup check)
+        val hasSubscriptionObject = user.subscription != null
+
+        // It is premium if (Flag is true OR Subscription object exists) AND it's not expired
+        return (hasFlag == true || hasSubscriptionObject) && expiry > currentTime
+    }
+
+    /**
+     * Returns a user-friendly string of days remaining
+     */
+    fun getSubscriptionDaysRemaining(user: UserModel?): Long {
+        val expiry = user?.subscription?.expiryDate ?: return 0L
+        val diff = expiry - System.currentTimeMillis()
+        return if (diff > 0) diff / (24 * 60 * 60 * 1000) else 0L
+    }
+
+    // Add a check in your existing getUserById to refresh the local _user state
+    fun refreshUser(userId: String) {
+        repo.getUserById(userId) { success, _, data ->
+            if (success) _user.postValue(data)
+        }
+    }
+
+
 }

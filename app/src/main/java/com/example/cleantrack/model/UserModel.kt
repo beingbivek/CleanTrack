@@ -2,7 +2,11 @@ package com.example.cleantrack.model
 
 import android.os.Parcelable
 import com.google.firebase.database.Exclude
+import com.google.firebase.database.PropertyName
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
+import retrofit2.http.GET
+
 
 
 @Parcelize
@@ -11,7 +15,9 @@ data class UserModel(
     val fullname : String = "",
     val number : String = "",
     val role : String = "USER",
-    val isSubscribed: Boolean = false,
+    @get:PropertyName("userStability")
+    @set:PropertyName("userStability")
+    var userStability: Int? = null,
     var points: Int = 0,
     val userId : String = "",
 
@@ -29,18 +35,17 @@ data class UserModel(
     val longitude : Double? = null,
 
     val profileImageUrl: String = "",
+    val subscription: @RawValue SubscriptionModel? = null,
 
-) : Parcelable{
+    ) : Parcelable{
 
     @Exclude
     fun toMap() : Map<String, Any?>{
-        return mapOf(
-
+        val data = mutableMapOf<String, Any?>(
             "email" to email,
             "fullname" to fullname,
             "number" to number,
             "role" to role,
-            "isSubscribed" to isSubscribed,
             "points" to points,
             "userId" to userId,
             "province" to province,
@@ -53,5 +58,9 @@ data class UserModel(
             "profileImageUrl" to profileImageUrl
         )
 
+        userStability?.let { data["userStability"] = it }
+        subscription?.let { data["subscription"] = it }
+
+        return data
     }
 }

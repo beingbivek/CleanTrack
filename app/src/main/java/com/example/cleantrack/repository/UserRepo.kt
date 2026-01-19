@@ -39,4 +39,10 @@ interface UserRepo {
 
     fun addUserPoints(userId: String, points: Int, callback: (Boolean, String) -> Unit)
     fun getUserPoints(userId: String, callback: (Boolean, String, Int) -> Unit)
+
+    fun updateSubscription(
+        userId: String,
+        subscription: com.example.cleantrack.model.SubscriptionModel,
+        callback: (Boolean, String) -> Unit
+    )
 }
