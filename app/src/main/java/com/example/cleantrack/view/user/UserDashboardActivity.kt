@@ -48,6 +48,7 @@ import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.util.NotificationHelper
+import com.example.cleantrack.view.common.LeaderboardActivity
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -293,7 +294,10 @@ fun HomeSection(
                 } else {
                     Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
                         QuickIcon(Icons.Outlined.PhotoCamera, "Scan", isOutline = true)
-                        QuickIcon(Icons.Outlined.SwapVert, "Exchange", isOutline = true, isSpecial = true)
+                        LockedQuickIcon(icon = Icons.Default.Leaderboard, label = "Leaderboard", isLocked = !isPremium) {
+                            if (isPremium) context.startActivity(Intent(context,
+                                LeaderboardActivity::class.java)) else onShowPremiumGate()
+                        }
                         QuickIcon(Icons.Outlined.Terrain, "Landfill", isOutline = true)
                         LockedQuickIcon(icon = Icons.Default.RestoreFromTrash, label = "Manage Bins", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserBinListActivity::class.java)) else onShowPremiumGate()
