@@ -64,6 +64,7 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
     val mapView = remember { MapView(context).apply { onCreate(savedInstanceState) } }
     var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
     var currentPolyline by remember { mutableStateOf<Polyline?>(null) }
+    var baatoApiKey by remember { mutableStateOf<String?>(null) }
 
     // 1. Fetch User Data and Routes
     LaunchedEffect(Unit) {
@@ -72,6 +73,12 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
             userVM.getUserById(uid)
         }
     }
+
+    LaunchedEffect(Unit) {
+        baatoApiKey = ApiTokenUtil.getBaatoApiKey()
+    }
+
+    ApplyBaatoStyle(mapInstance, baatoApiKey)
 
     // 2. Logic: Load saved route OR use Recommendation Logic
     LaunchedEffect(routes, userProfile) {
@@ -185,8 +192,6 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
                     ) { view ->
                         view.getMapAsync { m ->
                             mapInstance = m
-                            val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
-                            m.setStyle(styleUrl)
                         }
                     }
                 }
@@ -218,6 +223,17 @@ fun UserLiveTrackingScreen(savedInstanceState: Bundle?) {
     }
 }
 
+@Composable
+private fun ApplyBaatoStyle(mapInstance: MapLibreMap?, baatoApiKey: String?) {
+    LaunchedEffect(mapInstance, baatoApiKey) {
+        if (mapInstance == null || baatoApiKey.isNullOrBlank()) {
+            return@LaunchedEffect
+        }
+        val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=$baatoApiKey"
+        mapInstance.setStyle(styleUrl)
+    }
+}
+
 /**
  * Haversine formula to calculate distance between two coordinates in km
  */
@@ -229,4 +245,3 @@ fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): D
     val c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return r * c
 }
-

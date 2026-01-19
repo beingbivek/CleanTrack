@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- Location Permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -18,46 +19,51 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
-        <activity
+         <activity
             android:name=".view.user.PaymentHistoryActivity"
             android:exported="false"
-            android:label="@string/title_activity_payment_history"
+            android:label="PaymentHistoryActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.AddListItemActivity"
             android:exported="true"
-            android:label="@string/title_activity_add_list_item"
+            android:label="AddListItemActivity"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.LeaderboardActivity"
+            android:exported="true"
+            android:label="LeaderboardActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.ProductDetailActivity"
             android:exported="true"
-            android:label="@string/title_activity_product_detail"
+            android:label="ProductDetailActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.MarketplaceActivity"
             android:exported="true"
-            android:label="@string/title_activity_marketplace"
+            android:label="MarketplaceActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminTransactionListActivity"
             android:exported="false"
-            android:label="@string/title_activity_admin_transaction_list"
+            android:label="AdminTransactionListActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.DriversTripHistoryActivity"
             android:exported="true"
             android:label="@string/title_activity_drivers_trip_history"
-            android:theme="@style/Theme.CleanTrack" />
+            android:theme="@style/Theme.CleanTrack"></activity>
         <activity
             android:name=".view.driver.DriverRouteMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_route_map"
-            android:theme="@style/Theme.CleanTrack" />
+            android:theme="@style/Theme.CleanTrack"></activity>
         <activity
             android:name=".view.driver.BinCollectionActivity"
             android:exported="true"
             android:label="@string/title_activity_bin_collection"
-            android:theme="@style/Theme.CleanTrack" />
+            android:theme="@style/Theme.CleanTrack"></activity>
         <activity
             android:name=".view.user.UserScheduleListActivity"
             android:exported="true"
@@ -114,7 +120,7 @@
             android:label="@string/title_activity_admin_points_rule_list"
             android:theme="@style/Theme.CleanTrack" />
         <activity
-            android:name=".view.user.UserLiveTrackingActivity"
+            android:name=".view.user.TruckLiveTrackingActivity"
             android:exported="true"
             android:label="@string/title_activity_user_live_tracking"
             android:theme="@style/Theme.CleanTrack" />
@@ -172,13 +178,7 @@
             android:name=".view.common.PrivacyPolicyActivity"
             android:exported="true"
             android:label="PrivacyPolicyActivity"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack"/>
         <activity
             android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"
@@ -230,6 +230,11 @@
             android:label="@string/title_activity_contact_support"
             android:theme="@style/Theme.CleanTrack" />
         <activity
+            android:name=".view.common.NotificationCenterActivity"
+            android:exported="true"
+            android:label="Notifications"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
             android:name=".view.auth.StartActivity"
             android:exported="true"
             android:label="@string/title_activity_start"
@@ -257,7 +262,7 @@
             android:theme="@style/Theme.CleanTrack" />
 
         <service
-            android:name=".util.FCMNotificationService"
+            android:name=".util.MyFirebaseService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

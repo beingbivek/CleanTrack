@@ -32,8 +32,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cleantrack.model.NotificationPayload
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.TermsAndConditionRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.TermsAndConditionViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.mohamedrejeb.richeditor.model.RichTextState
@@ -81,6 +84,7 @@ class TermsAndConditionActivity : ComponentActivity() {
 @Composable
 fun AdminTermsScreen() {
     val viewModel = remember { TermsAndConditionViewModel(TermsAndConditionRepoImpl()) }
+    val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
     val currentTerms by viewModel.termsAndCondition.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
@@ -128,6 +132,14 @@ fun AdminTermsScreen() {
                 viewModel.postTermsAndCondition(state.toHtml()) { success, msg ->
                     if (success) {
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        notificationVM.notifyAllRecipients(
+                            NotificationPayload(
+                                title = "Terms updated",
+                                message = "Please review the updated terms and conditions.",
+                                type = "policy",
+                                actionType = "terms"
+                            )
+                        )
                         activity.finish()
                     }
                 }

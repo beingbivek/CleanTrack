@@ -23,3 +23,7 @@ val AccentRed = Color(0xFFF44336)
 val AccentLinkGreen = Color(0xFF43A047)
 val BackgroundLightGray = Color(0xFFF5F5F5)
 val Transparent = Color(0x0000000)
+
+val Gold = Color(0xFFFFD700)
+val Silver = Color(0xFFC0C0C0)
+val Bronze = Color(0xFFCD7F32)

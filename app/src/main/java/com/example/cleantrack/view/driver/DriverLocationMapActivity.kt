@@ -24,18 +24,22 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.cleantrack.model.BinCollectionModel
 import com.example.cleantrack.model.BinModel
+import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.repository.ActiveTripRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.BinRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.PointsRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.util.ApiTokenUtil
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.google.android.gms.location.*
 
+import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.annotations.Marker
@@ -48,6 +52,7 @@ class DriverLocationMapActivity : ComponentActivity() {
     private lateinit var activeTripViewModel: ActiveTripViewModel
     private var tripId: String = ""
     private var driverMapViewState: MapView? = null
+    private val notificationViewModel = NotificationViewModel(NotificationRepoImpl(), UserRepoImpl())
 
     private val scanLauncher =
         registerForActivityResult(ScanContract()) { result ->
@@ -86,6 +91,15 @@ class DriverLocationMapActivity : ComponentActivity() {
 
         activeTripViewModel.addBinCollection(collectionModel) { success, message ->
             if (success) {
+                notificationViewModel.notifyUser(
+                    bin.ownerUserId,
+                    NotificationPayload(
+                        title = "Bin rated",
+                        message = "Your bin was rated by the driver.",
+                        type = "bin_rating",
+                        actionType = "bin_rating"
+                    )
+                )
                 Toast.makeText(this, "Bin rated successfully", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
@@ -97,6 +111,7 @@ class DriverLocationMapActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        MapLibre.getInstance(applicationContext)
         tripId = intent.getStringExtra("TRIP_ID") ?: ""
 
         activeTripViewModel = ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(),
@@ -134,10 +149,9 @@ class DriverLocationMapActivity : ComponentActivity() {
 
         var currentLat by remember { mutableStateOf(27.7172) }
         var currentLon by remember { mutableStateOf(85.3240) }
+        var baatoApiKey by remember { mutableStateOf<String?>(null) }
 
         val mapView = remember { MapView(context).apply { onCreate(savedInstanceState) } }
-        // Ensure this API key is valid or the map won't load
-        val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=${ApiTokenUtil.BAATO_API_KEY}"
 
         var mapInstance by remember { mutableStateOf<MapLibreMap?>(null) }
         var markerInstance by remember { mutableStateOf<Marker?>(null) }
@@ -221,16 +235,29 @@ class DriverLocationMapActivity : ComponentActivity() {
             }
         }
 
+        LaunchedEffect(Unit) {
+            baatoApiKey = ApiTokenUtil.getBaatoApiKey()
+        }
+
         DisposableEffect(mapView) {
             mapView.getMapAsync { map ->
                 mapInstance = map
-                map.setStyle(styleUrl) {
-                    val pos = LatLng(currentLat, currentLon)
-                    map.cameraPosition =
-                        CameraPosition.Builder().target(pos).zoom(12.0).build()
-                }
             }
             onDispose {}
+        }
+
+        LaunchedEffect(mapInstance, baatoApiKey) {
+            val map = mapInstance
+            val apiKey = baatoApiKey
+            if (map == null || apiKey.isNullOrBlank()) {
+                return@LaunchedEffect
+            }
+            val styleUrl = "https://api.baato.io/api/v1/styles/breeze_cdn?key=$apiKey"
+            map.setStyle(styleUrl) {
+                val pos = LatLng(currentLat, currentLon)
+                map.cameraPosition =
+                    CameraPosition.Builder().target(pos).zoom(12.0).build()
+            }
         }
 
         val lifecycleOwner = LocalLifecycleOwner.current

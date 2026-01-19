@@ -36,14 +36,19 @@ import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.AnnouncementRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.*
 import com.example.cleantrack.view.common.AnnouncementBanner
 import com.example.cleantrack.view.common.LogoutDialog
 import com.example.cleantrack.view.common.MarketplaceActivity
 import com.example.cleantrack.view.common.PrivacyPolicyActivity
+import com.example.cleantrack.view.common.NotificationCenterActivity
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
+import com.example.cleantrack.util.NotificationHelper
+import com.example.cleantrack.view.common.LeaderboardActivity
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +65,7 @@ class UserDashboardActivity : ComponentActivity() {
 fun UserDashboardBody() {
     val context = LocalContext.current
     val userViewModel = remember { UserViewModel(UserRepoImpl(), BinCollectionRepoImpl()) }
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
@@ -68,6 +74,8 @@ fun UserDashboardBody() {
     val currentPoints by userViewModel.userPoints.observeAsState(0)
     val latestCollection by userViewModel.latestCollection.observeAsState()
     val globalAiReview by userViewModel.globalAiReview.observeAsState("Analyzing your waste habits...")
+    val notifications by notificationViewModel.notifications.observeAsState(emptyList())
+    var shownNotificationIds by remember { mutableStateOf(setOf<String>()) }
 
     // NEW: Observe loading state from ViewModel
     val isLoadingUser by userViewModel.loading.observeAsState(true)
@@ -86,6 +94,17 @@ fun UserDashboardBody() {
             userViewModel.getUserById(uid)
             userViewModel.fetchUserPoints(uid)
             userViewModel.fetchGlobalAIReview(uid, aiRepo)
+            notificationViewModel.observeNotifications(uid)
+        }
+    }
+
+    LaunchedEffect(notifications) {
+        val newItems = notifications.filter { it.notificationId !in shownNotificationIds }
+        newItems.forEach { item ->
+            NotificationHelper.showSystemNotification(context, item.title, item.message)
+        }
+        if (newItems.isNotEmpty()) {
+            shownNotificationIds = shownNotificationIds + newItems.map { it.notificationId }
         }
     }
 
@@ -198,7 +217,14 @@ fun HomeSection(
             Spacer(modifier = Modifier.width(12.dp))
             Text(text = "Points: $currentPoints ✨", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { context.startActivity(Intent(context, UserAnnouncementListActivity::class.java)) }) { Icon(Icons.Outlined.Campaign, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { context.startActivity(Intent(context, NotificationCenterActivity::class.java)) }) {
+                    Icon(Icons.Outlined.Notifications, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                }
+                IconButton(onClick = { context.startActivity(Intent(context, UserAnnouncementListActivity::class.java)) }) {
+                    Icon(Icons.Outlined.Campaign, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(25.dp))
@@ -214,7 +240,7 @@ fun HomeSection(
                 .clickable {
                     if (isPremium) {
                         userProfile?.activeRouteId?.let { id ->
-                            context.startActivity(Intent(context, UserLiveTrackingActivity::class.java).apply {
+                            context.startActivity(Intent(context, TruckLiveTrackingActivity::class.java).apply {
                                 putExtra("ROUTE_ID", id)
                             })
                         }
@@ -236,7 +262,7 @@ fun HomeSection(
                     if (isLoading) {
                         CircularProgressIndicator(color = Green, modifier = Modifier.size(30.dp))
                     } else if (isPremium && !userProfile?.activeRouteId.isNullOrEmpty()) {
-                        UserLiveMapScreen(routeId = userProfile!!.activeRouteId)
+                        TruckLiveMapScreen(routeId = userProfile!!.activeRouteId)
                     } else {
                         // Blurred or placeholder view for non-premium
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -268,7 +294,10 @@ fun HomeSection(
                 } else {
                     Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
                         QuickIcon(Icons.Outlined.PhotoCamera, "Scan", isOutline = true)
-                        QuickIcon(Icons.Outlined.SwapVert, "Exchange", isOutline = true, isSpecial = true)
+                        LockedQuickIcon(icon = Icons.Default.Leaderboard, label = "Leaderboard", isLocked = !isPremium) {
+                            if (isPremium) context.startActivity(Intent(context,
+                                LeaderboardActivity::class.java)) else onShowPremiumGate()
+                        }
                         QuickIcon(Icons.Outlined.Terrain, "Landfill", isOutline = true)
                         LockedQuickIcon(icon = Icons.Default.RestoreFromTrash, label = "Manage Bins", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserBinListActivity::class.java)) else onShowPremiumGate()
@@ -280,7 +309,7 @@ fun HomeSection(
                             putExtra("USER_ID", userProfile?.userId) // PASSING ID HERE
                         }) }
                         QuickIcon(icon = Icons.Default.Route, label = "Routes") {
-                             context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java))
+                            context.startActivity(Intent(context, UserRouteLiveTrackingActivity::class.java))
                         }
                         LockedQuickIcon(icon = Icons.Default.CalendarMonth, label = "Schedule", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserScheduleListActivity::class.java)) else onShowPremiumGate()
@@ -336,7 +365,7 @@ fun MapTrackerSection(padding: PaddingValues, userProfile: UserModel?) {
         Text("Vehicle Tracking", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(20.dp))
         Card(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp)), elevation = CardDefaults.cardElevation(8.dp), colors = CardDefaults.cardColors(containerColor = White)) {
-            if (!userProfile?.activeRouteId.isNullOrEmpty()) { UserLiveMapScreen(routeId = userProfile!!.activeRouteId) }
+            if (!userProfile?.activeRouteId.isNullOrEmpty()) { TruckLiveMapScreen(routeId = userProfile!!.activeRouteId) }
             else { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Select a route in Home to start tracking", color = Color.Gray) } }
         }
     }

@@ -375,16 +375,16 @@ class UserViewModel(
         val currentTime = System.currentTimeMillis()
 
         // Check root flag
-        val hasFlag = user.isSubscribed
+        val hasFlag = user.subscription?.isSubscribed
 
         // Check root expiry OR nested expiry
-        val expiry = user.expiryDate ?: user.subscription?.expiryDate ?: 0L
+        val expiry = user.subscription?.expiryDate ?: 0L
 
         // Check if the subscription object itself exists (backup check)
         val hasSubscriptionObject = user.subscription != null
 
         // It is premium if (Flag is true OR Subscription object exists) AND it's not expired
-        return (hasFlag || hasSubscriptionObject) && expiry > currentTime
+        return (hasFlag == true || hasSubscriptionObject) && expiry > currentTime
     }
 
     /**

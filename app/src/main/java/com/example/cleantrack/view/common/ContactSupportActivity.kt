@@ -71,10 +71,14 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.viewmodel.ContactSupportViewModel
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import coil.compose.AsyncImage
 import com.example.cleantrack.repository.CommonImageRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.view.common.IssuesViewActivity
 import com.example.cleantrack.viewmodel.CommonImageViewModel
+import com.example.cleantrack.model.NotificationPayload
 
 class ContactSupportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,6 +95,7 @@ class ContactSupportActivity : ComponentActivity() {
 @Composable
 fun ContactSupportScreen(userId: String?) {
     val supportViewModel = remember { ContactSupportViewModel(ContactSupportRepoImpl()) }
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
     val userData by supportViewModel.currentUserData.observeAsState()
 
     LaunchedEffect(Unit) {
@@ -109,7 +114,8 @@ fun ContactSupportScreen(userId: String?) {
         isReadOnly = userId != null,
         userId = userId ?: "",
         userType = userType,
-        viewModel = supportViewModel
+        viewModel = supportViewModel,
+        notificationViewModel = notificationViewModel
     )
 }
 
@@ -122,7 +128,8 @@ fun ContactSupportBody(
     isReadOnly: Boolean,
     userId: String,
     userType: String,
-    viewModel: ContactSupportViewModel
+    viewModel: ContactSupportViewModel,
+    notificationViewModel: NotificationViewModel
 ) {
     val context = LocalContext.current
 
@@ -406,6 +413,14 @@ fun ContactSupportBody(
                                         ) { success, msg ->
                                             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                             if (success) {
+                                                notificationViewModel.notifyAllAdmins(
+                                                    NotificationPayload(
+                                                        title = "New support ticket",
+                                                        message = "$fullname submitted a support request.",
+                                                        type = "support_ticket",
+                                                        actionType = "ticket_detail"
+                                                    )
+                                                )
                                                 message = ""
                                                 selectedImageUri = null
                                             }
@@ -420,7 +435,17 @@ fun ContactSupportBody(
                                     fullname, email, selectedOptionText, formattedFirstMessage, userId, userType, ""
                                 ) { success, msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                    if (success) message = ""
+                                    if (success) {
+                                        notificationViewModel.notifyAllAdmins(
+                                            NotificationPayload(
+                                                title = "New support ticket",
+                                                message = "$fullname submitted a support request.",
+                                                type = "support_ticket",
+                                                actionType = "ticket_detail"
+                                            )
+                                        )
+                                        message = ""
+                                    }
                                 }
                             }
                         }
@@ -447,4 +472,3 @@ fun ContactSupportBody(
 
     }
 }
-

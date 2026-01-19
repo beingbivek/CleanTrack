@@ -2,7 +2,10 @@ package com.example.cleantrack.model
 
 import android.os.Parcelable
 import com.google.firebase.database.Exclude
+import com.google.firebase.database.PropertyName
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
+import retrofit2.http.GET
 
 
 
@@ -12,9 +15,9 @@ data class UserModel(
     val fullname : String = "",
     val number : String = "",
     val role : String = "USER",
-    val isSubscribed: Boolean = false,
-    val subscription: SubscriptionModel? = null,
-    val expiryDate: Long? = null,
+    @get:PropertyName("userStability")
+    @set:PropertyName("userStability")
+    var userStability: Int? = null,
     var points: Int = 0,
     val userId : String = "",
 
@@ -32,21 +35,18 @@ data class UserModel(
     val longitude : Double? = null,
 
     val profileImageUrl: String = "",
+    val subscription: @RawValue SubscriptionModel? = null,
+    val fcmToken: String = ""
 
 ) : Parcelable{
 
     @Exclude
     fun toMap() : Map<String, Any?>{
-        return mapOf(
-
+        val data = mutableMapOf<String, Any?>(
             "email" to email,
             "fullname" to fullname,
             "number" to number,
             "role" to role,
-            "isSubscribed" to isSubscribed,
-            "subscription" to subscription,
-            "expiryDate" to expiryDate,
-
             "points" to points,
             "userId" to userId,
             "province" to province,
@@ -56,8 +56,13 @@ data class UserModel(
             "activeRouteId" to activeRouteId,
             "latitude" to latitude,
             "longitude" to longitude,
-            "profileImageUrl" to profileImageUrl
+            "profileImageUrl" to profileImageUrl,
+            "fcmToken" to fcmToken
         )
 
+        userStability?.let { data["userStability"] = it }
+        subscription?.let { data["subscription"] = it }
+
+        return data
     }
 }
