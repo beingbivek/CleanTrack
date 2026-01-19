@@ -269,7 +269,10 @@ fun HomeSection(
                 } else {
                     Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
                         QuickIcon(Icons.Outlined.PhotoCamera, "Scan", isOutline = true)
-                        QuickIcon(Icons.Outlined.Leaderboard, "Leaderboard") { context.startActivity(Intent(context, LeaderboardActivity::class.java)) }
+                        LockedQuickIcon(icon = Icons.Default.Leaderboard, label = "Leaderboard", isLocked = !isPremium) {
+                            if (isPremium) context.startActivity(Intent(context,
+                                LeaderboardActivity::class.java)) else onShowPremiumGate()
+                        }
                         QuickIcon(Icons.Outlined.Terrain, "Landfill", isOutline = true)
                         LockedQuickIcon(icon = Icons.Default.RestoreFromTrash, label = "Manage Bins", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserBinListActivity::class.java)) else onShowPremiumGate()
