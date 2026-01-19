@@ -32,8 +32,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cleantrack.model.NotificationPayload
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.PrivacyPolicyRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.PrivacyPolicyViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.mohamedrejeb.richeditor.model.RichTextState
@@ -87,6 +90,7 @@ class PrivacyPolicyActivity : ComponentActivity() {
 @Composable
 fun AdminPrivacyPolicyScreen() {
     val viewModel = remember { PrivacyPolicyViewModel(PrivacyPolicyRepoImpl()) }
+    val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
     val currentPrivacyPolicy by viewModel.privacypolicy.collectAsState()
     val message by viewModel.message.collectAsState()
     val context = LocalContext.current
@@ -143,6 +147,14 @@ fun AdminPrivacyPolicyScreen() {
             onClick = {
                 viewModel.postPrivacyPolicy(state.toHtml()) { s, m -> if(s) {
                     Toast.makeText(context, m, Toast.LENGTH_SHORT)
+                    notificationVM.notifyAllRecipients(
+                        NotificationPayload(
+                            title = "Privacy policy updated",
+                            message = "Please review the latest privacy policy.",
+                            type = "policy",
+                            actionType = "privacy"
+                        )
+                    )
                     activity.finish()
                 }
 

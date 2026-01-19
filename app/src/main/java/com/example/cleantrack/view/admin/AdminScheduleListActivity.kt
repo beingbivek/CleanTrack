@@ -23,9 +23,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.model.ScheduleModel
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.ScheduleRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.ScheduleViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import kotlin.text.get
@@ -44,9 +47,8 @@ class AdminScheduleListActivity : ComponentActivity() {
 @Composable
 fun AdminScheduleListScreen() {
 
-    val vm = remember {
-        ScheduleViewModel(ScheduleRepoImpl())
-    }
+    val vm = remember { ScheduleViewModel(ScheduleRepoImpl()) }
+    val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     val dVM = remember { UserViewModel(UserRepoImpl()) }
     val drivers by dVM.drivers.observeAsState(emptyList())
@@ -65,6 +67,7 @@ fun AdminScheduleListScreen() {
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedScheduleId by remember { mutableStateOf("") }
+    var selectedSchedule by remember { mutableStateOf<ScheduleModel?>(null) }
 
     val dayOrder = mapOf(
         "Sunday" to 1,
@@ -169,6 +172,7 @@ fun AdminScheduleListScreen() {
                             },
                             onDelete = {
                                 selectedScheduleId = schedule.scheduleId
+                                selectedSchedule = schedule
                                 showDeleteDialog = true
                             }
                         )
@@ -190,6 +194,18 @@ fun AdminScheduleListScreen() {
                     vm.deleteSchedule(selectedScheduleId) { success, msg ->
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         if (success) {
+                            selectedSchedule?.let { schedule ->
+                                val payload = NotificationPayload(
+                                    title = "Schedule removed",
+                                    message = "${schedule.routeName} schedule was removed.",
+                                    type = "schedule",
+                                    actionType = "schedule",
+                                    routeId = schedule.routeId,
+                                    scheduleId = schedule.scheduleId
+                                )
+                                notificationVM.notifyUsersByRoute(schedule.routeId, payload)
+                                notificationVM.notifyDriver(schedule.driverId, payload)
+                            }
                             vm.getAllSchedules()
                             showDeleteDialog = false
                         }

@@ -24,6 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cleantrack.model.NotificationPayload
+import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.PaymentRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Green
@@ -31,6 +33,7 @@ import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.viewmodel.PaymentState
 import com.example.cleantrack.viewmodel.PaymentViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
+import com.example.cleantrack.viewmodel.NotificationViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -69,6 +72,7 @@ fun PaymentScreen(
 
     // Observe Payment state for the "Processing" overlay
     val paymentState by paymentViewModel.paymentStatus.observeAsState(PaymentState.Idle)
+    val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     // 3. Trigger the fetch using the ID from Intent immediately on launch
     LaunchedEffect(userId) {
@@ -82,6 +86,23 @@ fun PaymentScreen(
         if (paymentState is PaymentState.Success) {
             Toast.makeText(context, (paymentState as PaymentState.Success).message, Toast.LENGTH_LONG).show()
             userViewModel.getUserById(userId)
+            notificationViewModel.notifyUser(
+                userId,
+                NotificationPayload(
+                    title = "Subscription active",
+                    message = "Your subscription is now active.",
+                    type = "subscription",
+                    actionType = "subscription"
+                )
+            )
+            notificationViewModel.notifyAllAdmins(
+                NotificationPayload(
+                    title = "New subscription",
+                    message = "${userProfile?.fullname ?: "A user"} subscribed.",
+                    type = "subscription",
+                    actionType = "subscription"
+                )
+            )
         } else if (paymentState is PaymentState.Error) {
             Toast.makeText(context, (paymentState as PaymentState.Error).message, Toast.LENGTH_LONG).show()
         }

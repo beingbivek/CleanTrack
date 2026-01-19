@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- Location Permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -177,13 +178,7 @@
             android:name=".view.common.PrivacyPolicyActivity"
             android:exported="true"
             android:label="PrivacyPolicyActivity"
-            android:theme="@style/Theme.CleanTrack">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.CleanTrack"/>
         <activity
             android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"
@@ -235,6 +230,11 @@
             android:label="@string/title_activity_contact_support"
             android:theme="@style/Theme.CleanTrack" />
         <activity
+            android:name=".view.common.NotificationCenterActivity"
+            android:exported="true"
+            android:label="Notifications"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
             android:name=".view.auth.StartActivity"
             android:exported="true"
             android:label="@string/title_activity_start"
@@ -262,7 +262,7 @@
             android:theme="@style/Theme.CleanTrack" />
 
         <service
-            android:name=".util.FCMNotificationService"
+            android:name=".util.MyFirebaseService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

@@ -20,8 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.AnnouncementModel
+import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.repository.AnnouncementRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
+import com.example.cleantrack.viewmodel.NotificationViewModel
 
 class AdminAnnouncementSetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,6 +45,7 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
     val activity = context as Activity
 
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
+    val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     // UI states
     var title by remember { mutableStateOf("") }
@@ -150,7 +155,17 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
                                 // CREATE MODE
                                 announcementVM.postAnnouncement(model) { success, msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                    if (success) activity.finish()
+                                    if (success) {
+                                        notificationVM.notifyAllUsersAndDrivers(
+                                            NotificationPayload(
+                                                title = "New announcement",
+                                                message = model.title,
+                                                type = "announcement",
+                                                actionType = "announcement"
+                                            )
+                                        )
+                                        activity.finish()
+                                    }
                                 }
                             } else {
                                 // EDIT MODE
