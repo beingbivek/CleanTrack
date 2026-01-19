@@ -378,10 +378,12 @@ fun DriverHomeSection(
                             val intent = Intent(context, DriverScanBinActivity::class.java).apply {
                                 putExtra("TRIP_ID", activeTrip?.tripId)
                                 putExtra("ROUTE_ID", activeTrip?.routeId)
+                                putExtra("ROUTE_NAME", activeTrip?.routeName) // 🔥 THIS WAS MISSING
                             }
                             context.startActivity(intent)
                         } else Toast.makeText(context, "Start route first", Toast.LENGTH_SHORT).show()
                     }
+
 
                     // --- MAP (BLUE) ---
                     DriverActionItem(Icons.Default.Route, "Map", Blue) {
