@@ -18,30 +18,35 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
-        <activity
+         <activity
             android:name=".view.user.PaymentHistoryActivity"
             android:exported="false"
-            android:label="@string/title_activity_payment_history"
+            android:label="PaymentHistoryActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.AddListItemActivity"
             android:exported="true"
-            android:label="@string/title_activity_add_list_item"
+            android:label="AddListItemActivity"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.LeaderboardActivity"
+            android:exported="true"
+            android:label="LeaderboardActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.ProductDetailActivity"
             android:exported="true"
-            android:label="@string/title_activity_product_detail"
+            android:label="ProductDetailActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.common.MarketplaceActivity"
             android:exported="true"
-            android:label="@string/title_activity_marketplace"
+            android:label="MarketplaceActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminTransactionListActivity"
             android:exported="false"
-            android:label="@string/title_activity_admin_transaction_list"
+            android:label="AdminTransactionListActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.DriversTripHistoryActivity"
