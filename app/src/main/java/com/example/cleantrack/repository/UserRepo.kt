@@ -45,4 +45,6 @@ interface UserRepo {
         subscription: com.example.cleantrack.model.SubscriptionModel,
         callback: (Boolean, String) -> Unit
     )
+
+    fun resetPassword(currentPassword: String, newPassword: String, callback: (Boolean, String) -> Unit)
 }

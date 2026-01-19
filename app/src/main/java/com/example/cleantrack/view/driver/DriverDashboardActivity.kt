@@ -49,6 +49,9 @@ import com.example.cleantrack.view.user.QuickIcon
 import com.example.cleantrack.view.user.UserAnnouncementListActivity
 import com.example.cleantrack.viewmodel.*
 import com.example.cleantrack.util.NotificationHelper
+import com.example.cleantrack.view.auth.ResetPasswordActivity
+import com.example.cleantrack.view.common.ContactSupportActivity
+import com.example.cleantrack.view.common.PrivacyPolicyActivity
 import com.google.android.gms.location.LocationServices
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -478,6 +481,18 @@ fun DriverProfileSection(padding: PaddingValues, userProfile: com.example.cleant
             Column(modifier = Modifier.padding(8.dp)) {
                 ProfileMenuItem(Icons.Default.Edit, "Edit Profile") {
                     val intent = Intent(context, EditProfileActivity::class.java).apply { putExtra("USER_ID", uid) }
+                    context.startActivity(intent)
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                ProfileMenuItem(Icons.Default.Policy, "Privacy Policy") { context.startActivity(Intent(context, PrivacyPolicyActivity::class.java)) }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                ProfileMenuItem(Icons.Default.LockReset, "Reset Password") {
+                    val intent = Intent(context, ResetPasswordActivity::class.java).apply { putExtra("USER_ID", uid ) }
+                    context.startActivity(intent)
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                ProfileMenuItem(Icons.Default.ContactSupport, "Contact Support") {
+                    val intent = Intent(context, ContactSupportActivity::class.java).apply { putExtra("USER_ID", uid) }
                     context.startActivity(intent)
                 }
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)

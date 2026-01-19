@@ -48,6 +48,10 @@ import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.util.NotificationHelper
+import com.example.cleantrack.view.auth.ResetPasswordActivity
+
+import com.example.cleantrack.view.common.ContactSupportActivity
+import com.example.cleantrack.view.common.EditProfileActivity
 import com.example.cleantrack.view.common.LeaderboardActivity
 
 class UserDashboardActivity : ComponentActivity() {
@@ -385,7 +389,22 @@ fun ProfileSection(padding: PaddingValues, userProfile: UserModel?, onLogout: ()
         Spacer(modifier = Modifier.height(40.dp))
         Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(8.dp)) {
+                ProfileMenuItem(Icons.Default.Edit, "Edit Profile") {
+                    val intent = Intent(context, EditProfileActivity::class.java).apply { putExtra("USER_ID", userProfile?.userId) }
+                    context.startActivity(intent)
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
                 ProfileMenuItem(Icons.Default.Policy, "Privacy Policy") { context.startActivity(Intent(context, PrivacyPolicyActivity::class.java)) }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                ProfileMenuItem(Icons.Default.LockReset, "Reset Password") {
+                    val intent = Intent(context, ResetPasswordActivity::class.java).apply { putExtra("USER_ID", userProfile?.userId) }
+                    context.startActivity(intent)
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                ProfileMenuItem(Icons.Default.ContactSupport, "Contact Support") {
+                    val intent = Intent(context, ContactSupportActivity::class.java).apply { putExtra("USER_ID", userProfile?.userId) }
+                    context.startActivity(intent)
+                }
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
                 ProfileMenuItem(Icons.AutoMirrored.Filled.Logout, "Logout", textColor = Red) { onLogout() }
             }
