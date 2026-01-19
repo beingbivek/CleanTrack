@@ -81,10 +81,13 @@ class DriverScanBinActivity : ComponentActivity() {
         // Now calling the updated ViewModel method with the routeId parameter
         activeTripViewModel.checkAndValidateBin(tripId, routeId, binId) { allowed, message ->
             if (allowed) {
+                val routeName = intent.getStringExtra("ROUTE_NAME") ?: ""
+
                 val intent = Intent(this, BinCollectionActivity::class.java).apply {
                     putExtra("BIN_ID", binId)
                     putExtra("TRIP_ID", tripId)
-                    putExtra("ROUTE_ID", routeId) // Also pass it to the next screen
+                    putExtra("ROUTE_ID", routeId)
+                    putExtra("ROUTE_NAME", routeName) // 🔥 PASS IT
                 }
                 startActivity(intent)
                 finish()
