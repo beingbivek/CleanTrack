@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.R
+import com.example.cleantrack.model.RouteInsightModel
+import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.repository.BinCollectionRepoImpl
 import com.example.cleantrack.repository.NotificationRepoImpl
@@ -40,6 +42,7 @@ import com.example.cleantrack.view.common.NotificationCenterActivity
 import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.util.NotificationHelper
+import kotlinx.coroutines.launch
 
 class AdminDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +64,10 @@ fun AdminDashboardBody() {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var shownNotificationIds by remember { mutableStateOf(setOf<String>()) }
 
+    val aiRepo = remember { AIRepository() }
+    val scope = rememberCoroutineScope()
+    var aiStrategy by remember { mutableStateOf("Generating operational strategy...") }
+
     LaunchedEffect(Unit) {
         userViewModel.getCurrentUserId()?.let { uid ->
             userViewModel.getUserById(uid)
@@ -75,6 +82,23 @@ fun AdminDashboardBody() {
         }
         if (newItems.isNotEmpty()) {
             shownNotificationIds = shownNotificationIds + newItems.map { it.notificationId }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        userViewModel.getCurrentUserId()?.let { userViewModel.getUserById(it) }
+
+        // Fetch RouteInsights from Firebase
+        val insightRef = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("RouteInsights")
+        insightRef.get().addOnSuccessListener { snapshot ->
+            val insights = snapshot.children.mapNotNull { it.getValue(RouteInsightModel::class.java) }
+            if (insights.isNotEmpty()) {
+                scope.launch {
+                    aiStrategy = aiRepo.generateStrategyFromInsights(insights)
+                }
+            } else {
+                aiStrategy = "No historical data found. AI requires collection insights to generate a report."
+            }
         }
     }
 
@@ -117,11 +141,23 @@ fun AdminDashboardBody() {
                     Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.White)
                 }
             }
-            Text(
-                text = "System Control Center",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 16.sp
-            )
+            Text("Route Strategy AI", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(6.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AutoAwesome, "AI", tint = Green)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Operational Intelligence", fontWeight = FontWeight.ExtraBold, color = Green)
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(text = aiStrategy, fontSize = 14.sp, color = Color.DarkGray, lineHeight = 20.sp)
+                }
+            }
 
             Spacer(modifier = Modifier.height(25.dp))
 

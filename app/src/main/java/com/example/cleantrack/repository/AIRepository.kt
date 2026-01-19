@@ -1,8 +1,11 @@
 package com.example.cleantrack.repository
 import android.util.Log
 import com.example.cleantrack.model.BinCollectionModel
+import com.example.cleantrack.model.RouteInsightModel
+import com.example.cleantrack.model.map.RouteModel
 import com.example.cleantrack.util.ApiTokenUtil
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.firebase.database.FirebaseDatabase
 
 class AIRepository {
     private suspend fun buildGenerativeModel(): GenerativeModel? {
@@ -47,5 +50,57 @@ class AIRepository {
             Log.e("AI_ERROR", "Reason: ${e.message}") // Look for "AI_ERROR" in Logcat
             "AI Error: ${e.localizedMessage}"
         }
+    }
+
+
+    suspend fun generateStrategyFromInsights(insights: List<RouteInsightModel>): String {
+        if (insights.isEmpty()) return "No historical insights available to analyze."
+
+        val generativeModel = buildGenerativeModel() ?: return "AI Configuration Error"
+
+        // Grouping insights to show the AI a condensed history
+        val narrativeData = insights.groupBy { it.routeName }.entries.joinToString("\n") { (name, logs) ->
+            "Route: $name | Bad Segregations: ${logs.count { !it.segregated }} | Avg Rating: ${logs.map { it.rating }.average()}"
+        }
+
+        val prompt = """
+        You are a Waste Management Operations Strategist.
+        Review the following summarized performance data for city routes:
+        $narrativeData
+        
+        Task:
+        1. Identify the 'Critical Route' (Worst) and the 'Model Route' (Best).
+        2. Provide a specific operational directive for the Admin.
+        3. Use professional, concise language.
+        4. Keep it under 60 words.
+    """.trimIndent()
+
+        return try {
+            val response = generativeModel.generateContent(prompt)
+            response.text ?: "System operating normally."
+        } catch (e: Exception) {
+            "Strategic Analysis Error: ${e.localizedMessage}"
+        }
+    }
+
+    // This logic should run after the AI generates a review for the user
+    // Inside AIRepository.kt
+    fun saveProcessedInsight(collection: BinCollectionModel, aiReview: String, routeName: String) {
+        val insightRef = FirebaseDatabase.getInstance().getReference("RouteInsights")
+        val id = insightRef.push().key ?: ""
+
+        val newInsight = RouteInsightModel(
+            insightId = id,
+            tripId = collection.tripId,
+            routeId = collection.tripId,
+            routeName = routeName,
+            aiResponse = aiReview,
+            rating = collection.rating,
+            // Ensure this maps correctly from BinCollectionModel to RouteInsightModel
+            segregated = collection.segregatedCorrectly,
+            timestamp = System.currentTimeMillis()
+        )
+
+        insightRef.child(id).setValue(newInsight)
     }
 }
