@@ -210,6 +210,10 @@ fun AdminDashboardBody() {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
+                    AdminMenuItem(Icons.Default.ContactSupport, "Contact Tickets") {
+                        context.startActivity(Intent(context, AdminContactSupportViewActivity::class.java))
+                    }
+                    HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray, modifier = Modifier.padding(horizontal = 16.dp))
                     AdminMenuItem(Icons.Default.Policy, "Privacy Policy") {
                         context.startActivity(Intent(context, PrivacyPolicyActivity::class.java))
                     }

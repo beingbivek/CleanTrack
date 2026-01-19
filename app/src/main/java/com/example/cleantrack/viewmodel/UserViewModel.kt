@@ -404,4 +404,27 @@ class UserViewModel(
     }
 
 
+    fun resetPassword(currentPass: String, newPass: String, confirmPass: String, callback: (Boolean, String) -> Unit) {
+        // Validation logic
+        if (currentPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
+            callback(false, "All fields are required")
+            return
+        }
+        if (newPass.length < 6) {
+            callback(false, "New password must be at least 6 characters")
+            return
+        }
+        if (newPass != confirmPass) {
+            callback(false, "New passwords do not match")
+            return
+        }
+
+        _loading.postValue(true)
+        repo.resetPassword(currentPass, newPass) { success, message ->
+            _loading.postValue(false)
+            callback(success, message)
+        }
+    }
+
+
 }

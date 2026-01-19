@@ -424,5 +424,36 @@ class UserRepoImpl : UserRepo{
         }
     }
 
+    override fun resetPassword(
+        currentPassword: String,
+        newPassword: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val user = auth.currentUser
+        val email = user?.email
+
+        if (user != null && email != null) {
+            // 1. Re-authenticate the user first
+            val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, currentPassword)
+
+            user.reauthenticate(credential).addOnCompleteListener { reAuthTask ->
+                if (reAuthTask.isSuccessful) {
+                    // 2. If re-auth successful, update the password
+                    user.updatePassword(newPassword).addOnCompleteListener { updateTask ->
+                        if (updateTask.isSuccessful) {
+                            callback(true, "Password updated successfully")
+                        } else {
+                            callback(false, updateTask.exception?.message ?: "Failed to update password")
+                        }
+                    }
+                } else {
+                    callback(false, "Current password is incorrect")
+                }
+            }
+        } else {
+            callback(false, "User not logged in")
+        }
+    }
+
 
 }
