@@ -40,7 +40,9 @@ class AIRepository {
             2. Provide one single, high-impact piece of advice or praise.
             3. Keep the response friendly and under 25 words.
             
-            Give a harsh yet meaningful review, if the user hasn't segregated tell the user which bin was bad and how the user can improve it.
+            Give a meaningful review, if the user hasn't segregated tell the user which bin was bad and how the user can improve it.
+            
+            If the user is improving their waste management praise them and tell them to continue managing in same way.
         """.trimIndent()
 
         return try {
@@ -85,18 +87,17 @@ class AIRepository {
 
     // This logic should run after the AI generates a review for the user
     // Inside AIRepository.kt
-    fun saveProcessedInsight(collection: BinCollectionModel, aiReview: String, routeName: String) {
+    fun saveProcessedInsight(collection: BinCollectionModel, aiReview: String, routeId: String, routeName: String) {
         val insightRef = FirebaseDatabase.getInstance().getReference("RouteInsights")
         val id = insightRef.push().key ?: ""
 
         val newInsight = RouteInsightModel(
             insightId = id,
             tripId = collection.tripId,
-            routeId = collection.tripId,
+            routeId = routeId,
             routeName = routeName,
             aiResponse = aiReview,
             rating = collection.rating,
-            // Ensure this maps correctly from BinCollectionModel to RouteInsightModel
             segregated = collection.segregatedCorrectly,
             timestamp = System.currentTimeMillis()
         )
