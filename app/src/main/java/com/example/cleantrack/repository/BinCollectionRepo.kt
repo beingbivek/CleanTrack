@@ -19,4 +19,6 @@ interface BinCollectionRepo {
 
     fun getAllCollectionsForUser(userId: String, callback: (Boolean, String?, List<BinCollectionModel>?) -> Unit)
 
+    fun getAllCollections(callback: (Boolean, String?, List<BinCollectionModel>?) -> Unit)
+
 }
