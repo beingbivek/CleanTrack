@@ -3,7 +3,6 @@ package com.example.cleantrack.view.common
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +15,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,14 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.cleantrack.model.LeaderBoardUser
-import com.example.cleantrack.repository.PointsRepo
+import com.example.cleantrack.model.LeaderboardModel
 import com.example.cleantrack.repository.PointsRepoImpl
-import com.example.cleantrack.ui.theme.Bronze
-import com.example.cleantrack.ui.theme.Gold
-import com.example.cleantrack.ui.theme.Green
-import com.example.cleantrack.ui.theme.Silver
-import com.example.cleantrack.view.auth.StartBody
 import com.example.cleantrack.viewmodel.LeaderboardViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlin.collections.find
@@ -39,17 +33,17 @@ import kotlin.collections.find
 class LeaderboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val viewModel = LeaderboardViewModel(PointsRepoImpl())
-        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
         setContent {
-            LeaderboardScreen(viewModel, currentUserId)
+            LeaderboardScreen()
         }
     }
 }
 
 @Composable
-fun LeaderboardScreen(viewModel: LeaderboardViewModel, currentUserId: String) {
+fun LeaderboardScreen() {
+    val viewModel = remember {   LeaderboardViewModel(PointsRepoImpl()) }
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val users by viewModel.leaderboardState
     val loading by viewModel.isLoading
 
@@ -103,7 +97,7 @@ fun LeaderboardScreen(viewModel: LeaderboardViewModel, currentUserId: String) {
 }
 
 @Composable
-fun LeaderboardRow(rank: Int, entry: LeaderBoardUser, isMe: Boolean) {
+fun LeaderboardRow(rank: Int, entry: LeaderboardModel, isMe: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
