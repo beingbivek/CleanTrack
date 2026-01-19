@@ -43,6 +43,7 @@ import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.R
 import com.example.cleantrack.repository.AIRepository
+import com.example.cleantrack.view.common.LeaderboardActivity
 import com.example.cleantrack.view.common.MarketplaceActivity
 
 class UserDashboardActivity : ComponentActivity() {
@@ -266,7 +267,7 @@ fun HomeSection(
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
                     QuickIcon(Icons.Outlined.PhotoCamera, isOutline = true)
-                    QuickIcon(Icons.Outlined.SwapVert, isOutline = true, isSpecial = true)
+                    QuickIcon(Icons.Outlined.Leaderboard, "Leaderboard") { context.startActivity(Intent(context, LeaderboardActivity::class.java)) }
                     QuickIcon(Icons.Outlined.Terrain, isOutline = true)
                     QuickIcon(Icons.Default.RestoreFromTrash, "Manage Bins") { context.startActivity(Intent(context, UserBinListActivity::class.java)) }
                 }
