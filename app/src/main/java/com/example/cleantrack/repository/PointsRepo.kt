@@ -1,6 +1,6 @@
 package com.example.cleantrack.repository
 
-import com.example.cleantrack.model.LeaderBoardUser
+import com.example.cleantrack.model.LeaderboardModel
 
 interface PointsRepo {
 
@@ -15,6 +15,6 @@ interface PointsRepo {
         points: Int
     )
 
-    fun getLeaderboardData(callback: (List<LeaderBoardUser>) -> Unit)
+    fun getLeaderboardData(callback: (List<LeaderboardModel>) -> Unit)
 
 }
