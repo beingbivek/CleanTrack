@@ -37,15 +37,30 @@ class BinCollectionActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val binId = intent.getStringExtra("BIN_ID") ?: ""
         val tripId = intent.getStringExtra("TRIP_ID") ?: "" // 🔹 FETCH TRIP_ID FROM INTENT
-        val actualRouteName = intent.getStringExtra("ROUTE_NAME") ?: "Unknown Route"
+        val actualRouteName = intent.getStringExtra("ROUTE_NAME") ?: ""
+        val routeId = intent.getStringExtra("ROUTE_ID") ?: ""
+
+        if (actualRouteName.isBlank() || routeId.isBlank()) {
+            Toast.makeText(this, "Route info missing", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
 
         setContent {
-            BinCollectionScreen(binId, tripId, actualRouteName) { finish() }        }
+            BinCollectionScreen(
+                binId = binId,
+                tripId = tripId,
+                routeId = routeId,
+                actualRouteName = actualRouteName
+            ) {
+                finish()
+            }
+        }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BinCollectionScreen(binId: String, tripId: String, actualRouteName: String, onComplete: () -> Unit) {
+fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRouteName: String, onComplete: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     // ViewModels
@@ -183,7 +198,8 @@ fun BinCollectionScreen(binId: String, tripId: String, actualRouteName: String, 
                                                 segregatedCorrectly = isSegregated
                                             ),
                                             aiReview = aiFeedback,
-                                            routeName = actualRouteName // Use the route name, not bin.label ("Nice bin")
+                                            routeId = routeId,
+                                            routeName = actualRouteName
                                         )
 
                                         notificationViewModel.notifyUser(
