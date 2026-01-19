@@ -87,6 +87,7 @@ fun StartBody() {
         // ✅ THIS IS YOUR "CONTINUED SPLASH"
         // It keeps the Splash look alive while the logic runs
         Box(
+
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF7F7F7)),
