@@ -48,6 +48,13 @@ class UserScheduleListActivity : ComponentActivity() {
 @Composable
 fun UserScheduleListScreen() {
     val context = LocalContext.current
+    val activity = context as Activity
+
+    // 1. Initialize PreferenceManager first
+    val prefManager = remember { com.example.cleantrack.util.PreferenceManager(context) }
+
+    // Check if we are in offline mode from the Intent
+    val isOfflineMode = activity.intent.getBooleanExtra("OFFLINE_MODE", false)
     val scheduleVM = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     val userVM = remember { UserViewModel(UserRepoImpl()) }
 
@@ -65,13 +72,25 @@ fun UserScheduleListScreen() {
     var showSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        scheduleVM.getAllSchedules()
-        userVM.getAllDrivers()
-        userVM.getCurrentUserId()?.let { userVM.getUserById(it) }
+        if (isOfflineMode) {
+            // --- OFFLINE LOGIC ---
+            val cachedData = prefManager.getSavedSchedules()
+            scheduleVM.schedules.postValue(cachedData)
+        } else {
+            // --- ONLINE LOGIC ---
+            scheduleVM.getAllSchedules()
+            userVM.getAllDrivers()
+            userVM.getCurrentUserId()?.let { userVM.getUserById(it) }
+        }
     }
 
-    val mySchedules = remember(allSchedules, userProfile) {
-        allSchedules?.filter { it.routeId == userProfile?.activeRouteId && it.active } ?: emptyList()
+    // Adjust mySchedules filtering for offline mode
+    val mySchedules = remember(allSchedules, userProfile, isOfflineMode) {
+        if (isOfflineMode) {
+            allSchedules ?: emptyList()
+        } else {
+            allSchedules?.filter { it.routeId == userProfile?.activeRouteId && it.active } ?: emptyList()
+        }
     }
 
     Box(
@@ -99,38 +118,68 @@ fun UserScheduleListScreen() {
                 )
             }
         ) { padding ->
-            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-                when {
-                    loading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-                    }
-                    userProfile?.activeRouteId.isNullOrEmpty() -> {
-                        EmptyStateView(
-                            title = "No Route Selected",
-                            description = "Please go to 'Routes' and confirm your neighborhood route.")
 
-                    }
-                    mySchedules.isEmpty() -> {
-                        EmptyStateView(
-                            title = "No Upcoming Pickups",
-                            description = "There are currently no active schedules for your route."
+            // Changed to Column to stack the Offline Banner and the Content properly
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                // --- OFFLINE BANNER ---
+                if (isOfflineMode) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE91E63)),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Text(
+                            text = "Offline Mode: Viewing schedules from your last login.",
+                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(mySchedules) { schedule ->
-                                UserScheduleCard(
-                                    schedule = schedule,
-                                    driverName = driverMap[schedule.driverId] ?: "Assigned Driver",
-                                    onClick = {
-                                        selectedScheduleForDetail = schedule
-                                        showSheet = true
-                                    }
-                                )
+                }
+
+                // --- CONTENT AREA ---
+                Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+                    when {
+                        loading -> {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+                        }
+                        // Only check for empty routeId if we are ONLINE
+                        !isOfflineMode && userProfile?.activeRouteId.isNullOrEmpty() -> {
+                            EmptyStateView(
+                                title = "No Route Selected",
+                                description = "Please go to 'Routes' and confirm your neighborhood route.")
+                        }
+                        mySchedules.isEmpty() -> {
+                            EmptyStateView(
+                                title = "No Upcoming Pickups",
+                                description = "There are currently no active schedules for your route."
+                            )
+                        }
+                        else -> {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(mySchedules) { schedule ->
+                                    UserScheduleCard(
+                                        schedule = schedule,
+                                        driverName = driverMap[schedule.driverId] ?: "Assigned Driver",
+                                        onClick = {
+                                            selectedScheduleForDetail = schedule
+                                            showSheet = true
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -153,6 +202,9 @@ fun UserScheduleListScreen() {
         }
     }
 }
+
+// Existing Composable functions (UserScheduleCard, ScheduleDetailContent, DetailRow, EmptyStateView)
+// remain exactly the same as in your original code.
 
 @Composable
 fun UserScheduleCard(schedule: ScheduleModel, driverName: String, onClick: () -> Unit) {

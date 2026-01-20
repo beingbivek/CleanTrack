@@ -13,6 +13,7 @@ import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.UserRepo
 import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.util.PreferenceManager
 import com.example.cleantrack.view.admin.AdminDashboardActivity
 import com.example.cleantrack.view.auth.LoginActivity
 import com.example.cleantrack.view.auth.RegistrationActivity
@@ -45,35 +46,36 @@ class UserViewModel(
         idToken: String,
         context: Context,
         activity: Activity,
-        callback: (Boolean, String?) -> Unit // Simplified callback for UI success/failure message
+        scheduleViewModel: ScheduleViewModel, // Pass this to trigger schedule caching
+        callback: (Boolean, String?) -> Unit
     ){
         repo.signInWithGoogle(idToken) { success, errorMessage, userModel, role ->
             if (success && userModel != null) {
+                val userId = userModel.userId
+
+                // --- SYNC LOGIC FOR GOOGLE USERS ---
+                syncOfflineUserData(userId, context) { routeId ->
+                    scheduleViewModel.cacheSchedulesForOffline(routeId, context)
+                }
+                // ------------------------------------
+
                 if (role != null) {
-                    // SCENARIO 1: FULL LOGIN SUCCESS (Existing user with complete profile)
-                    // We use checkAndNavigateAfterLogin which handles the location check
-                    repo.getUserById(userModel!!.userId) { fetchSuccess, _, fetchedUser ->
+                    repo.getUserById(userId) { fetchSuccess, _, fetchedUser ->
                         if (fetchSuccess && fetchedUser != null) {
                             checkAndNavigateAfterLogin(fetchedUser.userId, context, activity)
                         } else {
-                            callback(false, "Login successful but failed to fetch user data for navigation.")
+                            callback(false, "Failed to fetch user data.")
                         }
                     }
-                } else if (userModel != null) {
-                    // SCENARIO 2: REGISTRATION/PROFILE UPDATE NEEDED (New or incomplete user)
-
+                } else {
+                    // Handle registration for new Google users...
                     val intent = Intent(context, RegistrationActivity::class.java).apply {
                         putExtra("Google_UserModel", userModel)
                     }
                     context.startActivity(intent)
                     activity.finish()
-                    callback(true, "Please complete your profile.")
-
-                } else {
-                    callback(false, "Google sign-in succeeded but the next step is unclear.")
                 }
             } else {
-                // SCENARIO 3: SIGN-IN FAILED
                 callback(false, errorMessage ?: "Google Sign-In failed.")
             }
         }
@@ -426,5 +428,20 @@ class UserViewModel(
         }
     }
 
+    fun syncOfflineUserData(userId: String, context: Context, onProVerified: (String) -> Unit) {
+        val prefManager = PreferenceManager(context)
+        repo.getUserById(userId) { success, _, userModel ->
+            if (success && userModel != null) {
+                val isPro = isPremiumUser(userModel)
+                prefManager.setProUser(isPro)
+                if (isPro) {
+                    // If Pro, tell the activity to fetch schedules for this route
+                    onProVerified(userModel.activeRouteId ?: "")
+                } else {
+                    prefManager.clearData()
+                }
+            }
+        }
+    }
 
 }
