@@ -62,6 +62,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.ScheduleRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
@@ -72,6 +73,7 @@ import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.view.common.ContactSupportActivity
+import com.example.cleantrack.viewmodel.ScheduleViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -90,6 +92,8 @@ class LoginActivity : ComponentActivity() {
 @Composable
 fun LoginBody() {
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    val scheduleViewModel   = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordvisibility by remember { mutableStateOf(false) }
@@ -116,7 +120,7 @@ fun LoginBody() {
                 val account = task.getResult(ApiException::class.java)
                 val idToken = account.idToken
                 if (idToken != null) {
-                    userViewModel.signInWithGoogle(idToken, context, activity) { success, errorMessage ->
+                    userViewModel.signInWithGoogle(idToken, context, activity, scheduleViewModel) { success, errorMessage ->
                         if (success) {
                             if (errorMessage != null && errorMessage != "Login successful!") {
                                 AppUtil.showToast(context, errorMessage)
@@ -262,14 +266,16 @@ fun LoginBody() {
                 Button(
                     onClick = {
                         userViewModel.login(email.trim(), password.trim()) { success, errorMessage, _, userId ->
-                            if (success) {
-                                if (userId != null) {
-                                    userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
-                                } else {
-                                    AppUtil.showToast(context, "Login successful, but User ID is missing.")
+                            if (success && userId != null) {
+                                // 1. Sync User Pro status
+                                userViewModel.syncOfflineUserData(userId, context) { routeId ->
+                                    // 2. If the callback runs, the user is Pro, so cache their schedules
+                                    scheduleViewModel.cacheSchedulesForOffline(routeId, context)
                                 }
+
+                                userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
                             } else {
-                                AppUtil.showToast(context, errorMessage ?: "Login failed. Check your credentials.")
+                                AppUtil.showToast(context, errorMessage ?: "Login failed.")
                             }
                         }
                     },

@@ -68,7 +68,9 @@ fun StartBody() {
     val context = LocalContext.current
     val activity = context as Activity
 
+    // Initialize ViewModels and Preferences
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val prefManager = remember { com.example.cleantrack.util.PreferenceManager(context) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
@@ -76,15 +78,45 @@ fun StartBody() {
     var isCheckingSession by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
+        // 1. Handle Notifications
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
-        val currentUserId = userViewModel.getCurrentUserId()
 
-        if (currentUserId != null) {
-            userViewModel.checkAndNavigateAfterLogin(currentUserId, context, activity)
+        val currentUserId = userViewModel.getCurrentUserId()
+        val hasInternet = com.example.cleantrack.util.AppUtil.isNetworkAvailable(context)
+
+        if (hasInternet) {
+            // --- ONLINE FLOW ---
+            if (currentUserId != null) {
+                // Background sync to keep offline data fresh for next time
+                userViewModel.syncOfflineUserData(currentUserId, context) { routeId ->
+                    // Since we are in a Composable, we can't easily access scheduleViewModel
+                    // unless passed in, but syncOfflineUserData handles the cache call.
+                }
+                userViewModel.checkAndNavigateAfterLogin(currentUserId, context, activity)
+            } else {
+                isCheckingSession = false
+            }
         } else {
-            isCheckingSession = false
+            // --- OFFLINE FLOW ---
+            // 2. Check if Pro user and if we have saved schedules
+            if (prefManager.isProUser()) {
+                val cachedSchedules = prefManager.getSavedSchedules()
+                if (cachedSchedules.isNotEmpty()) {
+                    // Navigate directly to Schedule List in Offline Mode
+                    val intent = Intent(context, com.example.cleantrack.view.user.UserScheduleListActivity::class.java)
+                    intent.putExtra("OFFLINE_MODE", true)
+                    context.startActivity(intent)
+                    activity.finish()
+                } else {
+                    // Pro user but no data was ever cached
+                    isCheckingSession = false
+                }
+            } else {
+                // Not a pro user or no internet - show login/signup UI
+                isCheckingSession = false
+            }
         }
     }
 

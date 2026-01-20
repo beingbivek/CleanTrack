@@ -1,9 +1,11 @@
 package com.example.cleantrack.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.ScheduleRepo
+import com.example.cleantrack.util.PreferenceManager
 
 class ScheduleViewModel(
     private val repo: ScheduleRepo
@@ -129,6 +131,18 @@ class ScheduleViewModel(
         repo.getScheduleByDriver(driverId) { data ->
             _schedule.postValue(data)
             _loading.postValue(false)
+        }
+    }
+
+    fun cacheSchedulesForOffline(routeId: String, context: Context) {
+        val prefManager = PreferenceManager(context)
+        // Use your existing repo to get schedules (ensure your repo supports filtering by route)
+        repo.getAllSchedules { success, _, data ->
+            if (success && data != null) {
+                // Filter schedules for the user's specific route
+                val userSchedules = data.filter { it.routeId == routeId }
+                prefManager.saveSchedules(userSchedules)
+            }
         }
     }
 }
