@@ -297,7 +297,10 @@ fun HomeSection(
                     }
                 } else {
                     Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
-                        QuickIcon(Icons.Outlined.PhotoCamera, "Scan", isOutline = true)
+                        LockedQuickIcon(icon = Icons.Default.History, label = "Bin History", isLocked = !isPremium) {
+                            if (isPremium) context.startActivity(Intent(context,
+                                UserBinHistoryActivity::class.java)) else onShowPremiumGate()
+                        }
                         LockedQuickIcon(icon = Icons.Default.Leaderboard, label = "Leaderboard", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context,
                                 LeaderboardActivity::class.java)) else onShowPremiumGate()
