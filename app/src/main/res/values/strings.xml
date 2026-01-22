@@ -45,4 +45,5 @@
     <string name="title_activity_drivers_trip_history">DriversTripHistoryActivity</string>
     <string name="title_activity_leader_board">LeaderBoardActivity</string>
     <string name="title_activity_reset_password">ResetPasswordActivity</string>
+    <string name="title_activity_user_bin_history">UserBinHistoryActivity</string>
 </resources>
