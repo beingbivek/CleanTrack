@@ -138,7 +138,7 @@ fun DriverDashboardBody() {
     LaunchedEffect(notifications) {
         val newItems = notifications.filter { it.notificationId !in shownNotificationIds }
         newItems.forEach { item ->
-            NotificationHelper.showSystemNotification(context, item.title, item.message)
+            NotificationHelper.showSystemNotification(context, item.title, item.message, item.notificationId)
         }
         if (newItems.isNotEmpty()) {
             shownNotificationIds = shownNotificationIds + newItems.map { it.notificationId }
