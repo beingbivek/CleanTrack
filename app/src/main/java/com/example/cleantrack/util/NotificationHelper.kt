@@ -15,7 +15,12 @@ import kotlin.jvm.java
 object NotificationHelper {
     private const val CHANNEL_ID = "cleantrack_general"
 
-    fun showSystemNotification(context: Context, title: String, message: String) {
+    fun showSystemNotification(
+        context: Context,
+        title: String,
+        message: String,
+        notificationId: String? = null
+    ) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -45,6 +50,7 @@ object NotificationHelper {
             .setContentIntent(pendingIntent)
             .build()
 
-        manager.notify(System.currentTimeMillis().toInt(), notification)
+        val stableId = notificationId?.hashCode() ?: "$title::$message".hashCode()
+        manager.notify(stableId, notification)
     }
 }

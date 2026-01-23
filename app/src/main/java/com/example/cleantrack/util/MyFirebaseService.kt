@@ -29,7 +29,8 @@ class MyFirebaseService : FirebaseMessagingService() {
         // If the notification comes from "notification" payload
         message.notification?.let {
             Log.d("FCM_NOTIFICATION", "Title: ${it.title}, Body: ${it.body}")
-            showNotification(it.title ?: "CleanTrack", it.body ?: "")
+            val fallbackId = message.messageId ?: message.data["notificationId"]
+            showNotification(it.title ?: "CleanTrack", it.body ?: "", fallbackId)
         }
 
         // If the notification comes from "data" payload
@@ -37,12 +38,12 @@ class MyFirebaseService : FirebaseMessagingService() {
             val title = message.data["title"] ?: "CleanTrack"
             val body = message.data["body"] ?: ""
             if (body.isNotBlank()) {
-                showNotification(title, body)
+                showNotification(title, body, message.messageId ?: message.data["notificationId"])
             }
         }
     }
 
-    private fun showNotification(title: String, body: String) {
-        NotificationHelper.showSystemNotification(this, title, body)
+    private fun showNotification(title: String, body: String, notificationId: String?) {
+        NotificationHelper.showSystemNotification(this, title, body, notificationId)
     }
 }
