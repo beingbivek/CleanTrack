@@ -34,26 +34,61 @@ import com.example.cleantrack.viewmodel.PaymentState
 import com.example.cleantrack.viewmodel.PaymentViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.viewmodel.NotificationViewModel
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.stripe.android.PaymentConfiguration
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class PaymentActivity : ComponentActivity() {
+    private lateinit var paymentViewModel: PaymentViewModel
+    private lateinit var paymentSheet: PaymentSheet
+    private var pendingTransactionId: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 1. Get the ID passed from Dashboard
         val userId = intent.getStringExtra("USER_ID") ?: ""
-
-        // 2. Initialize both ViewModels
-        // We use UserViewModel to fetch the profile by ID
-        // We use PaymentViewModel to handle the "Upgrade" button clicks
         val userViewModel = UserViewModel(UserRepoImpl())
-        val paymentViewModel = PaymentViewModel(PaymentRepoImpl(), UserRepoImpl())
+        paymentViewModel = PaymentViewModel(PaymentRepoImpl(), UserRepoImpl())
+        paymentSheet = PaymentSheet(this) { result ->
+            when (result) {
+                is PaymentSheetResult.Completed -> {
+                    val transactionId = pendingTransactionId
+                    if (!transactionId.isNullOrBlank()) {
+                        paymentViewModel.completePayment(userId, transactionId)
+                    } else {
+                        paymentViewModel.resetPaymentStatus()
+                        Toast.makeText(this, "Payment completed, but transaction ID missing.", Toast.LENGTH_LONG).show()
+                    }
+                }
+                is PaymentSheetResult.Canceled -> {
+                    paymentViewModel.resetPaymentStatus()
+                }
+                is PaymentSheetResult.Failed -> {
+                    paymentViewModel.resetPaymentStatus()
+                    Toast.makeText(this, result.error.localizedMessage ?: "Payment failed.", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
 
         setContent {
-            PaymentScreen(userViewModel, paymentViewModel, userId)
+            PaymentScreen(
+                userViewModel = userViewModel,
+                paymentViewModel = paymentViewModel,
+                userId = userId,
+                onLaunchPayment = { clientSecret, transactionId ->
+                    pendingTransactionId = transactionId
+                    paymentSheet.presentWithPaymentIntent(
+                        clientSecret,
+                        PaymentSheet.Configuration(merchantDisplayName = "CleanTrack")
+                    )
+                }
+            )
         }
     }
 }
@@ -62,49 +97,68 @@ class PaymentActivity : ComponentActivity() {
 fun PaymentScreen(
     userViewModel: UserViewModel,
     paymentViewModel: PaymentViewModel,
-    userId: String
+    userId: String,
+    onLaunchPayment: (clientSecret: String, transactionId: String) -> Unit
 ) {
     val context = LocalContext.current
-
-    // Observe the User object from UserViewModel
     val userProfile by userViewModel.user.observeAsState()
     val isUserLoading by userViewModel.loading.observeAsState(true)
-
-    // Observe Payment state for the "Processing" overlay
     val paymentState by paymentViewModel.paymentStatus.observeAsState(PaymentState.Idle)
+    val subscriptionAmount by paymentViewModel.subscriptionAmount.observeAsState("500")
     val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
-    // 3. Trigger the fetch using the ID from Intent immediately on launch
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             userViewModel.getUserById(userId)
         }
     }
 
-    // Refresh user profile after a successful payment
+    LaunchedEffect(Unit) {
+        paymentViewModel.loadSubscriptionAmount()
+    }
+
     LaunchedEffect(paymentState) {
-        if (paymentState is PaymentState.Success) {
-            Toast.makeText(context, (paymentState as PaymentState.Success).message, Toast.LENGTH_LONG).show()
-            userViewModel.getUserById(userId)
-            notificationViewModel.notifyUser(
-                userId,
-                NotificationPayload(
-                    title = "Subscription active",
-                    message = "Your subscription is now active.",
-                    type = "subscription",
-                    actionType = "subscription"
+        when (paymentState) {
+            is PaymentState.LaunchStripe -> {
+                val launchState = paymentState as PaymentState.LaunchStripe
+                val remoteConfig = FirebaseRemoteConfig.getInstance()
+                remoteConfig.fetchAndActivate().await()
+                val publicKey = remoteConfig.getString("stripe_public_key").trim()
+                if (publicKey.isBlank()) {
+                    Toast.makeText(context, "Payment public key is missing.", Toast.LENGTH_LONG).show()
+                    return@LaunchedEffect
+                }
+
+                PaymentConfiguration.init(context, publicKey)
+                onLaunchPayment(launchState.clientSecret, launchState.paymentIntentId)
+            }
+            is PaymentState.Success -> {
+                Toast.makeText(context, (paymentState as PaymentState.Success).message, Toast.LENGTH_LONG).show()
+                userViewModel.getUserById(userId)
+                notificationViewModel.notifyUser(
+                    userId,
+                    NotificationPayload(
+                        title = "Subscription active",
+                        message = "Your subscription is now active.",
+                        type = "subscription",
+                        actionType = "subscription"
+                    )
                 )
-            )
-            notificationViewModel.notifyAllAdmins(
-                NotificationPayload(
-                    title = "New subscription",
-                    message = "${userProfile?.fullname ?: "A user"} subscribed.",
-                    type = "subscription",
-                    actionType = "subscription"
+                notificationViewModel.notifyAllAdmins(
+                    NotificationPayload(
+                        title = "New subscription",
+                        message = "${userProfile?.fullname ?: "A user"} subscribed.",
+                        type = "subscription",
+                        actionType = "subscription"
+                    )
                 )
-            )
-        } else if (paymentState is PaymentState.Error) {
-            Toast.makeText(context, (paymentState as PaymentState.Error).message, Toast.LENGTH_LONG).show()
+                paymentViewModel.resetPaymentStatus()
+            }
+            is PaymentState.Error -> {
+                Toast.makeText(context, (paymentState as PaymentState.Error).message, Toast.LENGTH_LONG).show()
+                paymentViewModel.resetPaymentStatus()
+            }
+            else -> Unit
         }
     }
 
@@ -125,23 +179,22 @@ fun PaymentScreen(
             Text("Advanced Waste Management Features", fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(40.dp))
 
-            // 4. LOGIC CHECK using your UserViewModel's helper function
             if (isUserLoading) {
                 Box(modifier = Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Green)
                 }
             } else {
-                // Use the precise logic from your ViewModel
                 val isPremium = userViewModel.isPremiumUser(userProfile)
 
                 if (isPremium) {
-                    // Extract expiry from nested model as you described
                     val expiryDate = userProfile?.subscription?.expiryDate ?: 0L
                     ActiveSubscriptionCard(expiryDate = expiryDate)
                 } else {
+                    val normalizedAmount = subscriptionAmount.ifBlank { "500" }
                     SubscriptionOfferCard(
                         isLoading = paymentState is PaymentState.Loading,
-                        onSubscribe = { paymentViewModel.processMonthlySubscription("500") }
+                        amount = normalizedAmount,
+                        onSubscribe = { paymentViewModel.processMonthlySubscription(normalizedAmount) }
                     )
                 }
             }
@@ -149,7 +202,6 @@ fun PaymentScreen(
             Spacer(modifier = Modifier.height(30.dp))
         }
 
-        // Processing Overlay
         if (paymentState is PaymentState.Loading) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(0.4f)), contentAlignment = Alignment.Center) {
                 Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
@@ -163,8 +215,6 @@ fun PaymentScreen(
         }
     }
 }
-
-// ... ActiveSubscriptionCard, SubscriptionOfferCard, and BenefitItem remain the same ...
 
 @Composable
 fun ActiveSubscriptionCard(expiryDate: Long) {
@@ -192,7 +242,7 @@ fun ActiveSubscriptionCard(expiryDate: Long) {
 }
 
 @Composable
-fun SubscriptionOfferCard(isLoading: Boolean, onSubscribe: () -> Unit) {
+fun SubscriptionOfferCard(isLoading: Boolean, amount: String, onSubscribe: () -> Unit) {
     Card(
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(10.dp),
@@ -204,7 +254,7 @@ fun SubscriptionOfferCard(isLoading: Boolean, onSubscribe: () -> Unit) {
                 Text("MONTHLY PLAN", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = Color(0xFF856404), fontWeight = FontWeight.Bold, fontSize = 11.sp)
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Rs. 500", fontSize = 36.sp, fontWeight = FontWeight.Black)
+            Text("Rs. $amount", fontSize = 36.sp, fontWeight = FontWeight.Black)
             Text("Billed every 30 days", color = Color.Gray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(24.dp))
             BenefitItem("Live Truck Tracking")

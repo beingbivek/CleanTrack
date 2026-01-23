@@ -32,6 +32,8 @@ interface UserRepo {
 
     fun getCurrentUserId(): String?
 
+    suspend fun getCurrentUser(): UserModel?
+
     fun updateActiveRoute(userId: String, routeId: String, callback: (Boolean, String) -> Unit)
 
     // Finds all users assigned to a specific route

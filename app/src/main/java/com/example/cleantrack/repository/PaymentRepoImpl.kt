@@ -1,13 +1,14 @@
 package com.example.cleantrack.repository
 
-import android.util.Log
+import com.example.cleantrack.model.PaymentInitiationModel
 import com.example.cleantrack.model.SubscriptionModel
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import kotlinx.coroutines.tasks.await
-import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.FormBody
+import org.json.JSONObject
 import java.util.Calendar
 import java.util.UUID
 
@@ -16,56 +17,56 @@ class PaymentRepoImpl : PaymentRepo {
     private val client = OkHttpClient()
     private val db = FirebaseDatabase.getInstance()
     private val userRef = db.getReference("Users")
+    private val subscriptionConfigRef = db.getReference("SubscriptionConfig")
 
     // 1. Networking Logic (Moved from Activity)
-    override suspend fun initiatePayment(amount: String, userEmail: String, userPhone: String): Result<String> {
+    // In PaymentRepoImpl.kt
+    override suspend fun initiatePayment(amount: String, userEmail: String, userPhone: String): Result<PaymentInitiationModel> {
         return try {
             val remoteConfig = FirebaseRemoteConfig.getInstance()
-
-            // Wait for config to ensure we have keys
             remoteConfig.fetchAndActivate().await()
-            val publicKey = remoteConfig.getString("payment_public_key")
-            val secretKey = remoteConfig.getString("payment_secret_key")
-
-            if (publicKey.isEmpty() || secretKey.isEmpty()) {
-                return Result.failure(Exception("Payment Gateway Keys missing"))
+            val secretKey = remoteConfig.getString("stripe_secret_key")
+                .trim()
+            if (secretKey.isBlank()) {
+                return Result.failure(IllegalStateException("Payment secret key is missing."))
             }
+            val authHeader = if (secretKey.startsWith("Bearer ")) secretKey else "Bearer $secretKey"
+            val amountInMinorUnit = (amount.toDouble() * 100).toInt()
 
-            val txnId = "TXN-${UUID.randomUUID().toString().take(8)}"
-
-            val formBody = FormBody.Builder()
-                .add("public_key", publicKey)
-                .add("secret_key", secretKey)
-                .add("identifier", txnId)
-                .add("currency", "NPR")
-                .add("amount", amount)
-                .add("details", "Test Payment")
-                .add("ipn_url", "http://example.com/ipn_url.php")
-                .add("success_url", "http://example.com/success_url.php")
-                .add("cancel_url", "http://example.com/cancel_url.php")
-                .add("site_name", "My Test App")
-                .add("site_logo", "http://example.com/logo.png")
-                .add("checkout_theme", "light")
-                .add("customer[first_name]", "John")
-                .add("customer[last_name]", "Doe")
-                .add("customer[email]", userEmail)
-                .add("customer[mobile]", userPhone)
+            val requestBody = FormBody.Builder()
+                .add("amount", amountInMinorUnit.toString())
+                .add("currency", "inr")
+                .add("automatic_payment_methods[enabled]", "true")
+                .add("description", "CleanTrack Subscription")
+                .add("metadata[user_email]", userEmail)
+                .add("metadata[user_phone]", userPhone)
+                .add("metadata[order_id]", UUID.randomUUID().toString().take(8))
                 .build()
 
             val request = Request.Builder()
-                .url("https://apinepal.com/test/payment/initiate")
-                .post(formBody)
+                .url("https://api.stripe.com/v1/payment_intents")
+                .header("Authorization", authHeader)
+                .post(requestBody)
                 .build()
 
-            // Execute synchronously since we are already in a suspend function (IO context handled by VM)
             val response = client.newCall(request).execute()
-            val body = response.body?.string() ?: ""
+            val responseBody = response.body?.string().orEmpty()
 
-            if (response.isSuccessful && body.contains("\"success\"")) {
-                Result.success(txnId) // Return the Transaction ID on success
-            } else {
-                Result.failure(Exception("Payment Failed: $body"))
+            val jsonResponse = runCatching { JSONObject(responseBody) }.getOrNull()
+            if (!response.isSuccessful) {
+                val message = jsonResponse?.optJSONObject("error")?.optString("message")
+                    ?.takeIf { it.isNotBlank() }
+                    ?: response.message.ifBlank { "Failed to initiate payment." }
+                return Result.failure(IllegalStateException(message))
             }
+
+            val paymentIntentId = jsonResponse?.optString("id").orEmpty()
+            val clientSecret = jsonResponse?.optString("client_secret").orEmpty()
+            if (paymentIntentId.isBlank() || clientSecret.isBlank()) {
+                val message = "Payment initiation response missing required fields."
+                return Result.failure(IllegalStateException(message))
+            }
+            Result.success(PaymentInitiationModel(paymentIntentId = paymentIntentId, clientSecret = clientSecret))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -138,6 +139,25 @@ class PaymentRepoImpl : PaymentRepo {
             }
             // Sort by most recent start date
             callback(transactionList.sortedByDescending { it.second.startDate })
+        }
+    }
+
+    override suspend fun getSubscriptionAmount(): Result<String> {
+        return try {
+            val snapshot = subscriptionConfigRef.child("monthlyAmount").get().await()
+            val amount = snapshot.getValue(String::class.java)?.trim().orEmpty()
+            Result.success(amount.ifBlank { "500" })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateSubscriptionAmount(amount: String): Result<Boolean> {
+        return try {
+            subscriptionConfigRef.child("monthlyAmount").setValue(amount.trim()).await()
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }
