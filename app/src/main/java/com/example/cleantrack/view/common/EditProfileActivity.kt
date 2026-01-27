@@ -3,40 +3,14 @@ package com.example.cleantrack.view.common
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.cleantrack.repository.CommonImageRepoImpl
-
-import com.example.cleantrack.viewmodel.CommonImageViewModel
-import com.example.cleantrack.viewmodel.UserAddressViewModel
-
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,34 +18,17 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenu
-
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.TextFieldDefaults
-
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -80,9 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.cleantrack.R
 import com.example.cleantrack.model.UserModel
+import com.example.cleantrack.repository.CommonImageRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.ButtonColor
@@ -90,43 +49,32 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
-import com.example.cleantrack.view.auth.DropdownField
+import com.example.cleantrack.viewmodel.CommonImageViewModel
+import com.example.cleantrack.viewmodel.UserAddressViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
-
 
 class EditProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-                EditProfileScreen()
+            EditProfileScreen()
         }
     }
 }
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class) // FIX 1: Required for TopAppBar
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen() {
     val context = LocalContext.current
     val activity = context as? android.app.Activity
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-
-    // 1. Get UserId from Intent
     val userIdFromIntent = activity?.intent?.getStringExtra("userId") ?: ""
-
-
-    // If Intent is empty, try to get it from the Repo directly
-    val userId = remember {
-        userIdFromIntent.ifEmpty { userViewModel.getCurrentUserId() ?: "" }
-    }
-
-
+    val userId = remember { userIdFromIntent.ifEmpty { userViewModel.getCurrentUserId() ?: "" } }
 
     val addressVM: UserAddressViewModel = viewModel()
-    // Ensure this matches your actual ViewModel/Repo name
     val commonImageViewModel = remember { CommonImageViewModel(CommonImageRepoImpl()) }
-
-
     val userData by userViewModel.user.observeAsState(null)
 
     var fullname by remember { mutableStateOf("") }
@@ -135,45 +83,31 @@ fun EditProfileScreen() {
     var profileImageUriString by remember { mutableStateOf("") }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Dropdown states
     val expandedProvince = remember { mutableStateOf(false) }
     val expandedDistrict = remember { mutableStateOf(false) }
     val expandedMunicipality = remember { mutableStateOf(false) }
     val expandedWard = remember { mutableStateOf(false) }
 
-    // Size states for dropdown matching
     var provinceFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
     var districtFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
     var municipalityFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
     var wardFieldSize by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
 
-    // 2. Trigger the fetch once when userId is available
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             userViewModel.getUserById(userId)
         }
     }
 
-    // 3. React when the userData LiveData changes
     LaunchedEffect(userData) {
-
         userData?.let { user ->
             fullname = user.fullname
             email = user.email
             number = user.number
             profileImageUriString = user.profileImageUrl ?: ""
-
-            // Pre-fill the address dropdowns
-            addressVM.initializeAddress(
-                user.province,
-                user.district,
-                user.municipality,
-                user.ward
-            )
+            addressVM.initializeAddress(user.province, user.district, user.municipality, user.ward)
         }
     }
-
-
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -181,7 +115,7 @@ fun EditProfileScreen() {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar( // CenterAligned looks cleaner for Edit Profile
+            CenterAlignedTopAppBar(
                 title = { Text("Edit Profile", fontWeight = FontWeight.Bold, color = Black) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = White)
             )
@@ -195,14 +129,10 @@ fun EditProfileScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             contentPadding = PaddingValues(vertical = 20.dp)
         ) {
-            // 1. Profile Image Section
             item {
-                Box(
-                    modifier = Modifier.size(140.dp),
-                    contentAlignment = Alignment.BottomEnd
-                ) {
+                Box(modifier = Modifier.size(140.dp), contentAlignment = Alignment.BottomEnd) {
                     AsyncImage(
-                        model = profileImageUri ?: if(profileImageUriString.isNotEmpty()) profileImageUriString else R.drawable.user_logo,
+                        model = profileImageUri ?: if (profileImageUriString.isNotEmpty()) profileImageUriString else R.drawable.user_logo,
                         contentDescription = "Profile Picture",
                         modifier = Modifier
                             .fillMaxSize()
@@ -212,10 +142,7 @@ fun EditProfileScreen() {
                     )
                     IconButton(
                         onClick = { launcher.launch("image/*") },
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(Green)
+                        modifier = Modifier.size(38.dp).clip(CircleShape).background(Green)
                     ) {
                         Icon(Icons.Default.CameraAlt, contentDescription = null, tint = White, modifier = Modifier.size(20.dp))
                     }
@@ -223,22 +150,12 @@ fun EditProfileScreen() {
                 Spacer(modifier = Modifier.height(30.dp))
             }
 
-            // 2. Input Fields (Individual items for better performance)
-            item {
-                ProfileInput(value = fullname, onValueChange = { fullname = it }, placeholder = "Full Name")
-                Spacer(modifier = Modifier.height(15.dp))
-            }
-            item {
-                ProfileInput(value = email, onValueChange = { email = it }, placeholder = "Email", keyboardType = KeyboardType.Email)
-                Spacer(modifier = Modifier.height(15.dp))
-            }
-            item {
-                ProfileInput(value = number, onValueChange = { number = it }, placeholder = "Phone Number", keyboardType = KeyboardType.Number)
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-
-// --- ADDRESS SECTION WITH Z-INDEX FIX ---
+            item { ProfileInput(value = fullname, onValueChange = { fullname = it }, placeholder = "Full Name")
+                Spacer(modifier = Modifier.height(15.dp)) }
+            item { ProfileInput(value = email, onValueChange = { email = it }, placeholder = "Email", keyboardType = KeyboardType.Email)
+                Spacer(modifier = Modifier.height(15.dp)) }
+            item { ProfileInput(value = number, onValueChange = { number = it }, placeholder = "Phone Number", keyboardType = KeyboardType.Number)
+                Spacer(modifier = Modifier.height(20.dp)) }
 
             item {
                 Box(modifier = Modifier.zIndex(if (expandedProvince.value) 1f else 0f)) {
@@ -249,8 +166,8 @@ fun EditProfileScreen() {
                         onExpand = { expandedProvince.value = true },
                         onDismiss = { expandedProvince.value = false },
                         items = addressVM.provinces.map { it.name },
-                        onItemSelectedText = {
-                            addressVM.provinces.firstOrNull { p -> p.name == it }?.let(addressVM::onProvinceSelected)
+                        onItemSelectedText = { name ->
+                            addressVM.provinces.find { it.name == name }?.let { addressVM.onProvinceSelected(it) }
                             expandedProvince.value = false
                         },
                         fieldSize = provinceFieldSize,
@@ -268,8 +185,8 @@ fun EditProfileScreen() {
                         onExpand = { expandedDistrict.value = true },
                         onDismiss = { expandedDistrict.value = false },
                         items = addressVM.districts.map { it.name },
-                        onItemSelectedText = {
-                            addressVM.districts.firstOrNull { d -> d.name == it }?.let(addressVM::onDistrictSelected)
+                        onItemSelectedText = { name ->
+                            addressVM.districts.find { it.name == name }?.let { addressVM.onDistrictSelected(it) }
                             expandedDistrict.value = false
                         },
                         fieldSize = districtFieldSize,
@@ -287,8 +204,8 @@ fun EditProfileScreen() {
                         onExpand = { expandedMunicipality.value = true },
                         onDismiss = { expandedMunicipality.value = false },
                         items = addressVM.municipalities.map { it.name },
-                        onItemSelectedText = {
-                            addressVM.municipalities.firstOrNull { m -> m.name == it }?.let(addressVM::onMunicipalitySelected)
+                        onItemSelectedText = { name ->
+                            addressVM.municipalities.find { it.name == name }?.let { addressVM.onMunicipalitySelected(it) }
                             expandedMunicipality.value = false
                         },
                         fieldSize = municipalityFieldSize,
@@ -317,7 +234,6 @@ fun EditProfileScreen() {
                 Spacer(modifier = Modifier.height(30.dp))
             }
 
-            // 4. Update Button
             item {
                 Box(
                     modifier = Modifier
@@ -327,12 +243,12 @@ fun EditProfileScreen() {
                         .background(brush = Brush.horizontalGradient(colors = ButtonColor), shape = RoundedCornerShape(15.dp))
                 ) {
                     Button(
-                        onClick = { if (userId.isEmpty()) {
-                            AppUtil.showToast(context, "User ID not found")
-                            return@Button
-                        }
+                        onClick = {
+                            if (userId.isEmpty()) {
+                                AppUtil.showToast(context, "User ID not found")
+                                return@Button
+                            }
 
-                            // Helper function to save user data to Firebase
                             val saveUserData: (String) -> Unit = { uploadedImageUrl ->
                                 val updatedUser = UserModel(
                                     userId = userId,
@@ -343,33 +259,26 @@ fun EditProfileScreen() {
                                     district = addressVM.selectedDistrictName,
                                     municipality = addressVM.selectedMunicipalityName,
                                     ward = addressVM.selectedWardName,
-                                    profileImageUrl = uploadedImageUrl, // Use the new or existing URL
-                                    role = userData?.role ?: "USER", // Keep existing role
-                                    latitude = userData?.latitude,   // Keep existing location
+                                    profileImageUrl = uploadedImageUrl,
+                                    role = userData?.role ?: "USER",
+                                    latitude = userData?.latitude,
                                     longitude = userData?.longitude
                                 )
-
                                 userViewModel.editUserProfile(userId, updatedUser) { success, message ->
                                     AppUtil.showToast(context, message)
-                                    if (success) {
-                                        activity?.finish() // Go back after success
-                                    }
+                                    if (success) activity?.finish()
                                 }
                             }
 
-                            // Logic: Upload image first if a new one was picked
                             if (profileImageUri != null) {
                                 commonImageViewModel.uploadImage(context, profileImageUri!!) { imageUrl ->
-                                    if (imageUrl != null) {
-                                        saveUserData(imageUrl)
-                                    } else {
-                                        AppUtil.showToast(context, "Image upload failed")
-                                    }
+                                    if (imageUrl != null) saveUserData(imageUrl)
+                                    else AppUtil.showToast(context, "Image upload failed")
                                 }
                             } else {
-                                // No new image picked, use the existing URL from the database
                                 saveUserData(profileImageUriString)
-                            } },
+                            }
+                        },
                         modifier = Modifier.fillMaxSize(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
@@ -381,8 +290,6 @@ fun EditProfileScreen() {
         }
     }
 }
-
-
 
 @Composable
 fun ProfileInput(value: String, onValueChange: (String) -> Unit, placeholder: String, keyboardType: KeyboardType = KeyboardType.Text) {
@@ -401,7 +308,7 @@ fun ProfileInput(value: String, onValueChange: (String) -> Unit, placeholder: St
         )
     )
 }
-// Exactly like your Registration Dropdown
+
 @Composable
 fun DropdownField(
     label: String,
@@ -414,11 +321,7 @@ fun DropdownField(
     fieldSize: androidx.compose.ui.geometry.Size,
     onSizeChange: (androidx.compose.ui.geometry.Size) -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
         OutlinedTextField(
             value = label,
             onValueChange = {},
@@ -437,7 +340,6 @@ fun DropdownField(
                 disabledTrailingIconColor = Green
             )
         )
-
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = onDismiss,

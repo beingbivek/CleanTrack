@@ -297,8 +297,9 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                     label = addressVM.selectedProvinceName, placeholder = "Select Province",
                     expanded = expandedProvince.value, onExpand = { expandedProvince.value = true },
                     onDismiss = { expandedProvince.value = false }, items = provinces.map { it.name },
-                    onItemSelectedText = {
-                        provinces.firstOrNull { p -> p.name == it }?.let(addressVM::onProvinceSelected)
+                    onItemSelectedText = { name ->
+                        // Find the full model object by the name selected in the UI
+                        provinces.find { it.name == name }?.let { addressVM.onProvinceSelected(it) }
                         expandedProvince.value = false
                     }
                 )
@@ -309,8 +310,8 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                     label = addressVM.selectedDistrictName, placeholder = "Select District",
                     expanded = expandedDistrict.value, onExpand = { expandedDistrict.value = true },
                     onDismiss = { expandedDistrict.value = false }, items = districts.map { it.name },
-                    onItemSelectedText = {
-                        districts.firstOrNull { d -> d.name == it }?.let(addressVM::onDistrictSelected)
+                    onItemSelectedText = { name ->
+                        districts.find { it.name == name }?.let { addressVM.onDistrictSelected(it) }
                         expandedDistrict.value = false
                     }
                 )
@@ -321,8 +322,8 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                     label = addressVM.selectedMunicipalityName, placeholder = "Select Municipality",
                     expanded = expandedMunicipality.value, onExpand = { expandedMunicipality.value = true },
                     onDismiss = { expandedMunicipality.value = false }, items = municipalities.map { it.name },
-                    onItemSelectedText = {
-                        municipalities.firstOrNull { m -> m.name == it }?.let(addressVM::onMunicipalitySelected)
+                    onItemSelectedText = { name ->
+                        municipalities.find { it.name == name }?.let { addressVM.onMunicipalitySelected(it) }
                         expandedMunicipality.value = false
                     }
                 )
