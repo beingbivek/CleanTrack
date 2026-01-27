@@ -7,18 +7,10 @@ import android.graphics.Color
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DepartureBoard
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -57,14 +49,9 @@ import kotlin.math.roundToInt
 class TruckLiveTrackingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Initialize MapLibre before setContent
         MapLibre.getInstance(this)
-
         val routeId = intent.getStringExtra("ROUTE_ID") ?: ""
-
-        setContent {
-            TruckLiveMapScreen(routeId)
-        }
+        setContent { TruckLiveMapScreen(routeId) }
     }
 }
 
@@ -73,11 +60,7 @@ fun TruckLiveMapScreen(routeId: String) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Use factory to prevent reconstruction on recomposition
-    val vm = remember {
-        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl(),
-            PointsRepoImpl())
-    }
+    val vm = remember { ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl(), PointsRepoImpl()) }
     val routeVM = remember { RouteViewModel(RouteRepoImpl()) }
     val scheduleVM = remember { ScheduleViewModel(ScheduleRepoImpl()) }
 
@@ -92,52 +75,32 @@ fun TruckLiveMapScreen(routeId: String) {
     var isStyleLoaded by remember { mutableStateOf(false) }
     var baatoApiKey by remember { mutableStateOf<String?>(null) }
 
-    val styleUrl = baatoApiKey?.let {
-        "https://api.baato.io/api/v1/styles/breeze_cdn?key=$it"
-    }
+    val styleUrl = baatoApiKey?.let { "https://api.baato.io/api/v1/styles/breeze_cdn?key=$it" }
 
-    // 1. Observe Trip Data
-    LaunchedEffect(routeId) {
-        vm.observeActiveTripByRoute(routeId)
-    }
-
-    LaunchedEffect(Unit) {
-        baatoApiKey = ApiTokenUtil.getBaatoApiKey()
-    }
+    LaunchedEffect(routeId) { vm.observeActiveTripByRoute(routeId) }
+    LaunchedEffect(Unit) { baatoApiKey = ApiTokenUtil.getBaatoApiKey() }
 
     LaunchedEffect(activeTrip?.scheduleId) {
-        val scheduleId = activeTrip?.scheduleId.orEmpty()
-        if (scheduleId.isNotBlank()) {
-            scheduleVM.getScheduleById(scheduleId)
-        }
+        activeTrip?.scheduleId?.takeIf { it.isNotBlank() }?.let { scheduleVM.getScheduleById(it) }
     }
 
     LaunchedEffect(activeTrip?.routeId, routeId) {
         val resolvedRouteId = activeTrip?.routeId?.ifBlank { null } ?: routeId
-        if (resolvedRouteId.isNotBlank()) {
-            routeVM.getRouteById(resolvedRouteId)
-        }
+        if (resolvedRouteId.isNotBlank()) routeVM.getRouteById(resolvedRouteId)
     }
 
     val isTripActiveInSchedule = remember(activeTrip, currentSchedule) {
         val trip = activeTrip
         val schedule = currentSchedule
-        if (trip == null || schedule == null) {
-            false
-        } else if (trip.status != "ACTIVE") {
-            false
-        } else {
-            val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
-            val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-            val today = dayFormat.format(Date())
-            val currentTime = timeFormat.format(Date())
+        if (trip == null || schedule == null || trip.status != "ACTIVE") false
+        else {
+            val today = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
+            val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
             schedule.dayOfWeek.equals(today, ignoreCase = true) &&
-                    currentTime >= schedule.startTime &&
-                    currentTime <= schedule.endTime
+                    currentTime >= schedule.startTime && currentTime <= schedule.endTime
         }
     }
 
-    // 2. Manage Map Lifecycle (CRITICAL for MapLibre)
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -155,21 +118,15 @@ fun TruckLiveMapScreen(routeId: String) {
         }
     }
 
-    // 3. Initialize Map and Style
     LaunchedEffect(mapView, styleUrl) {
-        if (styleUrl == null) {
-            isStyleLoaded = false
-            return@LaunchedEffect
-        }
-        mapView.getMapAsync { m ->
-            mapInstance = m
-            m.setStyle(styleUrl) {
-                isStyleLoaded = true
+        if (styleUrl != null) {
+            mapView.getMapAsync { m ->
+                mapInstance = m
+                m.setStyle(styleUrl) { isStyleLoaded = true }
             }
         }
     }
 
-    // 4. Update Route + Marker when Location changes
     LaunchedEffect(currentRoute, mapInstance, isStyleLoaded, isTripActiveInSchedule) {
         val map = mapInstance
         if (isTripActiveInSchedule && isStyleLoaded && map != null) {
@@ -177,17 +134,12 @@ fun TruckLiveMapScreen(routeId: String) {
                 val points = route.points.map { LatLng(it.lat, it.lon) }
                 if (points.isNotEmpty()) {
                     currentPolyline?.let { map.removePolyline(it) }
-                    currentPolyline = map.addPolyline(
-                        PolylineOptions()
-                            .addAll(points)
-                            .color(android.graphics.Color.parseColor("#4CAF50"))
-                            .width(6f)
-                    )
+                    currentPolyline = map.addPolyline(PolylineOptions().addAll(points).color(android.graphics.Color.parseColor("#4CAF50")).width(6f))
                     map.animateCamera(CameraUpdateFactory.newLatLngZoom(points.first(), 13.0))
                 }
             }
         } else {
-            currentPolyline?.let { map?.removePolyline(it) }
+            currentPolyline?.let { mapInstance?.removePolyline(it) }
             currentPolyline = null
         }
     }
@@ -199,7 +151,6 @@ fun TruckLiveMapScreen(routeId: String) {
 
         if (isTripActiveInSchedule && isStyleLoaded && map != null && lat != 0.0 && lng != 0.0) {
             val pos = LatLng(lat, lng)
-
             if (truckMarker == null) {
                 val iconFactory = IconFactory.getInstance(context)
                 val truckDrawable = ContextCompat.getDrawable(context, R.drawable.ic_truck)?.mutate()
@@ -214,49 +165,30 @@ fun TruckLiveMapScreen(routeId: String) {
                     iconFactory.fromBitmap(bitmap)
                 } ?: iconFactory.fromResource(R.drawable.ic_truck)
 
-                truckMarker = map.addMarker(
-                    MarkerOptions()
-                        .position(pos)
-                        .title("Waste Collection Vehicle")
-                        .icon(truckIcon)
-                )
-                // Smoothly zoom to truck on first load
+                truckMarker = map.addMarker(MarkerOptions().position(pos).title("Waste Vehicle").icon(truckIcon))
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 15.0))
             } else {
-                // Update existing marker position
                 truckMarker?.position = pos
             }
         } else {
-            truckMarker?.let { map?.removeMarker(it) }
+            truckMarker?.let { mapInstance?.removeMarker(it) }
             truckMarker = null
         }
     }
 
-    if (isTripActiveInSchedule) {
-        AndroidView(
-            factory = { mapView },
-            modifier = Modifier.fillMaxSize()
-        )
-    } else {
-        Column(
-            modifier = Modifier.fillMaxSize().background(color = MaterialTheme.colorScheme.background).padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
 
+        if (!isTripActiveInSchedule) {
+            Column(
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-            Icon(imageVector = Icons.Default.DepartureBoard, contentDescription = "Not Available", tint = Green)
-
-            Spacer(Modifier.height(5.dp))
-
-            Text(
-                text = "Live tracking is available only during the active route schedule.",
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
-            )
+                Icon(Icons.Default.DepartureBoard, null, tint = Green, modifier = Modifier.size(48.dp))
+                Spacer(Modifier.height(10.dp))
+                Text("Live tracking is available only during the active route schedule.", textAlign = TextAlign.Center)
+            }
         }
     }
 }

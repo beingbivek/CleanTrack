@@ -167,7 +167,11 @@ fun UserDashboardBody() {
         ) { innerPadding ->
             when (selectedTab) {
                 // Pass isLoadingUser to HomeSection
-                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview, isLoadingUser) { showPremiumDialog = true }
+                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview, isLoadingUser,
+                    { showPremiumDialog = true } // This handles the "Locked" icons
+                ) {
+                    selectedTab = 1 // This handles clicking the Map Card
+                }
                 1 -> MapTrackerSection(innerPadding, userProfile)
                 2 -> ProfileSection(innerPadding, userProfile) { showLogoutDialog = true }
             }
@@ -184,7 +188,8 @@ fun HomeSection(
     latestCollection: BinCollectionModel?,
     globalAiReview: String,
     isLoading: Boolean, // Added parameter
-    onShowPremiumGate: () -> Unit
+    onShowPremiumGate: () -> Unit,
+    onNavigateToTracker: () -> Unit
 ) {
     val context = LocalContext.current
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
@@ -267,6 +272,14 @@ fun HomeSection(
                         CircularProgressIndicator(color = Green, modifier = Modifier.size(30.dp))
                     } else if (isPremium && !userProfile?.activeRouteId.isNullOrEmpty()) {
                         TruckLiveMapScreen(routeId = userProfile!!.activeRouteId)
+
+                        // TRANSPARENT OVERLAY: This captures the click that the Map usually steals
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Transparent)
+                                .clickable { onNavigateToTracker() }
+                        )
                     } else {
                         // Blurred or placeholder view for non-premium
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -368,12 +381,28 @@ fun LockedQuickIcon(icon: ImageVector, label: String, isLocked: Boolean, onClick
 
 @Composable
 fun MapTrackerSection(padding: PaddingValues, userProfile: UserModel?) {
+    // Column must fill max size to provide constraints to the Map
     Column(modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp)) {
         Text("Vehicle Tracking", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(20.dp))
-        Card(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp)), elevation = CardDefaults.cardElevation(8.dp), colors = CardDefaults.cardColors(containerColor = White)) {
-            if (!userProfile?.activeRouteId.isNullOrEmpty()) { TruckLiveMapScreen(routeId = userProfile!!.activeRouteId) }
-            else { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Select a route in Home to start tracking", color = Color.Gray) } }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f) // Ensures the card takes up remaining space
+                .clip(RoundedCornerShape(28.dp)),
+            elevation = CardDefaults.cardElevation(8.dp),
+            colors = CardDefaults.cardColors(containerColor = White)
+        ) {
+            // Check if user has a route assigned
+            if (!userProfile?.activeRouteId.isNullOrEmpty()) {
+                // Pass the ID to the reusable MapScreen
+                TruckLiveMapScreen(routeId = userProfile!!.activeRouteId)
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No active route assigned to your profile.", color = Color.Gray)
+                }
+            }
         }
     }
 }
