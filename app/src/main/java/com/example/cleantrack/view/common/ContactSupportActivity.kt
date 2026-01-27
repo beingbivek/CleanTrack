@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
@@ -104,6 +105,7 @@ fun ContactSupportBody(
     notificationViewModel: NotificationViewModel
 ) {
     val context = LocalContext.current
+    val activity = context as? Activity
     val commonImageViewModel = remember { CommonImageViewModel(CommonImageRepoImpl()) }
 
     // States
@@ -114,6 +116,9 @@ fun ContactSupportBody(
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionText by remember { mutableStateOf("Select Issues") }
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
+
+    // --- NEW LOADING STATE ---
+    var isSubmitting by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -135,18 +140,26 @@ fun ContactSupportBody(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
+            // ... (Top Bar and Header items kept the same)
             item {
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 60.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 60.dp, bottom = 10.dp)) {
+                    IconButton(
+                        onClick = { activity?.finish() },
+                        modifier = Modifier.align(Alignment.CenterStart).padding(start = 15.dp).size(45.dp)
+                    ) {
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Green)
+                    }
+
                     Text(
                         "Contact Support",
-                        style = TextStyle(textAlign = TextAlign.Center, color = Black, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp),
+                        style = TextStyle(textAlign = TextAlign.Center, color = Black, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp),
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     IconButton(
                         onClick = { context.startActivity(Intent(context, IssuesViewActivity::class.java)) },
                         modifier = Modifier
-                            .align(Alignment.TopEnd)
+                            .align(Alignment.CenterEnd)
                             .padding(end = 15.dp)
                             .background(TextBoxColor, RoundedCornerShape(12.dp))
                             .size(45.dp)
@@ -175,6 +188,7 @@ fun ContactSupportBody(
                 Spacer(modifier = Modifier.size(24.dp))
             }
 
+            // ... (Input fields items kept the same)
             item {
                 OutlinedTextField(
                     value = fullname,
@@ -292,16 +306,19 @@ fun ContactSupportBody(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
+            // --- UPDATED SUBMIT BUTTON ---
             item {
                 Button(
                     onClick = {
                         if (selectedOptionText == "Select Issues" || message.isEmpty()) {
                             Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                         } else {
+                            isSubmitting = true // START LOADING
                             val timestamp = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date())
                             val formattedMsg = "[$fullname @ $timestamp]: $message"
 
                             val onComplete: (Boolean, String) -> Unit = { success, msg ->
+                                isSubmitting = false // STOP LOADING
                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                 if (success) {
                                     notificationViewModel.notifyAllAdmins(
@@ -314,20 +331,33 @@ fun ContactSupportBody(
 
                             if (selectedImageUri != null) {
                                 commonImageViewModel.uploadImage(context, selectedImageUri!!) { url ->
-                                    if (url != null) viewModel.submitTicket(fullname, email, selectedOptionText, formattedMsg, userId, userType, url, onComplete)
-                                    else Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
+                                    if (url != null) {
+                                        viewModel.submitTicket(fullname, email, selectedOptionText, formattedMsg, userId, userType, url, onComplete)
+                                    } else {
+                                        isSubmitting = false
+                                        Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             } else {
                                 viewModel.submitTicket(fullname, email, selectedOptionText, formattedMsg, userId, userType, "", onComplete)
                             }
                         }
                     },
+                    enabled = !isSubmitting, // DISABLE BUTTON WHILE LOADING
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp).height(60.dp)
                         .background(brush = Brush.horizontalGradient(colors = ButtonColor), shape = RoundedCornerShape(15.dp)),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
                 ) {
-                    Text("Submit", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = White)
+                    if (isSubmitting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Submit", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = White)
+                    }
                 }
                 Spacer(modifier = Modifier.height(40.dp))
             }

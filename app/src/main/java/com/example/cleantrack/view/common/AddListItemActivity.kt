@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
@@ -81,7 +82,6 @@ fun AddListItemScreen(userId: String, productId: String?) {
         context,
         { _, year, month, day ->
             val selectedCalendar = Calendar.getInstance()
-            // Set to end of the day (11:59 PM)
             selectedCalendar.set(year, month, day, 23, 59, 59)
             auctionEndTimeStamp = selectedCalendar.timeInMillis
             auctionDateDisplay = sdf.format(selectedCalendar.time)
@@ -114,7 +114,25 @@ fun AddListItemScreen(userId: String, productId: String?) {
 
     Scaffold { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp)) {
-            Text(if (isEditMode) "Edit Product" else "List New Product", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+
+            // --- BACK BUTTON AND TITLE ---
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { (context as? Activity)?.finish() }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Black
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isEditMode) "Edit Product" else "List New Product",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Black
+                )
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
 
             // Image Selector
@@ -154,7 +172,7 @@ fun AddListItemScreen(userId: String, productId: String?) {
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            // NEW: Auction End Date Picker UI
+            // Auction End Date Picker UI
             OutlinedTextField(
                 value = auctionDateDisplay,
                 onValueChange = {},
@@ -196,6 +214,7 @@ fun AddListItemScreen(userId: String, productId: String?) {
                                 "pDescription" to description,
                                 "pCategory" to selectedCategory,
                                 "startingBidPrice" to price,
+                                "currentBidPrice" to price,
                                 "pImageUrl" to finalUrl,
                                 "auctionEndTime" to auctionEndTimeStamp
                             )

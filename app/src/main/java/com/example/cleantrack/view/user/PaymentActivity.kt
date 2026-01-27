@@ -1,5 +1,6 @@
 package com.example.cleantrack.view.user
 
+import android.app.Activity
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
@@ -45,6 +47,7 @@ import java.util.Locale
 
 class PaymentActivity : ComponentActivity() {
     private lateinit var paymentViewModel: PaymentViewModel
+    private lateinit var userViewModel: UserViewModel
     private lateinit var paymentSheet: PaymentSheet
     private var pendingTransactionId: String? = null
 
@@ -53,17 +56,18 @@ class PaymentActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val userId = intent.getStringExtra("USER_ID") ?: ""
-        val userViewModel = UserViewModel(UserRepoImpl())
+
+        userViewModel = UserViewModel(UserRepoImpl())
         paymentViewModel = PaymentViewModel(PaymentRepoImpl(), UserRepoImpl())
+
         paymentSheet = PaymentSheet(this) { result ->
             when (result) {
                 is PaymentSheetResult.Completed -> {
-                    val transactionId = pendingTransactionId
-                    if (!transactionId.isNullOrBlank()) {
-                        paymentViewModel.completePayment(userId, transactionId)
-                    } else {
+                    pendingTransactionId?.let { tid ->
+                        paymentViewModel.completePayment(userId, tid)
+                    } ?: run {
                         paymentViewModel.resetPaymentStatus()
-                        Toast.makeText(this, "Payment completed, but transaction ID missing.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Transaction Error", Toast.LENGTH_SHORT).show()
                     }
                 }
                 is PaymentSheetResult.Canceled -> {
@@ -71,7 +75,7 @@ class PaymentActivity : ComponentActivity() {
                 }
                 is PaymentSheetResult.Failed -> {
                     paymentViewModel.resetPaymentStatus()
-                    Toast.makeText(this, result.error.localizedMessage ?: "Payment failed.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Payment Failed: ${result.error.localizedMessage}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -85,7 +89,10 @@ class PaymentActivity : ComponentActivity() {
                     pendingTransactionId = transactionId
                     paymentSheet.presentWithPaymentIntent(
                         clientSecret,
-                        PaymentSheet.Configuration(merchantDisplayName = "CleanTrack")
+                        PaymentSheet.Configuration(
+                            merchantDisplayName = "CleanTrack",
+                            allowsDelayedPaymentMethods = false
+                        )
                     )
                 }
             )
@@ -93,6 +100,7 @@ class PaymentActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentScreen(
     userViewModel: UserViewModel,
@@ -110,96 +118,100 @@ fun PaymentScreen(
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             userViewModel.getUserById(userId)
+            paymentViewModel.loadSubscriptionAmount()
         }
     }
 
-    LaunchedEffect(Unit) {
-        paymentViewModel.loadSubscriptionAmount()
-    }
-
     LaunchedEffect(paymentState) {
-        when (paymentState) {
+        when (val state = paymentState) {
             is PaymentState.LaunchStripe -> {
-                val launchState = paymentState as PaymentState.LaunchStripe
-                val remoteConfig = FirebaseRemoteConfig.getInstance()
-                remoteConfig.fetchAndActivate().await()
-                val publicKey = remoteConfig.getString("stripe_public_key").trim()
-                if (publicKey.isBlank()) {
-                    Toast.makeText(context, "Payment public key is missing.", Toast.LENGTH_LONG).show()
-                    return@LaunchedEffect
-                }
+                try {
+                    val remoteConfig = FirebaseRemoteConfig.getInstance()
+                    remoteConfig.fetchAndActivate().await()
+                    val publicKey = remoteConfig.getString("stripe_public_key").trim()
 
-                PaymentConfiguration.init(context, publicKey)
-                onLaunchPayment(launchState.clientSecret, launchState.paymentIntentId)
+                    if (publicKey.isNotEmpty()) {
+                        PaymentConfiguration.init(context, publicKey)
+                        onLaunchPayment(state.clientSecret, state.paymentIntentId)
+                    } else {
+                        Toast.makeText(context, "Config Error: Key missing", Toast.LENGTH_SHORT).show()
+                        paymentViewModel.resetPaymentStatus()
+                    }
+                } catch (e: Exception) {
+                    paymentViewModel.resetPaymentStatus()
+                }
             }
             is PaymentState.Success -> {
-                Toast.makeText(context, (paymentState as PaymentState.Success).message, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 userViewModel.getUserById(userId)
-                notificationViewModel.notifyUser(
-                    userId,
-                    NotificationPayload(
-                        title = "Subscription active",
-                        message = "Your subscription is now active.",
-                        type = "subscription",
-                        actionType = "subscription"
-                    )
-                )
-                notificationViewModel.notifyAllAdmins(
-                    NotificationPayload(
-                        title = "New subscription",
-                        message = "${userProfile?.fullname ?: "A user"} subscribed.",
-                        type = "subscription",
-                        actionType = "subscription"
-                    )
-                )
+                notificationViewModel.notifyUser(userId, NotificationPayload(
+                    title = "Subscription active",
+                    message = "Your premium features are unlocked.",
+                    type = "subscription", actionType = "subscription"
+                ))
                 paymentViewModel.resetPaymentStatus()
             }
             is PaymentState.Error -> {
-                Toast.makeText(context, (paymentState as PaymentState.Error).message, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
                 paymentViewModel.resetPaymentStatus()
             }
             else -> Unit
         }
     }
 
+    // --- REPLICATED BACK BUTTON LOGIC FROM REFERENCE ---
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = Brush.verticalGradient(colors = listOf(Blue.copy(alpha = 0.1f), Color.White)))
+            .background(brush = Brush.verticalGradient(colors = listOf(Blue.copy(alpha = 0.8f), Green.copy(alpha = 0.4f), Color.White)))
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Spacer(modifier = Modifier.height(80.dp))
-            Text("CleanTrack Premium", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Green)
-            Text("Advanced Waste Management Features", fontSize = 14.sp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(40.dp))
-
-            if (isUserLoading) {
-                Box(modifier = Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Green)
-                }
-            } else {
-                val isPremium = userViewModel.isPremiumUser(userProfile)
-
-                if (isPremium) {
-                    val expiryDate = userProfile?.subscription?.expiryDate ?: 0L
-                    ActiveSubscriptionCard(expiryDate = expiryDate)
-                } else {
-                    val normalizedAmount = subscriptionAmount.ifBlank { "500" }
-                    SubscriptionOfferCard(
-                        isLoading = paymentState is PaymentState.Loading,
-                        amount = normalizedAmount,
-                        onSubscribe = { paymentViewModel.processMonthlySubscription(normalizedAmount) }
-                    )
-                }
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text("CleanTrack Premium", fontWeight = FontWeight.ExtraBold, color = Color.White) },
+                    navigationIcon = {
+                        IconButton(onClick = { (context as? Activity)?.finish() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+                )
             }
+        ) { padding ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(padding)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Spacer(modifier = Modifier.height(30.dp))
+                Text("Upgrade Your Experience", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(30.dp))
 
-            Spacer(modifier = Modifier.height(30.dp))
+                if (isUserLoading && userProfile == null) {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color.White)
+                    }
+                } else {
+                    val isPremium = userViewModel.isPremiumUser(userProfile)
+
+                    if (isPremium) {
+                        ActiveSubscriptionCard(expiryDate = userProfile?.subscription?.expiryDate ?: 0L)
+                    } else {
+                        SubscriptionOfferCard(
+                            isLoading = paymentState is PaymentState.Loading,
+                            amount = subscriptionAmount.ifBlank { "500" },
+                            onSubscribe = {
+                                paymentViewModel.processMonthlySubscription(subscriptionAmount.ifBlank { "500" })
+                            }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(40.dp))
+            }
         }
 
         if (paymentState is PaymentState.Loading) {
@@ -208,7 +220,7 @@ fun PaymentScreen(
                     Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(color = Green, modifier = Modifier.size(24.dp))
                         Spacer(Modifier.width(16.dp))
-                        Text("Authorizing...", fontWeight = FontWeight.Bold)
+                        Text("Processing...", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -216,9 +228,11 @@ fun PaymentScreen(
     }
 }
 
+// Cards (ActiveSubscriptionCard, SubscriptionOfferCard, BenefitItem) remain the same...
+
 @Composable
 fun ActiveSubscriptionCard(expiryDate: Long) {
-    val sdf = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+    val sdf = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()) }
     val dateString = if (expiryDate > 0) sdf.format(Date(expiryDate)) else "Lifetime"
 
     Card(
@@ -230,13 +244,10 @@ fun ActiveSubscriptionCard(expiryDate: Long) {
         Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Default.Verified, null, tint = Green, modifier = Modifier.size(70.dp))
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Premium Active", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = Green)
+            Text("Premium Active", fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Green)
             Text("All features are unlocked", color = Color.Gray, fontSize = 14.sp)
             HorizontalDivider(Modifier.padding(vertical = 24.dp), thickness = 1.dp, color = Color(0xFFF0F0F0))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Valid until: ", fontSize = 14.sp)
-                Text(dateString, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            }
+            Text("Valid until: $dateString", fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -245,21 +256,23 @@ fun ActiveSubscriptionCard(expiryDate: Long) {
 fun SubscriptionOfferCard(isLoading: Boolean, amount: String, onSubscribe: () -> Unit) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(10.dp),
+        elevation = CardDefaults.cardElevation(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Surface(color = Color(0xFFFFD700).copy(0.15f), shape = RoundedCornerShape(8.dp)) {
+            Surface(color = Color(0xFFFFD700).copy(0.1f), shape = RoundedCornerShape(8.dp)) {
                 Text("MONTHLY PLAN", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = Color(0xFF856404), fontWeight = FontWeight.Bold, fontSize = 11.sp)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text("Rs. $amount", fontSize = 36.sp, fontWeight = FontWeight.Black)
             Text("Billed every 30 days", color = Color.Gray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(24.dp))
+
             BenefitItem("Live Truck Tracking")
             BenefitItem("Collection Schedules")
             BenefitItem("Smart AI Waste Review")
+
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = onSubscribe,
@@ -268,7 +281,8 @@ fun SubscriptionOfferCard(isLoading: Boolean, amount: String, onSubscribe: () ->
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Green)
             ) {
-                Text("Upgrade to Premium", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                else Text("Upgrade to Premium", fontWeight = FontWeight.Bold)
             }
         }
     }

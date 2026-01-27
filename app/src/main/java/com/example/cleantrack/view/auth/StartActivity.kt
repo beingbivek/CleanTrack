@@ -50,6 +50,7 @@ import com.example.cleantrack.R
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.White
+import com.example.cleantrack.view.common.NoInternetActivity
 import com.example.cleantrack.viewmodel.UserViewModel
 
 class StartActivity : ComponentActivity() {
@@ -110,12 +111,12 @@ fun StartBody() {
                     context.startActivity(intent)
                     activity.finish()
                 } else {
-                    // Pro user but no data was ever cached
-                    isCheckingSession = false
+                    // Pro user but NO cached data - they need internet for the first sync!
+                    navigateToNoInternet(context, activity)
                 }
             } else {
-                // Not a pro user or no internet - show login/signup UI
-                isCheckingSession = false
+                // Not a pro user AND no internet - they can't even login/signup
+                navigateToNoInternet(context, activity)
             }
         }
     }
@@ -241,3 +242,11 @@ fun StartBody() {
         }
     }
 }
+
+// Helper function (place outside or inside StartBody)
+private fun navigateToNoInternet(context: android.content.Context, activity: Activity) {
+    val intent = Intent(context, NoInternetActivity::class.java)
+    context.startActivity(intent)
+    activity.finish()
+}
+
