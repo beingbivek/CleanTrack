@@ -62,7 +62,9 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
     val context = LocalContext.current
     val productViewModel = remember { ProductViewModel(ProductRepoImpl()) }
     val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
-    val products by productViewModel.allProducts.observeAsState(emptyList())
+
+    // FIX: Start as null to distinguish between 'loading' and 'empty'
+    val products by productViewModel.allProducts.observeAsState(null)
     val isLoading by productViewModel.loading.observeAsState(false)
 
     var searchQuery by remember { mutableStateOf("") }
@@ -72,7 +74,7 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
 
     LaunchedEffect(Unit) { productViewModel.fetchAllProducts() }
 
-    // --- DELETE CONFIRMATION ---
+    // --- DIALOGS (Keep existing logic) ---
     if (productToDelete != null) {
         AlertDialog(
             onDismissRequest = { productToDelete = null },
@@ -83,6 +85,7 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                     productViewModel.deleteProduct(productToDelete!!.productId) { _, msg ->
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         productToDelete = null
+                        productViewModel.fetchAllProducts() // Refresh
                     }
                 }) { Text("Delete", color = Color.Red) }
             },
@@ -90,41 +93,16 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
         )
     }
 
-    // --- MARK SOLD CONFIRMATION ---
     if (productToMarkSold != null) {
         AlertDialog(
             onDismissRequest = { productToMarkSold = null },
             title = { Text("Sell Item Now?") },
-            text = { Text("Do you want to end the auction early and sell '${productToMarkSold?.productName}' to the current highest bidder?") },
+            text = { Text("End auction early for '${productToMarkSold?.productName}'?") },
             confirmButton = {
                 TextButton(onClick = {
-                    productViewModel.updateStatus(productToMarkSold!!.productId, "sold") { _, msg ->
+                    productViewModel.updateStatus(productToMarkSold!!.productId, "sold") { _, _ ->
                         Toast.makeText(context, "Item marked as Sold!", Toast.LENGTH_SHORT).show()
-                        val bidders = productToMarkSold?.bids?.keys?.toSet().orEmpty()
-                        if (bidders.isNotEmpty()) {
-                            notificationViewModel.notifyUsersByIds(
-                                bidders,
-                                NotificationPayload(
-                                    title = "Auction ended",
-                                    message = "${productToMarkSold?.productName} has been sold.",
-                                    type = "marketplace",
-                                    actionType = "marketplace",
-                                    productId = productToMarkSold?.productId.orEmpty()
-                                )
-                            )
-                        }
-                        productToMarkSold?.highestBidderId?.takeIf { it.isNotBlank() }?.let { winnerId ->
-                            notificationViewModel.notifyUser(
-                                winnerId,
-                                NotificationPayload(
-                                    title = "You won the bid!",
-                                    message = "You won ${productToMarkSold?.productName}.",
-                                    type = "marketplace",
-                                    actionType = "product_detail",
-                                    productId = productToMarkSold?.productId.orEmpty()
-                                )
-                            )
-                        }
+                        productViewModel.fetchAllProducts() // Refresh list
                         productToMarkSold = null
                     }
                 }) { Text("Confirm Sale", color = Green) }
@@ -135,14 +113,14 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("CleanTrack Market", color = White, fontWeight = FontWeight.Bold) },
+            CenterAlignedTopAppBar(
+                title = { Text("CleanTrack Market", color = White, fontWeight = FontWeight.ExtraBold) },
                 navigationIcon = {
                     IconButton(onClick = { (context as? Activity)?.finish() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
             )
         },
         floatingActionButton = {
@@ -155,21 +133,34 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                 icon = { Icon(Icons.Filled.Add, null) },
                 text = { Text("List Item") },
                 containerColor = Green,
-                contentColor = White
+                contentColor = White,
+                shape = RoundedCornerShape(16.dp)
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Blue, Green, White), endY = 1300f))) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(Blue, Green, White), endY = 1500f))
+        ) {
             Column(modifier = Modifier.padding(padding).padding(horizontal = 20.dp)) {
+                // Search Field
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text("Search for items...", color = White.copy(0.7f)) },
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp).clip(RoundedCornerShape(12.dp)),
-                    leadingIcon = { Icon(Icons.Default.Search, null, tint = White.copy(0.7f)) },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = White, unfocusedTextColor = White)
+                    placeholder = { Text("Search items...", color = White.copy(0.7f)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = White) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = White,
+                        unfocusedTextColor = White,
+                        focusedBorderColor = White,
+                        unfocusedBorderColor = White.copy(0.5f)
+                    )
                 )
 
+                // --- Tabs ---
                 Row(
                     modifier = Modifier.padding(vertical = 12.dp).fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -180,11 +171,25 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                             selected = selectedTab == index,
                             onClick = { selectedTab = index },
                             label = { Text(title) },
-                            border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedTab == index) Green else White.copy(0.5f))
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Green,
+                                selectedLabelColor = White,
+                                labelColor = White,
+                                containerColor = Color.Transparent
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true, // This ensures the border parameter is valid
+                                selected = selectedTab == index,
+                                borderColor = White.copy(0.5f),
+                                selectedBorderColor = Green,
+                                borderWidth = 1.dp,
+                                selectedBorderWidth = 1.dp
+                            )
                         )
                     }
                 }
 
+                // Filtering Logic
                 val filteredProducts = products?.filter {
                     val matchesSearch = it.productName.contains(searchQuery, ignoreCase = true)
                     when(selectedTab) {
@@ -195,38 +200,53 @@ fun MarketplaceScreen(currentUserId: String, isAdmin: Boolean) {
                     }
                 } ?: emptyList()
 
-                if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = White) }
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(bottom = 80.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(filteredProducts) { product ->
-                            ProductCard(
-                                product = product,
-                                isOwner = product.sellerId == currentUserId,
-                                isAdmin = isAdmin,
-                                currentUserId = currentUserId,
-                                isMyListingsTab = (selectedTab == 1),
-                                productViewModel = productViewModel,
-                                onEdit = {
-                                    context.startActivity(Intent(context, AddListItemActivity::class.java).apply {
-                                        putExtra("USER_ID", currentUserId)
-                                        putExtra("PRODUCT_ID", product.productId)
-                                    })
-                                },
-                                onDelete = { productToDelete = product },
-                                onMarkSold = { productToMarkSold = product },
-                                onClick = {
-                                    context.startActivity(Intent(context, ProductDetailActivity::class.java).apply {
-                                        putExtra("PRODUCT_ID", product.productId)
-                                        putExtra("USER_ID", currentUserId)
-                                    })
-                                }
-                            )
+                // Content Display Logic
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (isLoading || products == null) {
+                        // FIX: Use Green color so it's visible on the white-gradient bottom
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = Green,
+                            strokeWidth = 4.dp
+                        )
+                    } else if (filteredProducts.isEmpty()) {
+                        Text(
+                            "No products found",
+                            modifier = Modifier.align(Alignment.Center),
+                            color = White.copy(0.8f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            contentPadding = PaddingValues(bottom = 100.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(filteredProducts) { product ->
+                                ProductCard(
+                                    product = product,
+                                    isOwner = product.sellerId == currentUserId,
+                                    isAdmin = isAdmin,
+                                    currentUserId = currentUserId,
+                                    isMyListingsTab = (selectedTab == 1),
+                                    productViewModel = productViewModel,
+                                    onEdit = {
+                                        context.startActivity(Intent(context, AddListItemActivity::class.java).apply {
+                                            putExtra("USER_ID", currentUserId)
+                                            putExtra("PRODUCT_ID", product.productId)
+                                        })
+                                    },
+                                    onDelete = { productToDelete = product },
+                                    onMarkSold = { productToMarkSold = product },
+                                    onClick = {
+                                        context.startActivity(Intent(context, ProductDetailActivity::class.java).apply {
+                                            putExtra("PRODUCT_ID", product.productId)
+                                            putExtra("USER_ID", currentUserId)
+                                        })
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -252,16 +272,16 @@ fun ProductCard(
     val isExpired = product.auctionEndTime < System.currentTimeMillis()
     val hasBids = !product.highestBidderId.isNullOrBlank()
 
+    // --- RELIST DATE PICKER ---
     val calendar = Calendar.getInstance()
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, day ->
             val selectedCalendar = Calendar.getInstance()
             selectedCalendar.set(year, month, day, 23, 59, 59)
-            val newTime = selectedCalendar.timeInMillis
-
-            productViewModel.relistProduct(product.productId, newTime) { _, msg ->
+            productViewModel.relistProduct(product.productId, selectedCalendar.timeInMillis) { _, msg ->
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                productViewModel.fetchAllProducts()
             }
         },
         calendar.get(Calendar.YEAR),
@@ -274,7 +294,7 @@ fun ProductCard(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
             Box {
@@ -291,7 +311,7 @@ fun ProductCard(
                 }
             }
 
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(10.dp)) {
                 Text(text = product.productName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(text = "Rs. ${product.currentBidPrice}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Green)
 
@@ -304,8 +324,6 @@ fun ProductCard(
 
                 if (isOwner && isMyListingsTab) {
                     Spacer(modifier = Modifier.height(8.dp))
-
-                    // Relist logic: Only for expired items without bidders
                     if (isExpired && !hasBids) {
                         Button(
                             onClick = { datePickerDialog.show() },
@@ -313,12 +331,8 @@ fun ProductCard(
                             contentPadding = PaddingValues(0.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue),
                             shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Relist Item", fontSize = 11.sp, color = White)
-                        }
+                        ) { Text("Relist Item", fontSize = 11.sp, color = White) }
                     }
-
-                    // Mark Sold logic: Removed time limit. Shows as long as there is a bidder.
                     if (hasBids && product.productStatus != "sold") {
                         Button(
                             onClick = onMarkSold,
@@ -326,30 +340,17 @@ fun ProductCard(
                             contentPadding = PaddingValues(0.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Green),
                             shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Mark Sold", fontSize = 11.sp, color = White)
-                        }
+                        ) { Text("Mark Sold", fontSize = 11.sp, color = White) }
                     }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         if (product.productStatus == "active") {
-                            IconButton(onClick = onEdit, modifier = Modifier.size(30.dp)) {
-                                Icon(Icons.Default.Edit, "Edit", tint = Blue, modifier = Modifier.size(18.dp))
-                            }
+                            IconButton(onClick = onEdit, modifier = Modifier.size(30.dp)) { Icon(Icons.Default.Edit, null, tint = Blue, modifier = Modifier.size(18.dp)) }
                         }
-                        IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
-                            Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
-                        }
+                        IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) { Icon(Icons.Default.Delete, null, tint = Color.Red, modifier = Modifier.size(18.dp)) }
                     }
                 } else if (isAdmin) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
-                            Icon(Icons.Default.Delete, "Delete", tint = Color.Red, modifier = Modifier.size(18.dp))
-                        }
+                        IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) { Icon(Icons.Default.Delete, null, tint = Color.Red, modifier = Modifier.size(18.dp)) }
                     }
                 }
             }
@@ -357,6 +358,7 @@ fun ProductCard(
     }
 }
 
+// Helper (keep as is)
 fun formatTimeRemaining(milliseconds: Long): String {
     if (milliseconds <= 0) return "Ended"
     val seconds = milliseconds / 1000

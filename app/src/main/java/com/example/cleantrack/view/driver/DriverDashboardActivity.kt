@@ -217,7 +217,13 @@ fun DriverHomeSection(
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = CircleShape, color = Color.White.copy(0.4f), modifier = Modifier.size(45.dp), border = BorderStroke(1.dp, Color.White.copy(0.5f))) {
+            Surface(shape = CircleShape, color = Color.White.copy(0.4f), modifier = Modifier.size(45.dp)
+                .clickable {
+                    val intent = Intent(context, EditProfileActivity::class.java).apply {
+                        putExtra("userId", currentUser?.userId)
+                    }
+                    context.startActivity(intent)
+                }, border = BorderStroke(1.dp, Color.White.copy(0.5f))) {
                 AsyncImage(
                     model = if (!currentUser?.profileImageUrl.isNullOrEmpty()) currentUser?.profileImageUrl else R.drawable.user_logo,
                     contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop
@@ -356,7 +362,13 @@ fun DriverProfileSection(padding: PaddingValues, userProfile: com.example.cleant
     val context = LocalContext.current
     Column(modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(modifier = Modifier.height(30.dp))
-        Surface(shape = CircleShape, color = White.copy(0.3f), modifier = Modifier.size(110.dp), border = BorderStroke(2.dp, White)) {
+        Surface(shape = CircleShape, color = White.copy(0.3f), modifier = Modifier.size(110.dp)
+            .clickable {
+                val intent = Intent(context, EditProfileActivity::class.java).apply {
+                    putExtra("userId", userProfile?.userId)
+                }
+                context.startActivity(intent)
+            }, border = BorderStroke(2.dp, White)) {
             AsyncImage(
                 model = if (!userProfile?.profileImageUrl.isNullOrEmpty()) userProfile?.profileImageUrl else R.drawable.user_logo,
                 contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop

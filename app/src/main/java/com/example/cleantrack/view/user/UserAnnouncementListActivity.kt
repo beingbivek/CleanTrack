@@ -46,7 +46,10 @@ class UserAnnouncementListActivity : ComponentActivity() {
 fun AnnouncementListScreen() {
     val context = LocalContext.current
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
-    val announcements by announcementVM.allAnnouncements.observeAsState(emptyList())
+
+    // FIX: Start loading as 'true' by default so there is no flicker
+    val announcements by announcementVM.allAnnouncements.observeAsState(null)
+    val isLoading by announcementVM.loading.observeAsState(true)
 
     LaunchedEffect(Unit) {
         announcementVM.getAllAnnouncements { _, _, _ -> }
@@ -64,53 +67,53 @@ fun AnnouncementListScreen() {
             )
     ) {
         Scaffold(
-            containerColor = Color.Transparent, // Allows gradient to show through
+            containerColor = Color.Transparent,
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
-                        Text(
-                            "Announcements",
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
+                        Text("Announcements", fontWeight = FontWeight.ExtraBold, color = Color.White)
                     },
                     navigationIcon = {
                         IconButton(onClick = { (context as? ComponentActivity)?.finish() }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                         }
                     },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.Transparent
-                    )
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
                 )
             }
         ) { padding ->
-            if (announcements.isNullOrEmpty()) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No announcements yet.", color = Color.White.copy(alpha = 0.7f))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                // --- HIGHEST PRIORITY: LOADING ---
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Green, // Green is visible on the bottom white gradient
+                        strokeWidth = 4.dp
+                    )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        top = padding.calculateTopPadding() + 16.dp,
-                        bottom = 24.dp,
-                        start = 20.dp,
-                        end = 20.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(announcements!!) { item ->
-                        AnnouncementHistoryCard(item)
+                // --- DATA RECEIVED ---
+                else {
+                    if (announcements.isNullOrEmpty()) {
+                        Text(
+                            "No announcements yet.",
+                            modifier = Modifier.align(Alignment.Center),
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(announcements!!) { item ->
+                                AnnouncementHistoryCard(item)
+                            }
+                        }
                     }
                 }
             }
@@ -124,11 +127,10 @@ fun AnnouncementHistoryCard(announcement: AnnouncementModel) {
     val dateString = sdf.format(Date(announcement.timestamp))
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Updated to a consistent Dark Gray for visibility across all background colors
         Text(
             text = dateString,
             fontSize = 11.sp,
-            color = Color(0xFF424242), // Material Dark Gray
+            color = Color(0xFF424242), // Dark Gray for better contrast
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(start = 8.dp, bottom = 6.dp)
         )
@@ -137,7 +139,7 @@ fun AnnouncementHistoryCard(announcement: AnnouncementModel) {
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
         ) {
             Row(
                 modifier = Modifier.padding(20.dp),
@@ -149,31 +151,16 @@ fun AnnouncementHistoryCard(announcement: AnnouncementModel) {
                     modifier = Modifier.size(45.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Campaign,
-                            contentDescription = null,
-                            tint = Green,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Icon(Icons.Default.Campaign, null, tint = Green, modifier = Modifier.size(24.dp))
                     }
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column {
-                    Text(
-                        text = announcement.title,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Black,
-                        fontSize = 16.sp
-                    )
+                    Text(text = announcement.title, fontWeight = FontWeight.ExtraBold, color = Black, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = announcement.message,
-                        color = Color.DarkGray, // Message also remains dark for readability
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp
-                    )
+                    Text(text = announcement.message, color = Color.DarkGray, fontSize = 14.sp, lineHeight = 20.sp)
                 }
             }
         }

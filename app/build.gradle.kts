@@ -133,4 +133,7 @@ dependencies {
     // Stripe
     implementation("com.stripe:stripe-android:20.50.0")
 
+    //Gson
+    implementation("com.google.code.gson:gson:2.10.1")
+
 }
