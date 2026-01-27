@@ -358,6 +358,7 @@ fun DriverHomeSection(
                     text = when {
                         isTripActive -> "Stop Tracking & End Route"
                         isTimeExpired -> "Shift Time Expired"
+                        isTripCompleted -> "Resume Today's Route"
                         else -> "Start Collection Route"
                     },
                     fontWeight = FontWeight.Bold, fontSize = 16.sp

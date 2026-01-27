@@ -1,7 +1,5 @@
 package com.example.cleantrack.viewmodel
 
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -11,12 +9,7 @@ import com.example.cleantrack.model.BinCollectionModel
 import com.example.cleantrack.model.BinModel
 import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.model.TripHistoryUiModel
-import com.example.cleantrack.repository.ActiveTripRepo
-import com.example.cleantrack.repository.BinCollectionRepo
-import com.example.cleantrack.repository.BinRepo
-import com.example.cleantrack.repository.PointsRepo
-import com.example.cleantrack.repository.UserRepo
-import com.google.android.gms.location.FusedLocationProviderClient
+import com.example.cleantrack.repository.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -26,44 +19,36 @@ class ActiveTripViewModel(
     private val userRepo: UserRepo,
     private val binRepo: BinRepo,
     private val collectionRepo: BinCollectionRepo,
-    private val pointsRepo: PointsRepo // ADD THIS
+    private val pointsRepo: PointsRepo
 ) : ViewModel() {
 
-    // Active Trip State
     private val _activeTrip = MutableLiveData<ActiveTripModel?>()
     val activeTrip: LiveData<ActiveTripModel?> get() = _activeTrip
 
-    // Schedule State
     private val _isScheduleCompleted = MutableLiveData<Boolean>(false)
     val isScheduleCompleted: LiveData<Boolean> get() = _isScheduleCompleted
 
-    private val _loading = MutableLiveData<Boolean>()
-    val loading : MutableLiveData<Boolean>
-        get() = _loading
+    private val _loading = MutableLiveData<Boolean>(false)
+    val loading: LiveData<Boolean> get() = _loading
 
-    // Bin details for specific scans
     val binDetails = MutableLiveData<BinModel?>()
 
-    // Dashboard Stats: Total, Remains, Skipped
     private val _binStats = MutableLiveData<Triple<Int, Int, Int>>()
     val binStats: LiveData<Triple<Int, Int, Int>> = _binStats
 
-    /**
-     * Start Trip with Time Validation
-     * Only allows start if current time is between schedule start and end
-     */
+    private val _tripHistory = MutableLiveData<List<TripHistoryUiModel>>()
+    val tripHistory: LiveData<List<TripHistoryUiModel>> get() = _tripHistory
 
     fun startTripWithValidation(schedule: ScheduleModel, callback: (Boolean, String) -> Unit) {
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         val currentTime = sdf.format(Date())
 
-        // --- NEW: If time has already passed, force the status to COMPLETED and block restart ---
+        // 1. Check if Shift has expired
         if (currentTime > schedule.endTime) {
             repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
                 if (existingTrip?.status == "ACTIVE") {
-                    // Automatically finalize the trip in the database
                     repo.endTrip(existingTrip.tripId) { _, _ ->
-                        _activeTrip.postValue(null)
+                        _activeTrip.postValue(existingTrip.copy(status = "COMPLETED"))
                     }
                 }
             }
@@ -71,143 +56,54 @@ class ActiveTripViewModel(
             return
         }
 
-        // --- Existing logic for valid time window ---
-        if (currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
-            repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
-                when {
-                    existingTrip?.status == "COMPLETED" -> {
-                        // Allow restart only if there are bins left to collect
-                        userRepo.getUsersByRoute(schedule.routeId) { success, _, users ->
-                            if (success && users != null) {
-                                val userIds = users.map { it.userId }
-                                binRepo.getBinsByOwnerIds(userIds) { bins ->
-                                    collectionRepo.getCollectionsByTripOnce(existingTrip.tripId) { _, _, collections ->
-                                        if ((collections?.size ?: 0) >= bins.size && bins.isNotEmpty()) {
-                                            callback(false, "Route fully collected. Cannot restart.")
-                                        } else {
-                                            repo.resumeTrip(existingTrip.tripId) { s, m ->
-                                                if (s) {
-                                                    val resumed = existingTrip.copy(status = "ACTIVE")
-                                                    _activeTrip.postValue(resumed)
-                                                    loadBinStats(resumed.routeId, resumed.tripId)
-                                                }
-                                                callback(s, m)
+        // 2. Check if it's too early
+        if (currentTime < schedule.startTime) {
+            callback(false, "Route starts at ${schedule.startTime}.")
+            return
+        }
+
+        // 3. Main Logic for Valid Time Window
+        repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
+            when {
+                // CASE: Trip was completed but driver wants to RESUME
+                existingTrip?.status == "COMPLETED" -> {
+                    userRepo.getUsersByRoute(schedule.routeId) { success, _, users ->
+                        if (success && users != null) {
+                            val userIds = users.map { it.userId }
+                            binRepo.getBinsByOwnerIds(userIds) { bins ->
+                                collectionRepo.getCollectionsByTripOnce(existingTrip.tripId) { _, _, collections ->
+                                    if ((collections?.size ?: 0) >= bins.size && bins.isNotEmpty()) {
+                                        callback(false, "Route fully collected. Cannot restart.")
+                                    } else {
+                                        repo.resumeTrip(existingTrip.tripId) { s, m ->
+                                            if (s) {
+                                                val resumed = existingTrip.copy(status = "ACTIVE")
+                                                _activeTrip.postValue(resumed)
+                                                loadBinStats(resumed.routeId, resumed.tripId)
                                             }
+                                            callback(s, m)
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    existingTrip?.status == "ACTIVE" -> {
-                        _activeTrip.postValue(existingTrip)
-                        loadBinStats(existingTrip.routeId, existingTrip.tripId)
-                        callback(true, "Resuming active route.")
-                    }
-                    else -> {
-                        repo.startTrip(schedule.scheduleId) { s, m ->
-                            if (s) observeActiveTripByRoute(schedule.routeId)
-                            callback(s, m)
-                        }
+                }
+
+                // CASE: Trip is already ACTIVE (syncing state)
+                existingTrip?.status == "ACTIVE" -> {
+                    _activeTrip.postValue(existingTrip)
+                    loadBinStats(existingTrip.routeId, existingTrip.tripId)
+                    callback(true, "Resuming active route.")
+                }
+
+                // CASE: No trip exists for today, START NEW
+                else -> {
+                    repo.startTrip(schedule.scheduleId) { s, m ->
+                        if (s) observeActiveTripByRoute(schedule.routeId)
+                        callback(s, m)
                     }
                 }
-            }
-        } else {
-            callback(false, "Route starts at ${schedule.startTime}.")
-        }
-    }
-
-    /**
-     * Checks if a trip for this schedule was already completed today.
-     * Call this when the Dashboard loads or when assignedSchedule changes.
-     */
-    fun checkCompletionStatus(scheduleId: String) {
-        repo.checkExistingTrip(scheduleId) { trip ->
-            // If there is an active trip, it is definitely NOT completed.
-            if (trip?.status == "ACTIVE") {
-                _isScheduleCompleted.postValue(false)
-            } else if (trip?.status == "COMPLETED") {
-                _isScheduleCompleted.postValue(true)
-            } else {
-                _isScheduleCompleted.postValue(false)
-            }
-        }
-    }
-
-    /**
-     * Dashboard Data Logic
-     * 1. Finds Users in Route -> 2. Finds Bins for those Users -> 3. Observes Collections for Trip
-     */
-    fun loadBinStats(routeId: String, tripId: String) {
-        // Step A: Find users on this route
-        userRepo.getUsersByRoute(routeId) { success, _, users ->
-            if (success && users != null) {
-                val userIds = users.map { it.userId }
-
-                // Step B: Find all bins for those users
-                binRepo.getBinsByOwnerIds(userIds) { bins ->
-                    val total = bins.size
-
-                    // Step C: Observe collection entries for this trip
-                    collectionRepo.observeCollectionsByTrip(tripId) { collectionSuccess, _, collections ->
-                        if (collectionSuccess && collections != null) {
-
-                            // Every entry for this tripId counts as collected
-                            val collected = collections.size
-                            val remains = if (total > collected) total - collected else 0
-
-                            // Updated Triple: Total, Collected, Remains
-                            _binStats.postValue(Triple(total, collected, remains))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Observe an active trip by Route ID
-     * Used to resume state if the app is restarted
-     */
-    fun observeActiveTripByRoute(routeId: String) {
-        repo.observeActiveTripByRoute(routeId) { trip ->
-            _activeTrip.postValue(trip)
-            // If a trip is already active, resume loading stats
-            trip?.let {
-                loadBinStats(it.routeId, it.tripId)
-            }
-        }
-    }
-
-    // --- Helper Methods using Injected Repositories ---
-
-    fun getBinById(binId: String, callback: (Boolean, String, BinModel?) -> Unit) {
-        binRepo.getBinById(binId) { success, message, bin ->
-            if (success) binDetails.postValue(bin)
-            callback(success, message, bin)
-        }
-    }
-
-    fun addBinCollection(collectionModel: BinCollectionModel, callback: (Boolean, String) -> Unit) {
-        collectionRepo.addBinCollection(collectionModel) { success, message ->
-            callback(success, message)
-        }
-    }
-
-
-
-
-    fun observeTrip(tripId: String) {
-        repo.observeActiveTrip(tripId) { _activeTrip.postValue(it) }
-    }
-
-    fun updateLocation(tripId: String, lat: Double, lng: Double) {
-        repo.updateLocation(tripId, lat, lng) // Updates Firebase
-
-        // Also update local LiveData so the UI shows the new coordinates
-        _activeTrip.value?.let { current ->
-            if (current.tripId == tripId) {
-                _activeTrip.postValue(current.copy(currentLat = lat, currentLng = lng))
             }
         }
     }
@@ -215,10 +111,9 @@ class ActiveTripViewModel(
     fun endTrip(tripId: String, callback: (Boolean, String) -> Unit) {
         repo.endTrip(tripId) { success, msg ->
             if (success) {
-                // Instead of setting to null, we refresh the state
-                // so the UI knows the trip exists but is now COMPLETED
                 _activeTrip.value?.let { current ->
                     if (current.tripId == tripId) {
+                        // Update status to COMPLETED instead of null so "Resume" shows
                         _activeTrip.postValue(current.copy(status = "COMPLETED"))
                     }
                 }
@@ -227,95 +122,122 @@ class ActiveTripViewModel(
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-    }
-
-    // In ActiveTripViewModel.kt
-
-// 1. Add this to the constructor (if not already there)
-// collectionRepo: BinCollectionRepo
-
-    fun checkAndValidateBin(tripId: String, currentRouteId: String, binId: String, onResult: (Boolean, String) -> Unit) {
-        _loading.postValue(true)
-
-        // CHANGE: Use the 'Once' method here
-        collectionRepo.getCollectionsByTripOnce(tripId) { success, _, collections ->
-            val alreadyCollected = collections?.any { it.binId == binId } ?: false
-
-            if (alreadyCollected) {
-                _loading.postValue(false)
-                onResult(false, "This bin has already been scanned for this trip.")
-                return@getCollectionsByTripOnce // Stops execution here
-            }
-
-            // STEP 2: Fetch Bin Details
-            binRepo.getBinById(binId) { binSuccess, _, bin ->
-                if (!binSuccess || bin == null) {
-                    _loading.postValue(false)
-                    onResult(false, "Invalid QR Code: Bin not found in system.")
-                    return@getBinById
-                }
-
-                // STEP 3: Fetch the Owner of this bin to check their route
-                userRepo.getUserById(bin.ownerUserId) { userSuccess, _, owner ->
-                    _loading.postValue(false)
-
-                    if (userSuccess && owner != null) {
-                        // STEP 4: The Route Validation
-                        if (owner.activeRouteId == currentRouteId) {
-                            binDetails.postValue(bin)
-                            onResult(true, "Success")
-                        } else {
-                            onResult(false, "Access Denied: This bin belongs to Route ${owner.activeRouteId}, not your current route.")
+    fun loadBinStats(routeId: String, tripId: String) {
+        userRepo.getUsersByRoute(routeId) { success, _, users ->
+            if (success && users != null) {
+                val userIds = users.map { it.userId }
+                binRepo.getBinsByOwnerIds(userIds) { bins ->
+                    val total = bins.size
+                    collectionRepo.observeCollectionsByTrip(tripId) { colSuccess, _, collections ->
+                        if (colSuccess && collections != null) {
+                            val collected = collections.size
+                            val remains = if (total > collected) total - collected else 0
+                            _binStats.postValue(Triple(total, collected, remains))
                         }
-                    } else {
-                        onResult(false, "Error: Could not verify bin owner.")
                     }
                 }
             }
         }
     }
-    // --- DELETE THIS BROKEN FUNCTION ---
-// fun addBinCollection(collectionModel: BinCollectionModel, callback: (Boolean, String) -> Unit) { ... }
 
+    fun observeActiveTripByRoute(routeId: String) {
+        repo.observeActiveTripByRoute(routeId) { trip ->
+            _activeTrip.postValue(trip)
+            trip?.let { loadBinStats(it.routeId, it.tripId) }
+        }
+    }
 
+    fun updateLocation(tripId: String, lat: Double, lng: Double) {
+        repo.updateLocation(tripId, lat, lng)
+        _activeTrip.value?.let { current ->
+            if (current.tripId == tripId) {
+                _activeTrip.postValue(current.copy(currentLat = lat, currentLng = lng))
+            }
+        }
+    }
 
-    private val _tripHistory = MutableLiveData<List<TripHistoryUiModel>>()
-    val tripHistory: LiveData<List<TripHistoryUiModel>> get() = _tripHistory
+    fun checkAndValidateBin(tripId: String, currentRouteId: String, binId: String, onResult: (Boolean, String) -> Unit) {
+        _loading.postValue(true)
+        collectionRepo.getCollectionsByTripOnce(tripId) { success, _, collections ->
+            val alreadyCollected = collections?.any { it.binId == binId } ?: false
+            if (alreadyCollected) {
+                _loading.postValue(false)
+                onResult(false, "This bin has already been scanned for this trip.")
+                return@getCollectionsByTripOnce
+            }
+
+            binRepo.getBinById(binId) { binSuccess, _, bin ->
+                if (!binSuccess || bin == null) {
+                    _loading.postValue(false)
+                    onResult(false, "Invalid QR Code: Bin not found.")
+                    return@getBinById
+                }
+
+                userRepo.getUserById(bin.ownerUserId) { userSuccess, _, owner ->
+                    _loading.postValue(false)
+                    if (userSuccess && owner != null) {
+                        if (owner.activeRouteId == currentRouteId) {
+                            binDetails.postValue(bin)
+                            onResult(true, "Success")
+                        } else {
+                            onResult(false, "This bin belongs to Route ${owner.activeRouteId}.")
+                        }
+                    } else {
+                        onResult(false, "Error verifying bin owner.")
+                    }
+                }
+            }
+        }
+    }
+
+    fun collectBinWithAI(
+        bin: BinModel, driverId: String, tripId: String, rating: Int,
+        weight: Double, remarks: String, aiTip: String, isSegregated: Boolean,
+        callback: (Boolean, String) -> Unit
+    ) {
+        _loading.postValue(true)
+        userRepo.getUserById(bin.ownerUserId) { success, _, user ->
+            if (!success || user == null) {
+                _loading.postValue(false)
+                callback(false, "User not found")
+                return@getUserById
+            }
+
+            pointsRepo.calculatePoints(bin.category, isSegregated) { points ->
+                val collection = BinCollectionModel(
+                    binId = bin.binId, driverId = driverId, userId = bin.ownerUserId,
+                    tripId = tripId, rating = rating, weight = weight, remarks = remarks,
+                    aiFeedback = aiTip, segregatedCorrectly = isSegregated,
+                    pointsAwarded = points, collectedAt = System.currentTimeMillis()
+                )
+
+                collectionRepo.addBinCollection(collection) { saveS, saveM ->
+                    if (saveS) {
+                        pointsRepo.addPointsToUser(bin.ownerUserId, points)
+                        loadBinStats(user.activeRouteId ?: "", tripId)
+                    }
+                    _loading.postValue(false)
+                    callback(saveS, saveM)
+                }
+            }
+        }
+    }
 
     fun fetchDriverHistory(driverId: String) {
         _loading.postValue(true)
-        repo.getDriverTripHistory(driverId) { success, message, trips ->
+        repo.getDriverTripHistory(driverId) { success, _, trips ->
             if (success && !trips.isNullOrEmpty()) {
                 val historyList = mutableListOf<TripHistoryUiModel>()
-                var processedCount = 0
-
+                var processed = 0
                 trips.forEach { trip ->
-                    // STEP 1: Get the Driver's Name
-                    userRepo.getUserById(trip.driverId) { userSuccess, _, driverUser ->
-                        val dName = driverUser?.fullname ?: "Unknown Driver"
-
-                        // STEP 2: Get users on the route to count bins
+                    userRepo.getUserById(trip.driverId) { _, _, driver ->
                         userRepo.getUsersByRoute(trip.routeId) { _, _, routeUsers ->
                             val userIds = routeUsers?.map { it.userId } ?: emptyList()
-
                             binRepo.getBinsByOwnerIds(userIds) { bins ->
-                                val total = bins.size
-
-                                // STEP 3: Get collections for this specific trip
                                 collectionRepo.getCollectionsByTripOnce(trip.tripId) { _, _, collections ->
-                                    val collected = collections?.size ?: 0
-
-                                    historyList.add(TripHistoryUiModel(
-                                        trip = trip,
-                                        totalBins = total,
-                                        collectedBins = collected,
-                                        driverName = dName // Save the name here
-                                    ))
-
-                                    processedCount++
-                                    if (processedCount == trips.size) {
+                                    historyList.add(TripHistoryUiModel(trip, bins.size, collections?.size ?: 0, driver?.fullname ?: "Unknown"))
+                                    processed++
+                                    if (processed == trips.size) {
                                         _tripHistory.postValue(historyList.sortedByDescending { it.trip.startTimestamp })
                                         _loading.postValue(false)
                                     }
@@ -331,62 +253,17 @@ class ActiveTripViewModel(
         }
     }
 
-    fun collectBinWithAI(
-        bin: BinModel,
-        driverId: String,
-        tripId: String,
-        rating: Int,
-        weight: Double,
-        remarks: String,
-        aiTip: String, // Matches the new AI tip parameter from your Activity
-        isSegregated: Boolean,
-        callback: (Boolean, String) -> Unit
-    ) {
-        _loading.postValue(true)
+    fun getBinById(binId: String, callback: (Boolean, String, BinModel?) -> Unit) {
+        binRepo.getBinById(binId) { success, message, bin ->
+            if (success) binDetails.postValue(bin)
+            callback(success, message, bin)
+        }
+    }
 
-        // 1. Fetch the user to verify ownership and route
-        userRepo.getUserById(bin.ownerUserId) { success, message, user ->
-            if (!success || user == null) {
-                _loading.postValue(false)
-                callback(false, "User not found: $message")
-                return@getUserById
-            }
-
-            val userRouteId = user.activeRouteId ?: ""
-
-            // 2. Calculate points using the Points Repository rules
-            pointsRepo.calculatePoints(bin.category, isSegregated) { calculatedPoints ->
-
-                // 3. Construct the record with the AI feedback tip
-                val collection = BinCollectionModel(
-                    binId = bin.binId,
-                    driverId = driverId,
-                    userId = bin.ownerUserId,
-                    tripId = tripId,
-                    rating = rating,
-                    weight = weight,
-                    remarks = remarks,
-                    aiFeedback = aiTip, // 🔹 SAVES THE GEMINI TIP TO DB
-                    segregatedCorrectly = isSegregated,
-                    pointsAwarded = calculatedPoints,
-                    collectedAt = System.currentTimeMillis()
-                )
-
-                // 4. Save the collection log to the database
-                collectionRepo.addBinCollection(collection) { saveSuccess, saveMessage ->
-                    if (saveSuccess) {
-                        // 5. Update user's point balance
-                        pointsRepo.addPointsToUser(bin.ownerUserId, calculatedPoints)
-
-                        // 6. Refresh Dashboard Stats (Collected vs Remains)
-                        if (userRouteId.isNotEmpty()) {
-                            loadBinStats(userRouteId, tripId)
-                        }
-                    }
-                    _loading.postValue(false)
-                    callback(saveSuccess, saveMessage)
-                }
-            }
+    fun addBinCollection(collectionModel: BinCollectionModel, callback: (Boolean, String) -> Unit) {
+        collectionRepo.addBinCollection(collectionModel) { success, message ->
+            callback(success, message)
         }
     }
 }
+
