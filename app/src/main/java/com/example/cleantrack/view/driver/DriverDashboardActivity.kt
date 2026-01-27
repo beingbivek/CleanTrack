@@ -72,6 +72,9 @@ fun DriverDashboardBody() {
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
 
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val scheduleViewModel = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     val tripViewModel = remember {
@@ -129,6 +132,13 @@ fun DriverDashboardBody() {
 
     LaunchedEffect(assignedSchedule) {
         assignedSchedule?.routeId?.let { if (it.isNotEmpty()) tripViewModel.observeActiveTripByRoute(it) }
+    }
+
+    LaunchedEffect(lifecycleState) {
+        val uid = userViewModel.getCurrentUserId()
+        if (uid != null && lifecycleState == androidx.lifecycle.Lifecycle.State.RESUMED) {
+            userViewModel.refreshUser(uid) // This fetch will now pick up the new timestamped URL
+        }
     }
 
     LaunchedEffect(activeTrip?.status) {

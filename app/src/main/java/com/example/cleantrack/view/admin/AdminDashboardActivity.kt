@@ -59,8 +59,12 @@ fun AdminDashboardBody() {
     val userViewModel = remember { UserViewModel(UserRepoImpl(), BinCollectionRepoImpl()) }
     val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
+
     val userProfile by userViewModel.user.observeAsState()
     val notifications by notificationViewModel.notifications.observeAsState(emptyList())
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -77,6 +81,10 @@ fun AdminDashboardBody() {
             notificationViewModel.observeNotifications(uid)
         }
 
+
+
+
+
         // Fetch RouteInsights
         val insightRef = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("RouteInsights")
         insightRef.get().addOnSuccessListener { snapshot ->
@@ -86,6 +94,13 @@ fun AdminDashboardBody() {
             } else {
                 aiStrategy = "No historical data found for AI report."
             }
+        }
+    }
+
+    LaunchedEffect(lifecycleState) {
+        val uid = userViewModel.getCurrentUserId()
+        if (uid != null && lifecycleState == androidx.lifecycle.Lifecycle.State.RESUMED) {
+            userViewModel.refreshUser(uid) // This fetch will now pick up the new timestamped URL
         }
     }
 

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -64,7 +65,7 @@ class EditProfileActivity : ComponentActivity() {
 @Composable
 fun EditProfileScreen() {
     val context = LocalContext.current
-    val activity = context as? Activity
+    val activity = LocalActivity.current // Fixed: Replaced 'as Activity' cast
 
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val commonImageViewModel = remember { CommonImageViewModel(CommonImageRepoImpl()) }
@@ -132,118 +133,122 @@ fun EditProfileScreen() {
                 )
             }
         ) { padding ->
-            // --- CLEAN LOADING AT START ---
             if (isUserLoading && userData == null) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = PrimaryGreen, strokeWidth = 4.dp)
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Green, strokeWidth = 4.dp)
                 }
             } else {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(padding),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        contentPadding = PaddingValues(bottom = 40.dp)
-                    ) {
-                        item {
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Box(modifier = Modifier.size(150.dp), contentAlignment = Alignment.BottomEnd) {
-                                AsyncImage(
-                                    model = profileImageUri ?: if (profileImageUriString.isNotEmpty()) profileImageUriString else R.drawable.user_logo,
-                                    contentDescription = "Profile Picture",
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape)
-                                        .border(4.dp, White, CircleShape)
-                                        .background(White),
-                                    contentScale = ContentScale.Crop
-                                )
-                                IconButton(
-                                    onClick = { launcher.launch("image/*") },
-                                    modifier = Modifier.size(42.dp).clip(CircleShape).background(Green).border(2.dp, White, CircleShape)
-                                ) {
-                                    Icon(Icons.Default.CameraAlt, null, tint = White, modifier = Modifier.size(20.dp))
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(30.dp))
-                        }
-
-                        item {
-                            Card(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.cardColors(containerColor = White),
-                                elevation = CardDefaults.cardElevation(8.dp)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    contentPadding = PaddingValues(bottom = 40.dp)
+                ) {
+                    item {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Box(modifier = Modifier.size(150.dp), contentAlignment = Alignment.BottomEnd) {
+                            AsyncImage(
+                                model = profileImageUri ?: if (profileImageUriString.isNotEmpty()) profileImageUriString else R.drawable.user_logo,
+                                contentDescription = "Profile Picture",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
+                                    .border(4.dp, White, CircleShape)
+                                    .background(White),
+                                contentScale = ContentScale.Crop
+                            )
+                            IconButton(
+                                onClick = { launcher.launch("image/*") },
+                                modifier = Modifier.size(42.dp).clip(CircleShape).background(Green).border(2.dp, White, CircleShape)
                             ) {
-                                Column(modifier = Modifier.padding(20.dp)) {
-                                    Text("Personal Information", fontWeight = FontWeight.Bold, color = Green, fontSize = 16.sp)
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    ProfileInput(value = fullname, onValueChange = { fullname = it }, placeholder = "Full Name")
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    ProfileInput(value = email, onValueChange = { email = it }, placeholder = "Email", keyboardType = KeyboardType.Email)
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    ProfileInput(value = number, onValueChange = { number = it }, placeholder = "Phone Number", keyboardType = KeyboardType.Number)
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    Text("Address Details", fontWeight = FontWeight.Bold, color = Green, fontSize = 16.sp)
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    AddressDropdownGroup(addressVM, expandedProvince, expandedDistrict, expandedMunicipality, expandedWard,
-                                        provinceFieldSize, districtFieldSize, municipalityFieldSize, wardFieldSize,
-                                        { provinceFieldSize = it }, { districtFieldSize = it }, { municipalityFieldSize = it }, { wardFieldSize = it })
-                                }
+                                Icon(Icons.Default.CameraAlt, null, tint = White, modifier = Modifier.size(20.dp))
                             }
                         }
+                        Spacer(modifier = Modifier.height(30.dp))
+                    }
 
-                        item {
-                            Spacer(modifier = Modifier.height(30.dp))
-                            Button(
-                                onClick = {
-                                    if (userId.isEmpty()) {
-                                        AppUtil.showToast(context, "User ID not found")
-                                        return@Button
-                                    }
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = White),
+                            elevation = CardDefaults.cardElevation(8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Text("Personal Information", fontWeight = FontWeight.Bold, color = Green, fontSize = 16.sp)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                ProfileInput(fullname, { fullname = it }, "Full Name")
+                                Spacer(modifier = Modifier.height(12.dp))
+                                ProfileInput(email, { email = it }, "Email", KeyboardType.Email)
+                                Spacer(modifier = Modifier.height(12.dp))
+                                ProfileInput(number, { number = it }, "Phone Number", KeyboardType.Number)
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Text("Address Details", fontWeight = FontWeight.Bold, color = Green, fontSize = 16.sp)
+                                Spacer(modifier = Modifier.height(12.dp))
+                                AddressDropdownGroup(addressVM, expandedProvince, expandedDistrict, expandedMunicipality, expandedWard,
+                                    provinceFieldSize, districtFieldSize, municipalityFieldSize, wardFieldSize,
+                                    { provinceFieldSize = it }, { districtFieldSize = it }, { municipalityFieldSize = it }, { wardFieldSize = it })
+                            }
+                        }
+                    }
 
-                                    val saveUserData: (String) -> Unit = { uploadedImageUrl ->
-                                        val updatedUser = UserModel(
-                                            userId = userId,
-                                            fullname = fullname, email = email, number = number,
-                                            province = addressVM.selectedProvinceName,
-                                            district = addressVM.selectedDistrictName,
-                                            municipality = addressVM.selectedMunicipalityName,
-                                            ward = addressVM.selectedWardName,
-                                            profileImageUrl = uploadedImageUrl,
-                                            role = userData?.role ?: "USER",
-                                            latitude = userData?.latitude,
-                                            longitude = userData?.longitude
-                                        )
-                                        userViewModel.editUserProfile(userId, updatedUser) { success, message ->
+                    item {
+                        Spacer(modifier = Modifier.height(30.dp))
+                        Button(
+                            onClick = {
+                                if (userId.isEmpty()) {
+                                    AppUtil.showToast(context, "User ID not found")
+                                    return@Button
+                                }
+
+                                val saveUserData: (String) -> Unit = { uploadedImageUrl ->
+                                    // CACHE BUSTING: Append timestamp so Coil reloads the image immediately
+                                    val timestampedUrl = if (uploadedImageUrl.isNotEmpty()) {
+                                        if (uploadedImageUrl.contains("?")) "$uploadedImageUrl&t=${System.currentTimeMillis()}"
+                                        else "$uploadedImageUrl?t=${System.currentTimeMillis()}"
+                                    } else uploadedImageUrl
+
+                                    val updatedUser = UserModel(
+                                        userId = userId,
+                                        fullname = fullname, email = email, number = number,
+                                        province = addressVM.selectedProvinceName,
+                                        district = addressVM.selectedDistrictName,
+                                        municipality = addressVM.selectedMunicipalityName,
+                                        ward = addressVM.selectedWardName,
+                                        profileImageUrl = timestampedUrl,
+                                        role = userData?.role ?: "USER",
+                                        latitude = userData?.latitude,
+                                        longitude = userData?.longitude
+                                    )
+
+                                    userViewModel.editUserProfile(userId, updatedUser) { success, message ->
+                                        if (success) {
+                                            // Signal Dashboards to refresh
+                                            activity?.setResult(Activity.RESULT_OK)
+                                            AppUtil.showToast(context, "Profile updated successfully")
+                                            activity?.finish()
+                                        } else {
                                             AppUtil.showToast(context, message)
-                                            if (success) activity?.finish()
                                         }
                                     }
-
-                                    if (profileImageUri != null) {
-                                        commonImageViewModel.uploadImage(context, profileImageUri!!) { imageUrl ->
-                                            if (imageUrl != null) saveUserData(imageUrl) else AppUtil.showToast(context, "Upload failed")
-                                        }
-                                    } else {
-                                        saveUserData(profileImageUriString)
-                                    }
-                                },
-                                // Disable button while loading to prevent double taps
-                                enabled = !isImageLoading,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp).height(56.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Green),
-                                elevation = ButtonDefaults.buttonElevation(4.dp)
-                            ) {
-                                // --- BUTTON LOADING LOGIC ---
-                                if (isImageLoading) {
-                                    CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                                } else {
-                                    Text("Save Changes", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = White)
                                 }
+
+                                if (profileImageUri != null) {
+                                    commonImageViewModel.uploadImage(context, profileImageUri!!) { imageUrl ->
+                                        if (imageUrl != null) saveUserData(imageUrl) else AppUtil.showToast(context, "Upload failed")
+                                    }
+                                } else {
+                                    saveUserData(profileImageUriString)
+                                }
+                            },
+                            enabled = !isImageLoading,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp).height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Green)
+                        ) {
+                            if (isImageLoading) {
+                                CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                Text("Save Changes", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = White)
                             }
                         }
                     }
@@ -252,6 +257,8 @@ fun EditProfileScreen() {
         }
     }
 }
+
+// ... ProfileInput, DropdownField, and AddressDropdownGroup remain the same as your provided code ...
 
 
 
