@@ -1,4 +1,4 @@
-package com.example.cleantrack.view.user
+package com.example.cleantrack.view.admin
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -29,7 +29,7 @@ import com.example.cleantrack.ui.theme.Green
 import java.text.SimpleDateFormat
 import java.util.*
 
-class UserBinHistoryActivity : ComponentActivity() {
+class ViewUserBinHistoryActivity : ComponentActivity() {
 
     private val repo = RouteInsightRepoImpl()
 
