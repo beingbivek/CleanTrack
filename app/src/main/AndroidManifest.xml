@@ -18,7 +18,18 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
-         <activity
+        <activity
+            android:name=".view.user.PointsHistoryActivity"
+            android:exported="true"
+            android:label="@string/title_activity_points_history"
+            android:theme="@style/Theme.CleanTrack">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".view.user.PaymentHistoryActivity"
             android:exported="false"
             android:label="PaymentHistoryActivity"
@@ -52,17 +63,17 @@
             android:name=".view.driver.DriversTripHistoryActivity"
             android:exported="true"
             android:label="@string/title_activity_drivers_trip_history"
-            android:theme="@style/Theme.CleanTrack"></activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.DriverRouteMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_route_map"
-            android:theme="@style/Theme.CleanTrack"></activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.BinCollectionActivity"
             android:exported="true"
             android:label="@string/title_activity_bin_collection"
-            android:theme="@style/Theme.CleanTrack"></activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.user.UserScheduleListActivity"
             android:exported="true"
