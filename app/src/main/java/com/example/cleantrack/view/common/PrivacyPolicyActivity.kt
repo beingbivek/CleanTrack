@@ -72,10 +72,7 @@ class PrivacyPolicyActivity : ComponentActivity() {
             ) {
                 when {
                     userModel == null -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
-                            color = Color.White
-                        )
+                        PrivacyPolicyScreen()
                     }
                     userModel?.role == "ADMIN" -> {
                         AdminPrivacyPolicyScreen()
@@ -115,7 +112,7 @@ fun PolicyTopBar(title: String) {
 fun AdminPrivacyPolicyScreen() {
     val viewModel = remember { PrivacyPolicyViewModel(PrivacyPolicyRepoImpl()) }
     val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
-    val currentPrivacyPolicy by viewModel.privacypolicy.collectAsState()
+    val currentPrivacyPolicy by viewModel.privacypolicy.observeAsState()
     val context = LocalContext.current
     val activity = LocalActivity.current
 
@@ -126,9 +123,7 @@ fun AdminPrivacyPolicyScreen() {
     LaunchedEffect(Unit) { viewModel.loadPrivacyPolicy() }
 
     LaunchedEffect(currentPrivacyPolicy) {
-        if (currentPrivacyPolicy.isNotEmpty()) {
-            state.setHtml(currentPrivacyPolicy)
-        }
+            state.setHtml(currentPrivacyPolicy?: "")
     }
 
     Scaffold(
@@ -211,13 +206,13 @@ fun AdminPrivacyPolicyScreen() {
 @Composable
 fun PrivacyPolicyScreen() {
     val viewModel = remember { PrivacyPolicyViewModel(PrivacyPolicyRepoImpl()) }
-    val guidelines by viewModel.privacypolicy.collectAsState()
+    val guidelines by viewModel.privacypolicy.observeAsState()
     val state = rememberRichTextState()
 
     LaunchedEffect(Unit) { viewModel.loadPrivacyPolicy() }
 
     LaunchedEffect(guidelines) {
-        state.setHtml(guidelines)
+        state.setHtml(guidelines?: "")
     }
 
     Scaffold(
@@ -242,7 +237,7 @@ fun PrivacyPolicyScreen() {
                         .padding(24.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    if (guidelines.isEmpty()) {
+                    if (guidelines.isNullOrEmpty()) {
                         CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center),
                             color = Green

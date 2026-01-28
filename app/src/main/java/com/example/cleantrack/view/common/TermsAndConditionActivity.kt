@@ -5,15 +5,18 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.ParagraphStyle
@@ -36,13 +40,14 @@ import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.TermsAndConditionRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
-import com.example.cleantrack.viewmodel.NotificationViewModel
+import com.example.cleantrack.ui.theme.* import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.TermsAndConditionViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.mohamedrejeb.richeditor.model.RichTextState
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichText
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
+import com.mohamedrejeb.richeditor.ui.material3.RichTextEditorDefaults
 
 class TermsAndConditionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,132 +65,189 @@ class TermsAndConditionActivity : ComponentActivity() {
                 }
             }
 
-            MaterialTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-                        when {
-                            userModel == null -> {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                            }
-                            userModel?.role == "ADMIN" -> {
-                                AdminTermsScreen()
-                            }
-                            else -> {
-                                TermsScreen()
-                            }
-                        }
-                    }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(Blue, Green, Color.White), endY = 1100f))
+            ) {
+                when {
+                    userModel == null -> TermsScreen()
+                    userModel?.role == "ADMIN" -> AdminTermsScreen()
+                    else -> TermsScreen()
                 }
             }
         }
     }
 }
 
+// --- SHARED TOP BAR (Privacy Policy Style) ---
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TermsTopBar(title: String) {
+    val activity = LocalActivity.current
+    CenterAlignedTopAppBar(
+        title = { Text(title, fontWeight = FontWeight.ExtraBold, color = Color.White) },
+        navigationIcon = {
+            IconButton(onClick = { activity?.finish() }) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+    )
+}
+
+// --- ADMIN SCREEN (EDITOR) ---
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminTermsScreen() {
     val viewModel = remember { TermsAndConditionViewModel(TermsAndConditionRepoImpl()) }
     val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
-    val currentTerms by viewModel.termsAndCondition.collectAsState()
+    val currentTerms by viewModel.termsAndCondition.observeAsState()
     val context = LocalContext.current
-    val activity = context as Activity
+    val activity = LocalActivity.current
 
     val state = rememberRichTextState()
-    val titleSize = MaterialTheme.typography.displaySmall.fontSize
-    val subtitleSize = MaterialTheme.typography.titleLarge.fontSize
+    val titleSize = 24.sp
+    val subtitleSize = 18.sp
 
     LaunchedEffect(Unit) { viewModel.loadTermsAndCondition() }
 
     LaunchedEffect(currentTerms) {
-        if (currentTerms.isNotEmpty()) {
-            state.setHtml(currentTerms)
-        }
+        state.setHtml(currentTerms ?: "")
     }
 
-    Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
-        Text("Admin: Edit Terms & Conditions", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Controls(
-            modifier = Modifier.weight(2.5f),
-            state = state,
-            onBoldClick = { state.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold)) },
-            onItalicClick = { state.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic)) },
-            onUnderlineClick = { state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline)) },
-            onTitleClick = { state.toggleSpanStyle(SpanStyle(fontSize = titleSize)) },
-            onSubtitleClick = { state.toggleSpanStyle(SpanStyle(fontSize = subtitleSize)) },
-            onTextColorClick = { state.toggleSpanStyle(SpanStyle(color = Color.Red)) },
-            onStartAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.Start)) },
-            onEndAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.End)) },
-            onCenterAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.Center)) },
-            onExportClick = { Log.d("Editor", state.toHtml()) }
-        )
-
-        RichTextEditor(
-            modifier = Modifier.fillMaxWidth().weight(6.5f).border(1.dp, Color.LightGray, RoundedCornerShape(8.dp)),
-            state = state,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                viewModel.postTermsAndCondition(state.toHtml()) { success, msg ->
-                    if (success) {
-                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                        notificationVM.notifyAllRecipients(
-                            NotificationPayload(
-                                title = "Terms updated",
-                                message = "Please review the updated terms and conditions.",
-                                type = "policy",
-                                actionType = "terms"
-                            )
-                        )
-                        activity.finish()
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
+    Scaffold(
+        containerColor = Color.Transparent,
+        topBar = { TermsTopBar("Edit Terms & Conditions") }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            Text("Update Terms & Conditions")
+            Card(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(8.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    TermsEditorControls(
+                        state = state,
+                        onBoldClick = { state.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold)) },
+                        onItalicClick = { state.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic)) },
+                        onUnderlineClick = { state.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline)) },
+                        onTitleClick = { state.toggleSpanStyle(SpanStyle(fontSize = titleSize)) },
+                        onSubtitleClick = { state.toggleSpanStyle(SpanStyle(fontSize = subtitleSize)) },
+                        onTextColorClick = { state.toggleSpanStyle(SpanStyle(color = Color.Red)) },
+                        onStartAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.Start)) },
+                        onEndAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.End)) },
+                        onCenterAlignClick = { state.toggleParagraphStyle(ParagraphStyle(textAlign = TextAlign.Center)) }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    RichTextEditor(
+                        modifier = Modifier.fillMaxSize(),
+                        state = state,
+                        colors = RichTextEditorDefaults.richTextEditorColors(
+                            containerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    viewModel.postTermsAndCondition(state.toHtml()) { s, m ->
+                        if (s) {
+                            Toast.makeText(context, m, Toast.LENGTH_SHORT).show()
+                            notificationVM.notifyAllRecipients(
+                                NotificationPayload(
+                                    title = "Terms updated",
+                                    message = "Please review the updated terms and conditions.",
+                                    type = "policy",
+                                    actionType = "terms"
+                                )
+                            )
+                            activity?.finish()
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Green),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("Publish Update", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
         }
     }
 }
 
+// --- USER SCREEN (VIEWER) ---
+
 @Composable
 fun TermsScreen() {
     val viewModel = remember { TermsAndConditionViewModel(TermsAndConditionRepoImpl()) }
-    val content by viewModel.termsAndCondition.collectAsState()
+    val content by viewModel.termsAndCondition.observeAsState()
     val state = rememberRichTextState()
 
     LaunchedEffect(Unit) { viewModel.loadTermsAndCondition() }
 
     LaunchedEffect(content) {
-        state.setHtml(content)
+        state.setHtml(content ?: "")
     }
 
-    Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
-        Text("Terms & Conditions", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    Scaffold(
+        containerColor = Color.Transparent,
+        topBar = { TermsTopBar("Terms & Conditions") }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            Box(modifier = Modifier.padding(20.dp)) {
-                if (content.isEmpty()) {
-                    Text("Loading terms...")
-                } else {
-                    RichText(state = state)
+            Card(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    if (content.isNullOrEmpty()) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = Green
+                        )
+                    } else {
+                        RichText(state = state)
+                    }
                 }
             }
         }
     }
 }
 
+// --- EDITOR CONTROLS (Privacy Policy Style) ---
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun Controls(
-    modifier: Modifier = Modifier,
+fun TermsEditorControls(
     state: RichTextState,
     onBoldClick: () -> Unit,
     onItalicClick: () -> Unit,
@@ -195,135 +257,70 @@ fun Controls(
     onTextColorClick: () -> Unit,
     onStartAlignClick: () -> Unit,
     onEndAlignClick: () -> Unit,
-    onCenterAlignClick: () -> Unit,
-    onExportClick: () -> Unit,
+    onCenterAlignClick: () -> Unit
 ) {
     var boldSelected by rememberSaveable { mutableStateOf(false) }
     var italicSelected by rememberSaveable { mutableStateOf(false) }
     var underlineSelected by rememberSaveable { mutableStateOf(false) }
-    var titleSelected by rememberSaveable { mutableStateOf(false) }
-    var subtitleSelected by rememberSaveable { mutableStateOf(false) }
-    var textColorSelected by rememberSaveable { mutableStateOf(false) }
-    var linkSelected by rememberSaveable { mutableStateOf(false) }
     var alignmentSelected by rememberSaveable { mutableIntStateOf(0) }
     var showLinkDialog by remember { mutableStateOf(false) }
 
     if (showLinkDialog) {
-        LinkDialog(
-            onDismissRequest = {
+        TermsLinkDialog(
+            onDismissRequest = { showLinkDialog = false },
+            onConfirmation = { text, link ->
+                state.addLink(text = text, url = link)
                 showLinkDialog = false
-                linkSelected = false
-            },
-            onConfirmation = { linkText, link ->
-                state.addLink(text = linkText, url = link)
-                showLinkDialog = false
-                linkSelected = false
             }
         )
     }
 
     FlowRow(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Wrapper(
-            selected = boldSelected,
-            onChangeClick = { boldSelected = it },
-            onClick = onBoldClick
-        ) {
-            Icon(Icons.Default.FormatBold, contentDescription = "Bold", tint = Color.White)
+        TermsControlWrapper(selected = boldSelected, onChangeClick = { boldSelected = it }, onClick = onBoldClick) {
+            Icon(Icons.Default.FormatBold, "Bold", tint = if (boldSelected) Color.White else Green)
         }
-        Wrapper(
-            selected = italicSelected,
-            onChangeClick = { italicSelected = it },
-            onClick = onItalicClick
-        ) {
-            Icon(Icons.Default.FormatItalic, contentDescription = "Italic", tint = Color.White)
+        TermsControlWrapper(selected = italicSelected, onChangeClick = { italicSelected = it }, onClick = onItalicClick) {
+            Icon(Icons.Default.FormatItalic, "Italic", tint = if (italicSelected) Color.White else Green)
         }
-        Wrapper(
-            selected = underlineSelected,
-            onChangeClick = { underlineSelected = it },
-            onClick = onUnderlineClick
-        ) {
-            Icon(
-                Icons.Default.FormatUnderlined,
-                contentDescription = "Underline",
-                tint = Color.White
-            )
+        TermsControlWrapper(selected = underlineSelected, onChangeClick = { underlineSelected = it }, onClick = onUnderlineClick) {
+            Icon(Icons.Default.FormatUnderlined, "Underline", tint = if (underlineSelected) Color.White else Green)
         }
-        Wrapper(
-            selected = titleSelected,
-            onChangeClick = { titleSelected = it },
-            onClick = onTitleClick
-        ) {
-            Icon(Icons.Default.Title, contentDescription = "Title", tint = Color.White)
+        TermsControlWrapper(selected = false, onChangeClick = {}, onClick = onTitleClick) {
+            Icon(Icons.Default.Title, "Title", tint = Green)
         }
-        Wrapper(
-            selected = subtitleSelected,
-            onChangeClick = { subtitleSelected = it },
-            onClick = onSubtitleClick
-        ) {
-            Icon(Icons.Default.FormatSize, contentDescription = "Subtitle", tint = Color.White)
+        TermsControlWrapper(selected = false, onChangeClick = { showLinkDialog = true }, onClick = { showLinkDialog = true }) {
+            Icon(Icons.Default.AddLink, "Link", tint = Green)
         }
-        Wrapper(
-            selected = textColorSelected,
-            onChangeClick = { textColorSelected = it },
-            onClick = onTextColorClick
-        ) {
-            Icon(Icons.Default.FormatColorText, contentDescription = "Color", tint = Color.White)
+        TermsControlWrapper(selected = alignmentSelected == 0, onChangeClick = { alignmentSelected = 0 }, onClick = onStartAlignClick) {
+            Icon(Icons.Default.FormatAlignLeft, "Left", tint = if (alignmentSelected == 0) Color.White else Green)
         }
-        Wrapper(
-            selected = linkSelected,
-            onChangeClick = { linkSelected = it },
-            onClick = { showLinkDialog = true }) {
-            Icon(Icons.Default.AddLink, contentDescription = "Link", tint = Color.White)
-        }
-        Wrapper(
-            selected = alignmentSelected == 0,
-            onChangeClick = { alignmentSelected = 0 },
-            onClick = onStartAlignClick
-        ) {
-            Icon(Icons.Default.FormatAlignLeft, contentDescription = "Left", tint = Color.White)
-        }
-        Wrapper(
-            selected = alignmentSelected == 1,
-            onChangeClick = { alignmentSelected = 1 },
-            onClick = onCenterAlignClick
-        ) {
-            Icon(Icons.Default.FormatAlignCenter, contentDescription = "Center", tint = Color.White)
-        }
-        Wrapper(
-            selected = alignmentSelected == 2,
-            onChangeClick = { alignmentSelected = 2 },
-            onClick = onEndAlignClick
-        ) {
-            Icon(Icons.Default.FormatAlignRight, contentDescription = "Right", tint = Color.White)
+        TermsControlWrapper(selected = alignmentSelected == 1, onChangeClick = { alignmentSelected = 1 }, onClick = onCenterAlignClick) {
+            Icon(Icons.Default.FormatAlignCenter, "Center", tint = if (alignmentSelected == 1) Color.White else Green)
         }
     }
 }
 
 @Composable
-fun Wrapper(
+fun TermsControlWrapper(
     selected: Boolean,
-    selectedColor: Color = MaterialTheme.colorScheme.primary,
-    unselectedColor: Color = MaterialTheme.colorScheme.inversePrimary,
     onChangeClick: (Boolean) -> Unit,
     onClick: () -> Unit,
     content: @Composable () -> Unit
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(size = 6.dp))
+            .size(40.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) Green else Color.Transparent)
+            .border(1.dp, Green, RoundedCornerShape(8.dp))
             .clickable {
                 onClick()
                 onChangeClick(!selected)
-            }
-            .background(if (selected) selectedColor else unselectedColor)
-            .border(width = 1.dp, color = Color.LightGray, shape = RoundedCornerShape(size = 6.dp))
-            .padding(all = 8.dp),
+            },
         contentAlignment = Alignment.Center
     ) {
         content()
@@ -331,33 +328,24 @@ fun Wrapper(
 }
 
 @Composable
-fun Link(onDismissRequest: () -> Unit, onConfirmation: (String, String) -> Unit) {
+fun TermsLinkDialog(onDismissRequest: () -> Unit, onConfirmation: (String, String) -> Unit) {
     var linkText by remember { mutableStateOf("") }
     var linkUrl by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("Add Link") },
+        confirmButton = {
+            TextButton(onClick = { onConfirmation(linkText, linkUrl) }) { Text("Confirm", color = Green) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) { Text("Cancel", color = Color.Gray) }
+        },
+        title = { Text("Add Link", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextField(
-                    value = linkText,
-                    onValueChange = { linkText = it },
-                    label = { Text("Display Text") })
-                TextField(
-                    value = linkUrl,
-                    onValueChange = { linkUrl = it },
-                    label = { Text("URL") })
+                OutlinedTextField(value = linkText, onValueChange = { linkText = it }, label = { Text("Text") })
+                OutlinedTextField(value = linkUrl, onValueChange = { linkUrl = it }, label = { Text("URL") })
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onConfirmation(
-                    linkText,
-                    linkUrl
-                )
-            }) { Text("Confirm") }
-        },
-        dismissButton = { TextButton(onClick = onDismissRequest) { Text("Dismiss") } }
+        }
     )
 }
