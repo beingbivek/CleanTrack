@@ -273,7 +273,10 @@ fun HomeSection(
                             if (isPremium) context.startActivity(Intent(context,
                                 LeaderboardActivity::class.java)) else onShowPremiumGate()
                         }
-                        QuickIcon(Icons.Outlined.Terrain, "Landfill", isOutline = true)
+                        QuickIcon(icon = Icons.Default.AccessTime, "Points History", isOutline = false){
+                            context.startActivity(Intent(context, PointsHistoryActivity::class.java))
+                        }
+
                         LockedQuickIcon(icon = Icons.Default.RestoreFromTrash, label = "Manage Bins", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserBinListActivity::class.java)) else onShowPremiumGate()
                         }
