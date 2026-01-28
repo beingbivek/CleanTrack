@@ -318,7 +318,7 @@ fun HomeSection(
                     Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
                         LockedQuickIcon(icon = Icons.Default.History, label = "Bin History", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context,
-                                UserBinHistoryActivity::class.java)) else onShowPremiumGate()
+                                BinHistoryActivity::class.java)) else onShowPremiumGate()
                         }
                         LockedQuickIcon(icon = Icons.Default.Leaderboard, label = "Leaderboard", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context,
