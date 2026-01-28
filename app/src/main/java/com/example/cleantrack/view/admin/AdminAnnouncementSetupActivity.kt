@@ -29,7 +29,7 @@ import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.repository.AnnouncementRepoImpl
 import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
-import com.example.cleantrack.ui.theme.Green // Assuming your Primary Green is named Green or PrimaryGreen
+import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.NotificationViewModel
 
@@ -38,7 +38,6 @@ class AdminAnnouncementSetupActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val announcementId = intent.getStringExtra("ANNOUNCEMENT_ID")
-
         setContent {
             AdminAnnouncementSetupScreen(announcementId)
         }
@@ -58,28 +57,22 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
     var title by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("General") }
-
-    // Loading for initial data fetch
-    var isInitialLoading by remember { mutableStateOf(false) }
-    // Loading for button click
     var isPosting by remember { mutableStateOf(false) }
 
     val categories = listOf("General", "Urgent", "Schedule", "Holiday")
-    val allAnnouncements by announcementVM.allAnnouncements.observeAsState(emptyList())
 
-    // 1. Load data if in Edit mode
+    // --- RESTORING YOUR PAST WORKING LOGIC ---
+    // We observe the list from the VM just like your past working code did
+    val allAnnouncements by announcementVM.allAnnouncements.observeAsState(null)
+
+    // Trigger fetch on start
     LaunchedEffect(Unit) {
-        if (announcementId != null) {
-            isInitialLoading = true
-            announcementVM.getAllAnnouncements { _, _, _ ->
-                isInitialLoading = false
-            }
-        }
+        announcementVM.getAllAnnouncements { _, _, _ -> }
     }
 
-    // 2. Pre-fill data
+    // Pre-fill data when list arrives (This was your past working logic)
     LaunchedEffect(allAnnouncements) {
-        if (announcementId != null) {
+        if (announcementId != null && allAnnouncements != null) {
             val existing = allAnnouncements?.find { it.id == announcementId }
             existing?.let {
                 title = it.title
@@ -107,38 +100,27 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
                     title = {
                         Text(
                             if (announcementId == null) "New Announcement" else "Edit Announcement",
-                            style = TextStyle(
-                                color = Color.White,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 20.sp
-                            )
+                            style = TextStyle(color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = { activity.finish() }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                         }
                     },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color.Transparent
-                    )
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
                 )
             }
         ) { padding ->
-            if (isInitialLoading) {
+            // --- UPDATED LOADING LOGIC ---
+            // Only show spinner if we are EDITING and the data hasn't arrived yet
+            if (announcementId != null && allAnnouncements == null) {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Green)
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 20.dp),
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(top = 10.dp, bottom = 30.dp)
                 ) {
@@ -149,10 +131,7 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("Title") },
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Green,
-                                focusedLabelColor = Green
-                            )
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, focusedLabelColor = Green)
                         )
                     }
 
@@ -169,24 +148,16 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
                         OutlinedTextField(
                             value = message,
                             onValueChange = { message = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp),
+                            modifier = Modifier.fillMaxWidth().height(180.dp),
                             label = { Text("Message Body") },
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Green,
-                                focusedLabelColor = Green
-                            )
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, focusedLabelColor = Green)
                         )
                     }
 
                     item {
-                        Spacer(Modifier.height(8.dp))
                         Button(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
                             enabled = !isPosting,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Green),
@@ -211,12 +182,7 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
                                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                         if (success) {
                                             notificationVM.notifyAllUsersAndDrivers(
-                                                NotificationPayload(
-                                                    title = "New announcement",
-                                                    message = model.title,
-                                                    type = "announcement",
-                                                    actionType = "announcement"
-                                                )
+                                                NotificationPayload("New announcement", model.title, "announcement", "announcement")
                                             )
                                             activity.finish()
                                         }
@@ -231,17 +197,9 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
                             }
                         ) {
                             if (isPosting) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                             } else {
-                                Text(
-                                    if (announcementId == null) "Post Announcement" else "Save Changes",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
+                                Text(if (announcementId == null) "Post Announcement" else "Save Changes", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -251,6 +209,7 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
     }
 }
 
+// Ensure your AnnouncementDropdown stays the same as your working version
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnnouncementDropdown(label: String, value: String, options: List<String>, onSelect: (String) -> Unit) {
@@ -262,28 +221,13 @@ fun AnnouncementDropdown(label: String, value: String, options: List<String>, on
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(),
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Green,
-                focusedLabelColor = Green
-            )
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, focusedLabelColor = Green)
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color.White)
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach {
-                DropdownMenuItem(
-                    text = { Text(it) },
-                    onClick = {
-                        onSelect(it)
-                        expanded = false
-                    }
-                )
+                DropdownMenuItem(text = { Text(it) }, onClick = { onSelect(it); expanded = false })
             }
         }
     }
