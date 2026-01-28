@@ -2,6 +2,7 @@ package com.example.cleantrack.view.driver
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -125,8 +126,10 @@ class DriverScanBinActivity : ComponentActivity() {
                 ) { calculatedPoints ->
                     pointsRepo.addPointsToUser(
                         userId = bin.ownerUserId,
-                        points = calculatedPoints
+                        points = calculatedPoints,
+
                     )
+
                 }
                 Toast.makeText(this, "Bin rated successfully", Toast.LENGTH_SHORT).show()
                 finish()
