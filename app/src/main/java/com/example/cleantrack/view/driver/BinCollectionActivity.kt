@@ -233,6 +233,9 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                                     isSegregated = isSegregated
                                 ) { success, msg ->
                                     if (success) {
+
+                                        // --- ADDED THIS TOAST ---
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                         aiRepo.saveProcessedInsight(
                                             collection = BinCollectionModel(tripId = tripId, rating = rating, weight = weight, segregatedCorrectly = isSegregated),
                                             aiReview = aiFeedback,

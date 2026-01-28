@@ -447,6 +447,9 @@ class ActiveTripViewModel(
                         if (userRouteId.isNotEmpty()) {
                             loadBinStats(userRouteId, tripId)
                         }
+                        _loading.postValue(false)
+                        // Send a custom message back to the UI
+                        callback(true, "Collected! +$calculatedPoints points awarded.")
                     }
                     _loading.postValue(false)
                     callback(saveSuccess, saveMessage)

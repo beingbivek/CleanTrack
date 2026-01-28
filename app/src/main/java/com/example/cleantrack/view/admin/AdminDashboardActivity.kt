@@ -41,6 +41,8 @@ import com.example.cleantrack.view.common.*
 import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.util.NotificationHelper
+import com.example.cleantrack.view.auth.ResetPasswordActivity
+import com.example.cleantrack.view.user.ProfileMenuItem
 import kotlinx.coroutines.launch
 
 class AdminDashboardActivity : ComponentActivity() {
@@ -277,6 +279,11 @@ fun AdminProfileSection(padding: PaddingValues, userProfile: UserModel?, onLogou
 
                 AdminMenuItem(Icons.Default.Rule, "Points System Rules") {
                     context.startActivity(Intent(context, AdminPointsRuleListActivity::class.java))
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                ProfileMenuItem(Icons.Default.LockReset, "Reset Password") {
+                    val intent = Intent(context, ResetPasswordActivity::class.java).apply { putExtra("USER_ID", userProfile?.userId) }
+                    context.startActivity(intent)
                 }
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
 
