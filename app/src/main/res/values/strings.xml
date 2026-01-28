@@ -47,4 +47,5 @@
     <string name="title_activity_reset_password">ResetPasswordActivity</string>
     <string name="title_activity_user_bin_history">UserBinHistoryActivity</string>
     <string name="title_activity_no_internet">NoInternetActivity</string>
+    <string name="title_activity_bin_history">BinHistoryActivity</string>
 </resources>
