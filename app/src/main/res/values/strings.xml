@@ -44,4 +44,5 @@
     <string name="title_activity_demo_driver_dash">DemoDriverDashActivity</string>
     <string name="title_activity_drivers_trip_history">DriversTripHistoryActivity</string>
     <string name="title_activity_leader_board">LeaderBoardActivity</string>
+    <string name="title_activity_points_history">PointsHistoryActivity</string>
 </resources>
