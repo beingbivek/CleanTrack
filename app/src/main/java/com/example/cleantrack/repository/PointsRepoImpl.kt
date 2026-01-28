@@ -8,6 +8,8 @@ import com.example.cleantrack.model.UserPointsModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.MutableData
+import com.google.firebase.database.Transaction
 import com.google.firebase.database.ValueEventListener
 
 class PointsRepoImpl : PointsRepo {
@@ -137,6 +139,35 @@ class PointsRepoImpl : PointsRepo {
                     callback(emptyList())
                 }
             })
+    }
+
+    override fun deductPoints(userId: String, amount: Int, description: String, callback: (Boolean, String) -> Unit) {
+        val ref = userPointsRef.child(userId)
+        ref.runTransaction(object : Transaction.Handler {
+            override fun doTransaction(mutableData: MutableData): Transaction.Result {
+                val model = mutableData.getValue(UserPointsModel::class.java)
+                if (model == null || model.totalPoints < amount) return Transaction.abort()
+
+                model.totalPoints -= amount
+                mutableData.value = model
+                return Transaction.success(mutableData)
+            }
+
+            override fun onComplete(error: DatabaseError?, committed: Boolean, snapshot: DataSnapshot?) {
+                if (committed) {
+                    // Log the deduction in Points History for transparency
+                    val txn = PointsTransactionModel(
+                        userId = userId,
+                        amount = -amount,
+                        type = "REDEEMED",
+                        description = description
+                    )
+                    saveTransaction(txn) { callback(true, "Points deducted") }
+                } else {
+                    callback(false, error?.message ?: "Insufficient points")
+                }
+            }
+        })
     }
 
 

@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.repository.NotificationRepoImpl
 import com.example.cleantrack.repository.PaymentRepoImpl
+import com.example.cleantrack.repository.PointsRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.Blue
@@ -58,7 +60,8 @@ class PaymentActivity : ComponentActivity() {
         val userId = intent.getStringExtra("USER_ID") ?: ""
 
         userViewModel = UserViewModel(UserRepoImpl())
-        paymentViewModel = PaymentViewModel(PaymentRepoImpl(), UserRepoImpl())
+        // UPDATED: Initializing PaymentViewModel with PointsRepoImpl
+        paymentViewModel = PaymentViewModel(PaymentRepoImpl(), UserRepoImpl(), PointsRepoImpl())
 
         paymentSheet = PaymentSheet(this) { result ->
             when (result) {
@@ -159,7 +162,6 @@ fun PaymentScreen(
         }
     }
 
-    // --- REPLICATED BACK BUTTON LOGIC FROM REFERENCE ---
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -201,11 +203,23 @@ fun PaymentScreen(
                     if (isPremium) {
                         ActiveSubscriptionCard(expiryDate = userProfile?.subscription?.expiryDate ?: 0L)
                     } else {
+                        // 1. Existing Stripe Offer Card
                         SubscriptionOfferCard(
                             isLoading = paymentState is PaymentState.Loading,
                             amount = subscriptionAmount.ifBlank { "500" },
                             onSubscribe = {
                                 paymentViewModel.processMonthlySubscription(subscriptionAmount.ifBlank { "500" })
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // 2. NEW: Points Redemption Card
+                        PointsRedemptionCard(
+                            isLoading = paymentState is PaymentState.Loading,
+                            pointsNeeded = subscriptionAmount.ifBlank { "500" }.toInt(),
+                            onRedeem = { points ->
+                                paymentViewModel.processPointsPayment(points)
                             }
                         )
                     }
@@ -228,7 +242,40 @@ fun PaymentScreen(
     }
 }
 
-// Cards (ActiveSubscriptionCard, SubscriptionOfferCard, BenefitItem) remain the same...
+@Composable
+fun PointsRedemptionCard(isLoading: Boolean, pointsNeeded: Int, onRedeem: (Int) -> Unit) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)), // Light Greenish background
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Stars, contentDescription = null, tint = Color(0xFFFBC02D))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("REWARDS REDEMPTION", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("Pay with Points", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+            Text("Use $pointsNeeded reward points to pay your fee", color = Color.Gray, fontSize = 13.sp)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = { onRedeem(pointsNeeded) },
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+            ) {
+                Text("Redeem $pointsNeeded Points", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+// --- EXISTING CARDS REMAIN UNCHANGED ---
 
 @Composable
 fun ActiveSubscriptionCard(expiryDate: Long) {

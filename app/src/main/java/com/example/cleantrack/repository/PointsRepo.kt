@@ -22,5 +22,6 @@ interface PointsRepo {
     fun saveTransaction(transaction: PointsTransactionModel, callback: (Boolean) -> Unit)
 
     fun getPointsHistory(userId: String, callback: (List<PointsTransactionModel>) -> Unit)
+    fun deductPoints(userId: String, amount: Int, description: String, callback: (Boolean, String) -> Unit)
 
 }
