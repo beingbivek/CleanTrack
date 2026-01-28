@@ -6,34 +6,44 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.AnnouncementModel
+import com.example.cleantrack.model.NotificationPayload
 import com.example.cleantrack.repository.AnnouncementRepoImpl
+import com.example.cleantrack.repository.NotificationRepoImpl
+import com.example.cleantrack.repository.UserRepoImpl
+import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
+import com.example.cleantrack.viewmodel.NotificationViewModel
 
 class AdminAnnouncementSetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val announcementId = intent.getStringExtra("ANNOUNCEMENT_ID")
-
         setContent {
             AdminAnnouncementSetupScreen(announcementId)
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminAnnouncementSetupScreen(announcementId: String?) {
@@ -41,33 +51,28 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
     val activity = context as Activity
 
     val announcementVM = remember { AnnouncementViewModel(AnnouncementRepoImpl()) }
+    val notificationVM = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
     // UI states
     var title by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("General") }
-    var isLoading by remember { mutableStateOf(false) }
-
-
+    var isPosting by remember { mutableStateOf(false) }
 
     val categories = listOf("General", "Urgent", "Schedule", "Holiday")
 
-    // Observe all announcements to find the one we need to edit
-    val allAnnouncements by announcementVM.allAnnouncements.observeAsState(emptyList())
+    // --- RESTORING YOUR PAST WORKING LOGIC ---
+    // We observe the list from the VM just like your past working code did
+    val allAnnouncements by announcementVM.allAnnouncements.observeAsState(null)
 
-    // 1. Load data if in Edit mode
+    // Trigger fetch on start
     LaunchedEffect(Unit) {
-        if (announcementId != null) {
-
-            announcementVM.getAllAnnouncements { _, _, _ ->
-
-            }
-        }
+        announcementVM.getAllAnnouncements { _, _, _ -> }
     }
 
-    // 2. Pre-fill data when found in the list
+    // Pre-fill data when list arrives (This was your past working logic)
     LaunchedEffect(allAnnouncements) {
-        if (announcementId != null) {
+        if (announcementId != null && allAnnouncements != null) {
             val existing = allAnnouncements?.find { it.id == announcementId }
             existing?.let {
                 title = it.title
@@ -77,110 +82,148 @@ fun AdminAnnouncementSetupScreen(announcementId: String?) {
         }
     }
 
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (announcementId == null) "New Announcement" else "Edit Announcement") },
-                navigationIcon = {
-                    IconButton(onClick = { activity.finish() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null)
-                    }
-                }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Green, Color.White),
+                    startY = 0f,
+                    endY = 1000f
+                )
             )
-        }
-    ) { padding ->
-        if (isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            if (announcementId == null) "New Announcement" else "Edit Announcement",
+                            style = TextStyle(color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { activity.finish() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+                )
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Title") }
-                    )
+        ) { padding ->
+            // --- UPDATED LOADING LOGIC ---
+            // Only show spinner if we are EDITING and the data hasn't arrived yet
+            if (announcementId != null && allAnnouncements == null) {
+                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Green)
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(top = 10.dp, bottom = 30.dp)
+                ) {
+                    item {
+                        OutlinedTextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Title") },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, focusedLabelColor = Green)
+                        )
+                    }
 
-                item {
-                    AnnouncementDropdown(
-                        label = "Category",
-                        value = category,
-                        options = categories,
-                        onSelect = { category = it }
-                    )
-                }
+                    item {
+                        AnnouncementDropdown(
+                            label = "Category",
+                            value = category,
+                            options = categories,
+                            onSelect = { category = it }
+                        )
+                    }
 
-                item {
-                    OutlinedTextField(
-                        value = message,
-                        onValueChange = { message = it },
-                        modifier = Modifier.fillMaxWidth().height(150.dp),
-                        label = { Text("Message Body") }
-                    )
-                }
+                    item {
+                        OutlinedTextField(
+                            value = message,
+                            onValueChange = { message = it },
+                            modifier = Modifier.fillMaxWidth().height(180.dp),
+                            label = { Text("Message Body") },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, focusedLabelColor = Green)
+                        )
+                    }
 
-                item {
-                    Button(
-                        modifier = Modifier.fillMaxWidth().height(55.dp),
-                        onClick = {
-                            if (title.isBlank() || message.isBlank()) {
-                                Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                                return@Button
+                    item {
+                        Button(
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            enabled = !isPosting,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Green),
+                            onClick = {
+                                if (title.isBlank() || message.isBlank()) {
+                                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+
+                                isPosting = true
+                                val model = AnnouncementModel(
+                                    id = announcementId ?: "",
+                                    title = title,
+                                    message = message,
+                                    category = category,
+                                    timestamp = System.currentTimeMillis()
+                                )
+
+                                if (announcementId == null) {
+                                    announcementVM.postAnnouncement(model) { success, msg ->
+                                        isPosting = false
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        if (success) {
+                                            notificationVM.notifyAllUsersAndDrivers(
+                                                NotificationPayload("New announcement", model.title, "announcement", "announcement")
+                                            )
+                                            activity.finish()
+                                        }
+                                    }
+                                } else {
+                                    announcementVM.editAnnouncement(announcementId, model) { success, msg ->
+                                        isPosting = false
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        if (success) activity.finish()
+                                    }
+                                }
                             }
-
-                            val model = AnnouncementModel(
-                                id = announcementId ?: "",
-                                title = title,
-                                message = message,
-                                category = category,
-                                timestamp = System.currentTimeMillis()
-                            )
-
-                            if (announcementId == null) {
-                                // CREATE MODE
-                                announcementVM.postAnnouncement(model) { success, msg ->
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                    if (success) activity.finish()
-                                }
+                        ) {
+                            if (isPosting) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                             } else {
-                                // EDIT MODE
-                                announcementVM.editAnnouncement(announcementId, model) { success, msg ->
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                    if (success) activity.finish()
-                                }
+                                Text(if (announcementId == null) "Post Announcement" else "Save Changes", fontWeight = FontWeight.Bold)
                             }
                         }
-                    ) {
-                        Text(if (announcementId == null) "Post Announcement" else "Save Changes")
                     }
-
                 }
             }
         }
     }
-
-
 }
 
+// Ensure your AnnouncementDropdown stays the same as your working version
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnnouncementDropdown(label: String, value: String, options: List<String>, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
-            value = value, onValueChange = {}, readOnly = true, label = { Text(label) },
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor()
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, focusedLabelColor = Green)
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach {

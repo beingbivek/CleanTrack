@@ -1,65 +1,42 @@
 package com.example.cleantrack.view.admin
 
+import android.app.Activity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.UserRepoImpl
-import com.example.cleantrack.ui.theme.AccentRed
-import com.example.cleantrack.ui.theme.BackgroundLightGray
-import com.example.cleantrack.ui.theme.CleanTrackTheme
 import com.example.cleantrack.ui.theme.PrimaryGreen
 import com.example.cleantrack.viewmodel.UserViewModel
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.foundation.lazy.items
-
 
 class UserManagementActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,177 +48,160 @@ class UserManagementActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserManagementScreen() {
-
+    val context = LocalContext.current
+    val activity = context as? Activity
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-    // Start listening to users collection
+
+    // UI states
+    var isSaving by remember { mutableStateOf(false) }
+    var editingUser by remember { mutableStateOf<UserModel?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var userToDeleteId by remember { mutableStateOf<String?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // Fetch users on start
     LaunchedEffect(Unit) {
         userViewModel.getAllUsers()
     }
 
-    val allUsers by userViewModel.allUsers.observeAsState(initial = null)
-
+    val allUsers by userViewModel.allUsers.observeAsState(initial = emptyList())
     val loading by userViewModel.loading.observeAsState(initial = false)
-
     val total = allUsers?.size ?: 0
 
-
-
-
-    var editingUser by remember { mutableStateOf<UserModel?>(null) }
-    var showEditDialog by remember { mutableStateOf(false) }
-
-    var userToDeleteId by remember { mutableStateOf<String?>(null) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    Scaffold(
-        topBar = { UserHeader(userCount = total) }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(BackgroundLightGray)
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Text(
-                    "Registered Users ($total)",
-                    style = TextStyle(
-                        color = Color.Black,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    ),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(PrimaryGreen, Color.White),
+                    startY = 0f,
+                    endY = 1000f
                 )
-
-                LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-
-                    val userList = allUsers ?: emptyList()
-                    items(userList, key = { it.userId }) { user ->
-                        UserCard(
-                            user = user,
-                            onEdit = {
-                                editingUser = user
-                                showEditDialog = true
-                            },
-                            onDelete = { uid ->
-                                userToDeleteId = uid
-                                showDeleteDialog = true
-                            }
+            )
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            "User Management",
+                            style = TextStyle(color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
                         )
-                    }
-                }
-            }
-
-            // Edit Dialog
-            if (showEditDialog && editingUser != null) {
-                EditUserDialog(
-                    user = editingUser!!,
-                    onDismiss = {
-                        showEditDialog = false
-                        editingUser = null
                     },
-                    onSave = { updated ->
-                        val id = updated.userId   ?: ""
-                        userViewModel.editUserProfile(id,updated) { success, err ->
-                            // optional: show result via snackbar/toast
-                            showEditDialog = false
-                            editingUser = null
+                    navigationIcon = {
+                        IconButton(onClick = { activity?.finish() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+                )
+            }
+        ) { padding ->
+            // Use a Box here so the Loader can overlay the content
+            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        "Registered Users ($total)",
+                        style = TextStyle(color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                    )
+
+                    // Only show list if not loading and list isn't empty
+                    if (!loading) {
+                        LazyColumn(
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                top = 8.dp,
+                                end = 16.dp,
+                                bottom = 100.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(allUsers ?: emptyList(), key = { it.userId ?: "" }) { user ->
+                                UserCard(
+                                    user = user,
+                                    onEdit = {
+                                        editingUser = user
+                                        showEditDialog = true
+                                    },
+                                    onDelete = { uid ->
+                                        userToDeleteId = uid
+                                        showDeleteDialog = true
+                                    }
+                                )
+                            }
                         }
                     }
-                )
-            }
+                }
 
-            // Delete confirmation dialog
-            if (showDeleteDialog && userToDeleteId != null) {
-                AlertDialog(
-                    onDismissRequest = { showDeleteDialog = false; userToDeleteId = null },
-                    title = { Text("Confirm Deletion") },
-                    text = { Text("Are you sure you want to delete user ?") },
-                    confirmButton = {
-                        Button(onClick = {
-                            val id = userToDeleteId
-                            if (!id.isNullOrBlank()) {
-                                userViewModel.deleteUser(id) { success, err ->
-                                    // optional: show result via snackbar/toast
+                // Center the loader in the middle of the Scaffold area
+                if (loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = PrimaryGreen,
+                        strokeWidth = 4.dp
+                    )
+                }
+            }
+        }
+
+        // Edit Dialog
+        if (showEditDialog && editingUser != null) {
+            EditUserDialog(
+                user = editingUser!!,
+                isLoading = isSaving,
+                onDismiss = { if (!isSaving) showEditDialog = false },
+                onSave = { updated ->
+                    isSaving = true
+                    userViewModel.editUserProfile(updated.userId ?: "", updated) { success, msg ->
+                        isSaving = false
+                        Toast.makeText(context, msg ?: "Profile Updated", Toast.LENGTH_SHORT).show()
+                        if (success) {
+                            showEditDialog = false
+                            userViewModel.getAllUsers()
+                        }
+                    }
+                }
+            )
+        }
+
+        // Delete Dialog
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { if (!isSaving) showDeleteDialog = false },
+                shape = RoundedCornerShape(20.dp),
+                title = { Text("Confirm Deletion", fontWeight = FontWeight.Bold) },
+                text = { Text("Are you sure you want to remove this user?") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            userToDeleteId?.let { id ->
+                                isSaving = true
+                                userViewModel.deleteUser(id) { success, msg ->
+                                    isSaving = false
+                                    Toast.makeText(context, msg ?: "User Deleted", Toast.LENGTH_SHORT).show()
+                                    if (success) userViewModel.getAllUsers()
                                 }
                             }
                             showDeleteDialog = false
-                            userToDeleteId = null
-                        }, colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)) {
-                            Text("Yes", color = Color.White)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = {
-                            showDeleteDialog = false
-                            userToDeleteId = null
-                        }) {
-                            Text("No", color = Color.Gray)
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        enabled = !isSaving
+                    ) {
+                        Text("Delete", color = Color.White)
                     }
-                )
-            }
-
-            // Optional: show a simple loading indicator (you can replace with a nicer one)
-            if (loading == true) {
-                // Very simple center text — replace with CircularProgressIndicator if you want
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Loading...", color = Color.Gray)
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }, enabled = !isSaving) {
+                        Text("Cancel", color = Color.Gray)
+                    }
                 }
-            }
-
-
-
-        }
-    }
-}
-
-@Composable
-fun UserHeader(userCount: Int) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .height(64.dp)
-            .background(PrimaryGreen)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Filled.Settings,
-                contentDescription = "Settings",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Text(
-                    "User Management",
-                    style = TextStyle(
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 20.sp
-                    )
-                )
-                Text(
-                    "Registered Users ($userCount)",
-                    style = TextStyle(
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.sp
-                    )
-                )
-            }
         }
     }
 }
@@ -249,148 +209,108 @@ fun UserHeader(userCount: Int) {
 @Composable
 fun UserCard(user: UserModel, onEdit: (UserModel) -> Unit, onDelete: (String) -> Unit) {
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .background(PrimaryGreen.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryGreen)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "${user.fullname} (${user.role})",
-                    style = TextStyle(
-                        color = Color.Black,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    user.email,
-                    style = TextStyle(color = Color.Gray, fontSize = 14.sp)
+                    user.fullname ?: "No Name",
+                    style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
                 )
                 Text(
-                    "Phone: ${user.number}",
-                    style = TextStyle(color = Color.Gray, fontSize = 14.sp)
+                    user.role ?: "USER",
+                    style = TextStyle(fontSize = 12.sp, color = PrimaryGreen, fontWeight = FontWeight.Medium)
+                )
+                Text(
+                    user.email ?: "",
+                    style = TextStyle(color = Color.Gray, fontSize = 13.sp)
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Edit
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onEdit(user) }
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.Edit,
-                        contentDescription = "Edit User",
-                        tint = PrimaryGreen,
-                        modifier = Modifier.size(20.dp)
-                    )
+            Row {
+                IconButton(onClick = { onEdit(user) }) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = PrimaryGreen)
                 }
-
-                // Delete
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onDelete(user.userId ?: "") }
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = "Delete User",
-                        tint = AccentRed,
-                        modifier = Modifier.size(20.dp)
-                    )
+                IconButton(onClick = { onDelete(user.userId ?: "") }) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color.Red)
                 }
             }
         }
     }
 }
 
-//private fun Unit.height(dp: Dp): Modifier {}
-
 @Composable
-fun EditUserDialog(user: UserModel, onDismiss: () -> Unit, onSave: (UserModel) -> Unit) {
+fun EditUserDialog(
+    user: UserModel,
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (UserModel) -> Unit
+) {
     var name by remember { mutableStateOf(user.fullname) }
     var email by remember { mutableStateOf(user.email) }
     var phone by remember { mutableStateOf(user.number) }
     var role by remember { mutableStateOf(user.role) }
-
-    // Dropdown state
-    val roles = listOf("USER", "DRIVER", "ADMIN")
     var expanded by remember { mutableStateOf(false) }
+    val roles = listOf("USER", "DRIVER", "ADMIN")
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    "Edit User: ${user.fullname}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Text("Edit User Details", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = PrimaryGreen)
+                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    value = name ?: "", onValueChange = { name = it },
+                    label = { Text("Name") }, shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(), enabled = !isLoading
                 )
+                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    value = email ?: "", onValueChange = { email = it },
+                    label = { Text("Email") }, shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(), enabled = !isLoading
                 )
+                Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = { phone = it },
-                    label = { Text("Phone") },
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                )
-
-                // Role dropdown: admin can only pick from USER, DRIVER, ADMIN
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
-                        value = role,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = role ?: "USER", onValueChange = {}, readOnly = true,
+                        label = { Text("Role") }, shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
                         trailingIcon = {
-                            Icon(
-                                Icons.Filled.ArrowDropDown,
-                                contentDescription = "Role dropdown",
-                                modifier = Modifier.clickable { expanded = !expanded }
-                            )
-                        },
-                        label = { Text("Role") },
-                        modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+                            IconButton(onClick = { if (!isLoading) expanded = true }) {
+                                Icon(Icons.Filled.ArrowDropDown, null)
+                            }
+                        }
                     )
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         roles.forEach { r ->
                             DropdownMenuItem(text = { Text(r) }, onClick = {
                                 role = r
@@ -400,43 +320,31 @@ fun EditUserDialog(user: UserModel, onDismiss: () -> Unit, onSave: (UserModel) -
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel", color = Color.Gray)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoading
+                    ) { Text("Cancel", color = Color.Gray) }
+
                     Button(
-                        onClick = {
-                            val updated = user.copy(
-                                fullname = name,
-                                email = email,
-                                number = phone,
-                                role = role
-                            )
-                            onSave(updated)
-                        },
+                        onClick = { onSave(user.copy(fullname = name, email = email, number = phone, role = role)) },
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                        shape = RoundedCornerShape(8.dp)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoading
                     ) {
-                        Text("Save Changes", color = Color.White)
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text("Save", color = Color.White)
+                        }
                     }
                 }
             }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun UserManagementPreview() {
-    CleanTrackTheme {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Text("Preview - run on device/emulator")
         }
     }
 }

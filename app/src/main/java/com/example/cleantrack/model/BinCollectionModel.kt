@@ -6,7 +6,8 @@ data class BinCollectionModel(
     var driverId: String = "",
     var userId: String = "", // User who owns the bin
     var tripId: String = "",
-    var rating: Int = 0,  // Rating given by the driver (0-5)
+    var rating: Int = 0, // Rating given by the driver (0-5)
+    var weight: Double = 0.0,
     var remarks: String = "",
     val aiFeedback: String = "",
     var segregatedCorrectly: Boolean = false, // Is it segregated correctly?
@@ -21,6 +22,7 @@ data class BinCollectionModel(
             "userId" to userId,
             "tripId" to tripId,
             "rating" to rating,
+            "weight" to weight,
             "remarks" to remarks,
             "aiFeedback" to aiFeedback,
             "segregatedCorrectly" to segregatedCorrectly,

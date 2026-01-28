@@ -57,13 +57,12 @@ class ActiveTripViewModel(
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         val currentTime = sdf.format(Date())
 
-        // --- NEW: If time has already passed, force the status to COMPLETED and block restart ---
+        // 1. Check if Shift has expired
         if (currentTime > schedule.endTime) {
             repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
                 if (existingTrip?.status == "ACTIVE") {
-                    // Automatically finalize the trip in the database
                     repo.endTrip(existingTrip.tripId) { _, _ ->
-                        _activeTrip.postValue(null)
+                        _activeTrip.postValue(existingTrip.copy(status = "COMPLETED"))
                     }
                 }
             }
@@ -71,49 +70,69 @@ class ActiveTripViewModel(
             return
         }
 
-        // --- Existing logic for valid time window ---
-        if (currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
-            repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
-                when {
-                    existingTrip?.status == "COMPLETED" -> {
-                        // Allow restart only if there are bins left to collect
-                        userRepo.getUsersByRoute(schedule.routeId) { success, _, users ->
-                            if (success && users != null) {
-                                val userIds = users.map { it.userId }
-                                binRepo.getBinsByOwnerIds(userIds) { bins ->
-                                    collectionRepo.getCollectionsByTripOnce(existingTrip.tripId) { _, _, collections ->
-                                        if ((collections?.size ?: 0) >= bins.size && bins.isNotEmpty()) {
-                                            callback(false, "Route fully collected. Cannot restart.")
-                                        } else {
-                                            repo.resumeTrip(existingTrip.tripId) { s, m ->
-                                                if (s) {
-                                                    val resumed = existingTrip.copy(status = "ACTIVE")
-                                                    _activeTrip.postValue(resumed)
-                                                    loadBinStats(resumed.routeId, resumed.tripId)
-                                                }
-                                                callback(s, m)
+        // 2. Check if it's too early
+        if (currentTime < schedule.startTime) {
+            callback(false, "Route starts at ${schedule.startTime}.")
+            return
+        }
+
+        // 3. Main Logic for Valid Time Window
+        repo.checkExistingTrip(schedule.scheduleId) { existingTrip ->
+            when {
+                // CASE: Trip was completed but driver wants to RESUME
+                existingTrip?.status == "COMPLETED" -> {
+                    userRepo.getUsersByRoute(schedule.routeId) { success, _, users ->
+                        if (success && users != null) {
+                            val userIds = users.map { it.userId }
+                            binRepo.getBinsByOwnerIds(userIds) { bins ->
+                                collectionRepo.getCollectionsByTripOnce(existingTrip.tripId) { _, _, collections ->
+                                    if ((collections?.size ?: 0) >= bins.size && bins.isNotEmpty()) {
+                                        callback(false, "Route fully collected. Cannot restart.")
+                                    } else {
+                                        repo.resumeTrip(existingTrip.tripId) { s, m ->
+                                            if (s) {
+                                                val resumed = existingTrip.copy(status = "ACTIVE")
+                                                _activeTrip.postValue(resumed)
+                                                loadBinStats(resumed.routeId, resumed.tripId)
                                             }
+                                            callback(s, m)
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    existingTrip?.status == "ACTIVE" -> {
-                        _activeTrip.postValue(existingTrip)
-                        loadBinStats(existingTrip.routeId, existingTrip.tripId)
-                        callback(true, "Resuming active route.")
-                    }
-                    else -> {
-                        repo.startTrip(schedule.scheduleId) { s, m ->
-                            if (s) observeActiveTripByRoute(schedule.routeId)
-                            callback(s, m)
-                        }
+                }
+
+                // CASE: Trip is already ACTIVE (syncing state)
+                existingTrip?.status == "ACTIVE" -> {
+                    _activeTrip.postValue(existingTrip)
+                    loadBinStats(existingTrip.routeId, existingTrip.tripId)
+                    callback(true, "Resuming active route.")
+                }
+
+                // CASE: No trip exists for today, START NEW
+                else -> {
+                    repo.startTrip(schedule.scheduleId) { s, m ->
+                        if (s) observeActiveTripByRoute(schedule.routeId)
+                        callback(s, m)
                     }
                 }
             }
-        } else {
-            callback(false, "Route starts at ${schedule.startTime}.")
+        }
+    }
+
+    fun endTrip(tripId: String, callback: (Boolean, String) -> Unit) {
+        repo.endTrip(tripId) { success, msg ->
+            if (success) {
+                _activeTrip.value?.let { current ->
+                    if (current.tripId == tripId) {
+                        // Update status to COMPLETED instead of null so "Resume" shows
+                        _activeTrip.postValue(current.copy(status = "COMPLETED"))
+                    }
+                }
+            }
+            callback(success, msg)
         }
     }
 
@@ -212,20 +231,7 @@ class ActiveTripViewModel(
         }
     }
 
-    fun endTrip(tripId: String, callback: (Boolean, String) -> Unit) {
-        repo.endTrip(tripId) { success, msg ->
-            if (success) {
-                // Instead of setting to null, we refresh the state
-                // so the UI knows the trip exists but is now COMPLETED
-                _activeTrip.value?.let { current ->
-                    if (current.tripId == tripId) {
-                        _activeTrip.postValue(current.copy(status = "COMPLETED"))
-                    }
-                }
-            }
-            callback(success, msg)
-        }
-    }
+
 
     override fun onCleared() {
         super.onCleared()
@@ -285,6 +291,7 @@ class ActiveTripViewModel(
         driverId: String,
         tripId: String,
         rating: Int,
+        weight: Double,
         remarks: String,
         isSegregated: Boolean,
         callback: (Boolean, String) -> Unit
@@ -312,6 +319,7 @@ class ActiveTripViewModel(
                     userId = bin.ownerUserId,
                     tripId = tripId,
                     rating = rating,
+                    weight = weight,
                     remarks = remarks,
                     segregatedCorrectly = isSegregated,
                     pointsAwarded = calculatedPoints,
@@ -335,6 +343,7 @@ class ActiveTripViewModel(
             }
         }
     }
+
 
     private val _tripHistory = MutableLiveData<List<TripHistoryUiModel>>()
     val tripHistory: LiveData<List<TripHistoryUiModel>> get() = _tripHistory
@@ -386,11 +395,13 @@ class ActiveTripViewModel(
         }
     }
 
+
     fun collectBinWithAI(
         bin: BinModel,
         driverId: String,
         tripId: String,
         rating: Int,
+        weight : Double,
         remarks: String,
         aiTip: String, // Matches the new AI tip parameter from your Activity
         isSegregated: Boolean,
@@ -418,6 +429,7 @@ class ActiveTripViewModel(
                     userId = bin.ownerUserId,
                     tripId = tripId,
                     rating = rating,
+                    weight = weight,
                     remarks = remarks,
                     aiFeedback = aiTip, // 🔹 SAVES THE GEMINI TIP TO DB
                     segregatedCorrectly = isSegregated,
@@ -435,6 +447,9 @@ class ActiveTripViewModel(
                         if (userRouteId.isNotEmpty()) {
                             loadBinStats(userRouteId, tripId)
                         }
+                        _loading.postValue(false)
+                        // Send a custom message back to the UI
+                        callback(true, "Collected! +$calculatedPoints points awarded.")
                     }
                     _loading.postValue(false)
                     callback(saveSuccess, saveMessage)

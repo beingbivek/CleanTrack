@@ -11,6 +11,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.tasks.await
 
 class UserRepoImpl : UserRepo{
 
@@ -29,41 +30,41 @@ class UserRepoImpl : UserRepo{
         password: String,
         callback: (Boolean, String?, String?, String?) -> Unit
     ) {
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener {
-                    if (it.isSuccessful){
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener {
+                if (it.isSuccessful){
 
-                        val userId = it.result?.user?.uid
+                    val userId = it.result?.user?.uid
 
-                        if (userId != null){
+                    if (userId != null){
 
-                            val roleRef = ref.child(userId).child("role")
+                        val roleRef = ref.child(userId).child("role")
 
-                            roleRef.get()
-                                .addOnSuccessListener { snapshot ->
-                                    val role = snapshot.getValue(String::class.java)
+                        roleRef.get()
+                            .addOnSuccessListener { snapshot ->
+                                val role = snapshot.getValue(String::class.java)
 
-                                    if (role != null){
-                                        callback(true, "login successfull",role, userId)
-                                    }else{
-                                        callback(false, "Login successful, but user role not defined.", null, null)
-                                    }
-
-                                }
-                                .addOnFailureListener { e ->
-                                    callback(false, "Login successful, but failed to fetch role: ${e.localizedMessage}", null, null)
+                                if (role != null){
+                                    callback(true, "login successfull",role, userId)
+                                }else{
+                                    callback(false, "Login successful, but user role not defined.", null, null)
                                 }
 
-                        }
-                        else {
-                            callback(false, "Login successful, but userID is missing.", null, null)
-                        }
+                            }
+                            .addOnFailureListener { e ->
+                                callback(false, "Login successful, but failed to fetch role: ${e.localizedMessage}", null, null)
+                            }
 
-
-                    }else{
-                        callback(false, "${it.exception?.message}", null, null)
                     }
+                    else {
+                        callback(false, "Login successful, but userID is missing.", null, null)
+                    }
+
+
+                }else{
+                    callback(false, "${it.exception?.message}", null, null)
                 }
+            }
     }
 
     override fun signInWithGoogle(idToken: String, callback: (Boolean, String?,UserModel?, String?) -> Unit) {
@@ -116,7 +117,7 @@ class UserRepoImpl : UserRepo{
 
                                     ref.child(userId).setValue(userModel)
                                         .addOnSuccessListener {
-                                           callback (true, null,userModel, null)
+                                            callback (true, null,userModel, null)
                                         }
                                         .addOnFailureListener { dbError ->
                                             callback(false, "Google sign-in succeeded, but failed to create user document : ${dbError.localizedMessage}",null, null)
@@ -326,6 +327,18 @@ class UserRepoImpl : UserRepo{
         return auth.currentUser?.uid
     }
 
+    override suspend fun getCurrentUser(): UserModel? {
+        val userId = auth.currentUser?.uid ?: return null
+        return try {
+            // Fetch the user document from the "Users" node
+            val snapshot = ref.child(userId).get().await()
+            snapshot.getValue(UserModel::class.java)
+        } catch (e: Exception) {
+            Log.e("UserRepo", "Error fetching current user: ${e.message}")
+            null
+        }
+    }
+
     override fun updateActiveRoute(
         userId: String,
         routeId: String,
@@ -414,13 +427,44 @@ class UserRepoImpl : UserRepo{
         callback: (Boolean, String) -> Unit
     ) {
         val updates = mapOf(
-        "isSubscribed" to true,           // Root level
-        "expiryDate" to subscription.expiryDate, // Root level (for easy access)
-        "subscription" to subscription    // Nested object
-    )
+            "isSubscribed" to true,           // Root level
+            "expiryDate" to subscription.expiryDate, // Root level (for easy access)
+            "subscription" to subscription    // Nested object
+        )
         ref.child(userId).updateChildren(updates).addOnCompleteListener { task ->
             if (task.isSuccessful) callback(true, "Subscription Activated")
             else callback(false, task.exception?.message ?: "Update Failed")
+        }
+    }
+
+    override fun resetPassword(
+        currentPassword: String,
+        newPassword: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        val user = auth.currentUser
+        val email = user?.email
+
+        if (user != null && email != null) {
+            // 1. Re-authenticate the user first
+            val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, currentPassword)
+
+            user.reauthenticate(credential).addOnCompleteListener { reAuthTask ->
+                if (reAuthTask.isSuccessful) {
+                    // 2. If re-auth successful, update the password
+                    user.updatePassword(newPassword).addOnCompleteListener { updateTask ->
+                        if (updateTask.isSuccessful) {
+                            callback(true, "Password updated successfully")
+                        } else {
+                            callback(false, updateTask.exception?.message ?: "Failed to update password")
+                        }
+                    }
+                } else {
+                    callback(false, "Current password is incorrect")
+                }
+            }
+        } else {
+            callback(false, "User not logged in")
         }
     }
 

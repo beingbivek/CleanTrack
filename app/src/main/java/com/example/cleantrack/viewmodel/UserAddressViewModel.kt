@@ -1,219 +1,138 @@
 package com.example.cleantrack.viewmodel
 
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cleantrack.model.useraddress.DistrictModel
-import com.example.cleantrack.model.useraddress.MunicipalityModel
-import com.example.cleantrack.model.useraddress.MunicipalityDetailModel
-import com.example.cleantrack.model.useraddress.ProvinceModel
-import com.example.cleantrack.repository.UserAddressApiRepo
+import com.example.cleantrack.model.useraddress.*
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class UserAddressViewModel(
-    private val api: UserAddressApiRepo = UserAddressApiRepo.create()
-) : ViewModel() {
+class UserAddressViewModel(application: Application) : AndroidViewModel(application) {
 
-    // lists from API
+    // Store the full nested data here
+    private var allProvinceData: List<ProvinceModel> = emptyList()
+
+    // UI State lists
     var provinces by mutableStateOf<List<ProvinceModel>>(emptyList())
         private set
-
     var districts by mutableStateOf<List<DistrictModel>>(emptyList())
         private set
-
     var municipalities by mutableStateOf<List<MunicipalityModel>>(emptyList())
         private set
-
-    // Ward strings like "Ward 1", "Ward 2", ... generated from ward_count
     var wards by mutableStateOf<List<String>>(emptyList())
         private set
 
-    // selected display text
+    // Selection State
     var selectedProvinceName by mutableStateOf("Select Province")
-        private set
     var selectedDistrictName by mutableStateOf("Select District")
-        private set
     var selectedMunicipalityName by mutableStateOf("Select Municipality")
-        private set
     var selectedWardName by mutableStateOf("Select Ward")
-        private set
-
-    // selected ids
-    private var selectedProvinceId: Int? = null
-    private var selectedDistrictId: Int? = null
-    private var selectedMunicipalityId: Int? = null
-
-    // ui loading / error indicators (optional)
-    var loading by mutableStateOf(false)
-        private set
-
-    var errorMessage by mutableStateOf<String?>(null)
-        private set
 
     init {
-        loadProvinces()
+        loadDataFromAssets()
     }
 
-    fun loadProvinces() {
+    private fun loadDataFromAssets() {
         viewModelScope.launch {
-            loading = true
-            errorMessage = null
             try {
-                provinces = api.getProvinces()
+                // Read file in background thread
+                val jsonString = withContext(Dispatchers.IO) {
+                    getApplication<Application>().assets
+                        .open("nepallocationnames.json")
+                        .bufferedReader().use { it.readText() }
+                }
+
+                // Parse JSON into your nested models
+                val type = object : TypeToken<List<ProvinceModel>>() {}.type
+                allProvinceData = Gson().fromJson(jsonString, type)
+
+                provinces = allProvinceData
             } catch (e: Exception) {
-                errorMessage = "Failed to load provinces: ${e.message}"
-            } finally {
-                loading = false
+                e.printStackTrace()
             }
         }
     }
 
     fun onProvinceSelected(province: ProvinceModel) {
-        // set selection
-        selectedProvinceId = province.id
         selectedProvinceName = province.name
+        districts = province.districts // Get districts directly from the province model
 
-        // reset deeper selections
-        selectedDistrictId = null; selectedDistrictName = "Select District"; districts = emptyList()
-        selectedMunicipalityId = null; selectedMunicipalityName = "Select Municipality"; municipalities = emptyList()
-        wards = emptyList(); selectedWardName = "Select Ward"
-
-        // load districts
-        loadDistricts(province.id)
-    }
-
-    private fun loadDistricts(provinceId: Int) {
-        viewModelScope.launch {
-            loading = true
-            errorMessage = null
-            try {
-                districts = api.getDistricts(provinceId)
-            } catch (e: Exception) {
-                errorMessage = "Failed to load districts: ${e.message}"
-            } finally {
-                loading = false
-            }
-        }
+        // Reset children
+        selectedDistrictName = "Select District"
+        selectedMunicipalityName = "Select Municipality"
+        municipalities = emptyList()
+        selectedWardName = "Select Ward"
+        wards = emptyList()
     }
 
     fun onDistrictSelected(district: DistrictModel) {
-        selectedDistrictId = district.id
         selectedDistrictName = district.name
+        municipalities = district.municipalities // Get municipalities directly from district model
 
-        // reset municipality & wards
-        selectedMunicipalityId = null; selectedMunicipalityName = "Select Municipality"; municipalities = emptyList()
-        wards = emptyList(); selectedWardName = "Select Ward"
-
-        loadMunicipalities(district.id)
-    }
-
-    private fun loadMunicipalities(districtId: Int) {
-        viewModelScope.launch {
-            loading = true
-            errorMessage = null
-            try {
-                municipalities = api.getMunicipalities(districtId)
-            } catch (e: Exception) {
-                errorMessage = "Failed to load municipalities: ${e.message}"
-            } finally {
-                loading = false
-            }
-        }
+        // Reset children
+        selectedMunicipalityName = "Select Municipality"
+        selectedWardName = "Select Ward"
+        wards = emptyList()
     }
 
     fun onMunicipalitySelected(municipality: MunicipalityModel) {
-        selectedMunicipalityId = municipality.id
         selectedMunicipalityName = municipality.name
 
-        // reset wards
-        wards = emptyList()
+        // Generate ward list based on the "wards" count in your JSON
+        val count = municipality.wards
+        wards = (1..count).map { "Ward $it" }
         selectedWardName = "Select Ward"
-
-        loadWards(municipality.id)
-    }
-
-    private fun loadWards(municipalityId: Int) {
-        viewModelScope.launch {
-            loading = true
-            errorMessage = null
-            try {
-                val detail: MunicipalityDetailModel = api.getMunicipalityDetail(municipalityId)
-                val count = detail.ward_count.coerceAtLeast(0)
-                wards = if (count > 0) {
-                    (1..count).map { "Ward $it" }
-                } else {
-                    emptyList()
-                }
-            } catch (e: Exception) {
-                errorMessage = "Failed to load wards: ${e.message}"
-            } finally {
-                loading = false
-            }
-        }
     }
 
     fun onWardSelected(wardName: String) {
         selectedWardName = wardName
     }
 
-
     fun initializeAddress(pName: String, dName: String, mName: String, wName: String) {
         viewModelScope.launch {
-            loading = true
-            try {
-                // 1. Load Provinces and find match
-                if (provinces.isEmpty()) {
-                    provinces = api.getProvinces()
+            // 1. Ensure data is loaded before trying to find names
+            // If the app just started, loadDataFromAssets might still be running
+            if (allProvinceData.isEmpty()) {
+                val jsonString = withContext(Dispatchers.IO) {
+                    getApplication<Application>().assets
+                        .open("nepallocationnames.json")
+                        .bufferedReader().use { it.readText() }
                 }
-                val province = provinces.find { it.name == pName }
+                val type = object : TypeToken<List<ProvinceModel>>() {}.type
+                allProvinceData = Gson().fromJson(jsonString, type)
+                provinces = allProvinceData
+            }
 
-                if (province != null) {
-                    selectedProvinceId = province.id
-                    selectedProvinceName = province.name
+            // 2. Find the Province object by name
+            val province = allProvinceData.find { it.name == pName }
+            if (province != null) {
+                selectedProvinceName = province.name
+                districts = province.districts
 
-                    // 2. Load Districts and find match
-                    districts = api.getDistricts(province.id)
-                    val district = districts.find { it.name == dName }
+                // 3. Find the District object inside that province
+                val district = province.districts.find { it.name == dName }
+                if (district != null) {
+                    selectedDistrictName = district.name
+                    municipalities = district.municipalities
 
-                    if (district != null) {
-                        selectedDistrictId = district.id
-                        selectedDistrictName = district.name
+                    // 4. Find the Municipality object inside that district
+                    val municipality = district.municipalities.find { it.name == mName }
+                    if (municipality != null) {
+                        selectedMunicipalityName = municipality.name
 
-                        // 3. Load Municipalities and find match
-                        municipalities = api.getMunicipalities(district.id)
-                        val municipality = municipalities.find { it.name == mName }
-
-                        if (municipality != null) {
-                            selectedMunicipalityId = municipality.id
-                            selectedMunicipalityName = municipality.name
-
-                            // 4. Load Wards
-                            val detail = api.getMunicipalityDetail(municipality.id)
-                            val count = detail.ward_count.coerceAtLeast(0)
-                            wards = (1..count).map { "Ward $it" }
-                            selectedWardName = wName
-                        }
+                        // 5. Generate the Ward list and select the saved ward
+                        val count = municipality.wards
+                        wards = (1..count).map { "Ward $it" }
+                        selectedWardName = wName
                     }
                 }
-            } catch (e: Exception) {
-                errorMessage = "Failed to initialize address: ${e.message}"
-            } finally {
-                loading = false
             }
         }
     }
-
-    // optional: helper to get currently-selected ids/names for submission
-    fun currentSelection(): Map<String, Any?> = mapOf(
-        "provinceId" to selectedProvinceId,
-        "provinceName" to selectedProvinceName,
-        "districtId" to selectedDistrictId,
-        "districtName" to selectedDistrictName,
-        "municipalityId" to selectedMunicipalityId,
-        "municipalityName" to selectedMunicipalityName,
-        "wardName" to selectedWardName
-    )
 }
-

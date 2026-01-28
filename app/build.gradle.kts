@@ -121,12 +121,19 @@ dependencies {
 
     implementation("com.cloudinary:cloudinary-android:2.1.0")
     implementation("com.squareup.picasso:picasso:2.8")
-//Coil instaed of picasso
+    //Coil instaed of picasso
     // Change from 3.3.0 to 3.2.0 or 3.0.0
     // Coil 2.x includes the network engine by default
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
+    implementation ("com.google.code.gson:gson:2.10.1")
+
+    // Stripe
+    implementation("com.stripe:stripe-android:20.50.0")
+
+    //Gson
+    implementation("com.google.code.gson:gson:2.10.1")
 
 }
