@@ -240,7 +240,8 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                                             collection = BinCollectionModel(tripId = tripId, rating = rating, weight = weight, segregatedCorrectly = isSegregated),
                                             aiReview = aiFeedback,
                                             routeId = routeId,
-                                            routeName = actualRouteName
+                                            routeName = actualRouteName,
+                                            ownerId = bin.ownerUserId
                                         )
                                         notificationViewModel.notifyUser(
                                             bin.ownerUserId,
