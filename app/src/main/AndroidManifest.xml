@@ -38,9 +38,9 @@
             android:theme="@style/Theme.CleanTrack"/>
 
         <activity
-            android:name=".view.user.UserBinHistoryActivity"
+            android:name=".view.admin.ViewUserBinHistoryActivity"
             android:exported="true"
-            android:label="@string/title_activity_user_bin_history"
+            android:label="ViewUserBinHistoryActivity"
             android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.auth.ResetPasswordActivity"
