@@ -2,6 +2,7 @@ package com.example.cleantrack.model
 
 data class RouteInsightModel(
     var insightId: String = "",
+    val userId: String = "",
     val tripId: String = "",
     val routeId: String = "",
     val routeName: String = "",

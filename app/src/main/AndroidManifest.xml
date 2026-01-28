@@ -27,6 +27,11 @@
             android:theme="@style/Theme.CleanTrack">
         </activity>
         <activity
+            android:name=".view.user.BinHistoryActivity"
+            android:exported="false"
+            android:label="@string/title_activity_bin_history"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
             android:name=".view.common.NoInternetActivity"
             android:exported="true"
             android:label="@string/title_activity_no_internet"
