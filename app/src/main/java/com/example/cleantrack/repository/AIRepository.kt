@@ -87,12 +87,13 @@ class AIRepository {
 
     // This logic should run after the AI generates a review for the user
     // Inside AIRepository.kt
-    fun saveProcessedInsight(collection: BinCollectionModel, aiReview: String, routeId: String, routeName: String) {
+    fun saveProcessedInsight(collection: BinCollectionModel, aiReview: String, routeId: String, routeName: String, ownerId: String) {
         val insightRef = FirebaseDatabase.getInstance().getReference("RouteInsights")
         val id = insightRef.push().key ?: ""
 
         val newInsight = RouteInsightModel(
             insightId = id,
+            userId = ownerId,
             tripId = collection.tripId,
             routeId = routeId,
             routeName = routeName,
