@@ -24,4 +24,17 @@ class RouteInsightRepoImpl : RouteInsightRepo {
             override fun onCancelled(error: DatabaseError) = callback(false, null)
         })
     }
+
+    override fun getInsightsByUserId(userId: String, callback: (Boolean, List<RouteInsightModel>?) -> Unit) {
+        ref.orderByChild("userId").equalTo(userId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val list = snapshot.children.mapNotNull { it.getValue(RouteInsightModel::class.java) }
+                    callback(true, list)
+                }
+                override fun onCancelled(error: DatabaseError) {
+                    callback(false, null)
+                }
+            })
+    }
 }
