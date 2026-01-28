@@ -26,12 +26,14 @@ import com.example.cleantrack.repository.RouteInsightRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
 import com.example.cleantrack.ui.theme.Green
+import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
 import java.util.*
 
-class UserBinHistoryActivity : ComponentActivity() {
+class BinHistoryActivity : ComponentActivity() {
 
     private val repo = RouteInsightRepoImpl()
+    private val auth = FirebaseAuth.getInstance()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,15 +41,19 @@ class UserBinHistoryActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-
             var insightList by remember { mutableStateOf<List<RouteInsightModel>>(emptyList()) }
             var isLoading by remember { mutableStateOf(true) }
             var selectedInsight by remember { mutableStateOf<RouteInsightModel?>(null) }
 
+            // Get the current logged-in user ID
+            val currentUserId = auth.currentUser?.uid ?: ""
+
             LaunchedEffect(Unit) {
-                repo.getAllInsights { success, list ->
+                // We call the filtered repository method
+                repo.getInsightsByUserId(currentUserId) { success, list ->
                     if (success && list != null) {
-                        insightList = list
+                        // Sort by newest first
+                        insightList = list.sortedByDescending { it.timestamp }
                     }
                     isLoading = false
                 }
@@ -64,14 +70,13 @@ class UserBinHistoryActivity : ComponentActivity() {
                         )
                     )
             ) {
-
                 Scaffold(
                     containerColor = Color.Transparent,
                     topBar = {
                         CenterAlignedTopAppBar(
                             title = {
                                 Text(
-                                    "Bin Collection History",
+                                    "My Collection History",
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color.White
                                 )
@@ -91,13 +96,11 @@ class UserBinHistoryActivity : ComponentActivity() {
                         )
                     }
                 ) { paddingValues ->
-
                     Box(
                         modifier = Modifier
                             .padding(paddingValues)
                             .fillMaxSize()
                     ) {
-
                         when {
                             isLoading -> {
                                 CircularProgressIndicator(
@@ -105,16 +108,14 @@ class UserBinHistoryActivity : ComponentActivity() {
                                     color = Color.White
                                 )
                             }
-
                             insightList.isEmpty() -> {
                                 Text(
-                                    "No bin collection history found.",
+                                    "No collection history found for you.",
                                     modifier = Modifier.align(Alignment.Center),
                                     color = Color.White.copy(alpha = 0.85f),
                                     fontWeight = FontWeight.Medium
                                 )
                             }
-
                             else -> {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
@@ -122,7 +123,7 @@ class UserBinHistoryActivity : ComponentActivity() {
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     items(insightList) { insight ->
-                                        RouteInsightCard(insight) {
+                                        RouteInsightCards(insight) {
                                             selectedInsight = insight
                                         }
                                     }
@@ -130,7 +131,7 @@ class UserBinHistoryActivity : ComponentActivity() {
                             }
                         }
 
-                        // 🔍 DETAIL DIALOG
+                        // DETAIL DIALOG
                         selectedInsight?.let { insight ->
                             val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
                             val date = sdf.format(Date(insight.timestamp))
@@ -141,41 +142,21 @@ class UserBinHistoryActivity : ComponentActivity() {
                                 containerColor = Color.White,
                                 confirmButton = {
                                     TextButton(onClick = { selectedInsight = null }) {
-                                        Text(
-                                            "Close",
-                                            color = Green,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Text("Close", color = Green, fontWeight = FontWeight.Bold)
                                     }
                                 },
                                 title = {
                                     Column {
-                                        Text(
-                                            text = date,
-                                            fontSize = 11.sp,
-                                            color = Color.DarkGray,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Text(date, fontSize = 11.sp, color = Color.DarkGray, fontWeight = FontWeight.Bold)
                                         Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = insight.routeName,
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = Black
-                                        )
+                                        Text(insight.routeName, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Black)
                                     }
                                 },
                                 text = {
                                     Column {
-                                        DetailedRow("AI Response", insight.aiResponse)
-                                        DetailedRow("Rating", "${insight.rating}/5")
-                                        DetailedRow(
-                                            "Segregation",
-                                            if (insight.segregated)
-                                                "Properly Segregated"
-                                            else
-                                                "Not Segregated"
-                                        )
+                                        DetailedRows("AI Feedback", insight.aiResponse)
+                                        DetailedRows("Rating", "${insight.rating}/5")
+                                        DetailedRows("Status", if (insight.segregated) "Properly Segregated ✅" else "Not Segregated ❌")
                                     }
                                 }
                             )
@@ -187,13 +168,8 @@ class UserBinHistoryActivity : ComponentActivity() {
     }
 }
 
-/* ----------------------------- CARD UI ----------------------------- */
-
 @Composable
-fun RouteInsightCard(
-    insight: RouteInsightModel,
-    onClick: () -> Unit
-) {
+fun RouteInsightCards(insight: RouteInsightModel, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,46 +180,17 @@ fun RouteInsightCard(
             ),
         shape = RoundedCornerShape(18.dp),
         onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.95f)
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
-            Text(
-                text = insight.routeName,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Black
-            )
-
+            Text(text = insight.routeName, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Black)
             Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = insight.aiResponse,
-                fontSize = 13.sp,
-                color = Color.DarkGray,
-                maxLines = 2
-            )
-
+            Text(text = insight.aiResponse, fontSize = 13.sp, color = Color.DarkGray, maxLines = 2)
             Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(text = "⭐ ${insight.rating}/5", fontWeight = FontWeight.Bold, color = Green)
                 Text(
-                    text = "⭐ ${insight.rating}/5",
-                    fontWeight = FontWeight.Bold,
-                    color = Green
-                )
-
-                Text(
-                    text = if (insight.segregated)
-                        "Segregated ✅"
-                    else
-                        "Not Segregated ❌",
+                    text = if (insight.segregated) "Segregated ✅" else "Unsorted ❌",
                     fontWeight = FontWeight.Bold,
                     color = if (insight.segregated) Green else Color.Red
                 )
@@ -252,28 +199,10 @@ fun RouteInsightCard(
     }
 }
 
-
-/* -------------------------- DETAIL ROW -------------------------- */
-
 @Composable
-fun DetailedRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            color = Color.Gray,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp
-        )
-        Text(
-            text = value,
-            color = Black,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
-        )
+fun DetailedRows(label: String, value: String) {
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+        Text(text = label, color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text(text = value, color = Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }

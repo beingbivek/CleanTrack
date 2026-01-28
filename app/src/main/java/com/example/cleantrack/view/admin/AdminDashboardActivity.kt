@@ -139,7 +139,6 @@ fun AdminHomeSection(padding: PaddingValues, userProfile: UserModel?, aiStrategy
     Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp).verticalScroll(rememberScrollState())) {
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Enhanced Header matching User Dashboard
         Text(text = "Hello Admin ${userProfile?.fullname?.split(" ")?.firstOrNull() ?: ""} 👋", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
         Spacer(modifier = Modifier.height(15.dp))
 
@@ -191,7 +190,6 @@ fun AdminHomeSection(padding: PaddingValues, userProfile: UserModel?, aiStrategy
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Management Actions Card
         Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(6.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text("Core Management", fontWeight = FontWeight.Bold, fontSize = 16.sp)
@@ -211,6 +209,14 @@ fun AdminHomeSection(padding: PaddingValues, userProfile: UserModel?, aiStrategy
                         })
                     }
                     AdminQuickIcon(Icons.Default.Leaderboard, "Leaderboard") { context.startActivity(Intent(context, LeaderboardActivity::class.java)) }
+                }
+                Spacer(modifier = Modifier.height(25.dp))
+                Row(modifier = Modifier.fillMaxWidth(), Arrangement.Start) {
+                    Box(modifier = Modifier.fillMaxWidth(0.33f), contentAlignment = Alignment.Center) {
+                        AdminQuickIcon(Icons.Default.History, "Bin History") {
+                            context.startActivity(Intent(context, ViewUserBinHistoryActivity::class.java))
+                        }
+                    }
                 }
             }
         }
