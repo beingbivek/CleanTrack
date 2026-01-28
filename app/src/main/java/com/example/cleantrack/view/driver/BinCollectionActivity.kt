@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 class BinCollectionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
 
         val binId = intent.getStringExtra("BIN_ID") ?: ""
         val tripId = intent.getStringExtra("TRIP_ID") ?: ""
@@ -73,7 +73,11 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
     val binVM = remember { BinViewModel(BinRepoImpl()) }
     val userViewModel = remember { UserViewModel(UserRepoImpl(), BinCollectionRepoImpl()) }
     val activeTripViewModel = remember {
-        ActiveTripViewModel(ActiveTripRepoImpl(), UserRepoImpl(), BinRepoImpl(), BinCollectionRepoImpl(), PointsRepoImpl())
+        ActiveTripViewModel(ActiveTripRepoImpl(),
+            UserRepoImpl(),
+            BinRepoImpl(),
+            BinCollectionRepoImpl(),
+            PointsRepoImpl())
     }
     val notificationViewModel = remember { NotificationViewModel(NotificationRepoImpl(), UserRepoImpl()) }
 
@@ -229,6 +233,9 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                                     isSegregated = isSegregated
                                 ) { success, msg ->
                                     if (success) {
+
+                                        // --- ADDED THIS TOAST ---
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                         aiRepo.saveProcessedInsight(
                                             collection = BinCollectionModel(tripId = tripId, rating = rating, weight = weight, segregatedCorrectly = isSegregated),
                                             aiReview = aiFeedback,

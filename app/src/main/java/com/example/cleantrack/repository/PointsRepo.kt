@@ -12,7 +12,8 @@ interface PointsRepo {
 
     fun addPointsToUser(
         userId: String,
-        points: Int
+        points: Int,
+
     )
 
     fun getLeaderboardData(callback: (List<LeaderboardModel>) -> Unit)
