@@ -43,9 +43,10 @@ This project demonstrates the full software engineering lifecycle — requiremen
 
 Follow these steps to run the project locally:
 
-### 2) Open Andriod Studio
+### 1) Open Andriod Studio
 
 ### 2) Clone the repository
 ```bash
 git clone https://github.com/beingbivek/CleanTrack.git
 ```
+
