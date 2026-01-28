@@ -6,13 +6,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleantrack.model.SubscriptionModel
 import com.example.cleantrack.repository.PaymentRepo
+import com.example.cleantrack.repository.PointsRepo
 import com.example.cleantrack.repository.UserRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class PaymentViewModel(
     private val paymentRepo: PaymentRepo,
-    private val userRepo: UserRepo
+    private val userRepo: UserRepo,
+    private val pointsRepo: PointsRepo
 ) : ViewModel() {
 
     private val _paymentStatus = MutableLiveData<PaymentState>()
@@ -63,6 +65,33 @@ class PaymentViewModel(
                 )
             } else {
                 _paymentStatus.postValue(PaymentState.Error("Failed to initiate: ${initiationResult.exceptionOrNull()?.message}"))
+            }
+        }
+    }
+
+    fun processPointsPayment(pointsNeeded: Int) {
+        val userId = userRepo.getCurrentUserId() ?: return
+
+        viewModelScope.launch {
+            _paymentStatus.postValue(PaymentState.Loading)
+
+            // 1. Deduct points first
+            pointsRepo.deductPoints(userId, pointsNeeded, "Redeemed for Monthly Fee") { success, message ->
+                if (success) {
+                    // 2. If points deduction works, activate subscription with a special ID
+                    val transactionId = "POINTS_REDEM_${System.currentTimeMillis()}"
+
+                    viewModelScope.launch {
+                        val result = paymentRepo.activateSubscription(userId, transactionId)
+                        if (result.isSuccess) {
+                            _paymentStatus.postValue(PaymentState.Success("Fee paid with points!"))
+                        } else {
+                            _paymentStatus.postValue(PaymentState.Error("Points taken, but activation failed. Contact support."))
+                        }
+                    }
+                } else {
+                    _paymentStatus.postValue(PaymentState.Error(message))
+                }
             }
         }
     }
