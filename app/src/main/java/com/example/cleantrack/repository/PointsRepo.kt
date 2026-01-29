@@ -8,6 +8,7 @@ interface PointsRepo {
     fun calculatePoints(
         binType: String,
         segregatedCorrectly: Boolean,
+        ratingForBin: Int,
         callback: (Int) -> Unit
     )
 
