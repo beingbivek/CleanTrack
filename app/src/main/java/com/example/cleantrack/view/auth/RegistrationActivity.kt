@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -100,6 +101,7 @@ class RegistrationActivity : ComponentActivity() {
 @Composable
 fun RegisterBody(googleUserModel: UserModel? = null) {
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val isLoading by userViewModel.loading.observeAsState(false)
     val addressVM: UserAddressViewModel = viewModel()
     val isGoogleSignInFlow = googleUserModel != null
 
@@ -353,7 +355,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                         },
                         visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
-                        shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your password") },
+                        shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your password") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
                             focusedIndicatorColor = Green, unfocusedIndicatorColor = Color.Transparent
@@ -372,7 +374,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                         },
                         visualTransformation = if (confirmpasswordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
-                        shape = RoundedCornerShape(15.dp), placeholder = { Text("Confirm your password") },
+                        shape = RoundedCornerShape(15.dp), placeholder = { Text("Confirm your password") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
                             focusedIndicatorColor = Green, unfocusedIndicatorColor = Color.Transparent
@@ -448,23 +450,62 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
             item {
                 Button(
                     onClick = onRegisterOrUpdate,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp).height(60.dp)
-                        .background(brush = Brush.horizontalGradient(colors = ButtonColor), shape = RoundedCornerShape(15.dp)),
+                    enabled = !isLoading, // Disable when loading
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp)
+                        .height(60.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(colors = ButtonColor),
+                            shape = RoundedCornerShape(15.dp)
+                        ),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 15.dp),
                 ) {
-                    Text(if (isGoogleSignInFlow) "Save & Continue" else "Register", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    if (isLoading) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (isGoogleSignInFlow) "Save & Continue" else "Register",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
 
             item {
-                Text(buildAnnotatedString {
-                    withStyle(SpanStyle(color = Blue)) { append("Already have account? ") }
-                    withStyle(SpanStyle(color = Green)) { append("Login") }
-                }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 20.dp).clickable {
-                    context.startActivity(Intent(context, LoginActivity::class.java))
-                    activity.finish()
-                })
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Already have account? ",
+                        style = TextStyle(color = Blue, fontSize = 16.sp)
+                    )
+                    Text(
+                        text = "Login",
+                        style = TextStyle(
+                            color = Green,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier
+                            .clickable(enabled = !isLoading) { // Disable navigation if currently loading
+                                context.startActivity(Intent(context, LoginActivity::class.java))
+                                activity.finish()
+                            }
+                            .padding(3.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
