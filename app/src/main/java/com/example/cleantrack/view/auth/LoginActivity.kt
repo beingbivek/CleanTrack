@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +40,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -92,6 +94,7 @@ class LoginActivity : ComponentActivity() {
 @Composable
 fun LoginBody() {
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val isLoading by userViewModel.loading.observeAsState(false)
 
     val scheduleViewModel   = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     var email by remember { mutableStateOf("") }
@@ -267,18 +270,16 @@ fun LoginBody() {
                     onClick = {
                         userViewModel.login(email.trim(), password.trim()) { success, errorMessage, _, userId ->
                             if (success && userId != null) {
-                                // 1. Sync User Pro status
                                 userViewModel.syncOfflineUserData(userId, context) { routeId ->
-                                    // 2. If the callback runs, the user is Pro, so cache their schedules
                                     scheduleViewModel.cacheSchedulesForOffline(routeId, context)
                                 }
-
                                 userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
                             } else {
                                 AppUtil.showToast(context, errorMessage ?: "Login failed.")
                             }
                         }
                     },
+                    enabled = !isLoading, // PREVENT CLICKING WHILE LOADING
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
@@ -290,19 +291,37 @@ fun LoginBody() {
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 15.dp),
                 ) {
-                    Text("Login", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Login", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    }
                 }
             }
 
             item {
-                Text(buildAnnotatedString {
-                    withStyle(SpanStyle(color = Blue)) { append("Haven't made an account yet? ") }
-                    withStyle(SpanStyle(color = Green)) { append("Sign Up") }
-                }, modifier = Modifier
-                    .padding(horizontal = 15.dp, vertical = 15.dp)
-                    .clickable {
-                        context.startActivity(Intent(context, RegistrationActivity::class.java))
-                    })
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 15.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Haven't made an account yet? ",
+                        color = Blue
+                    )
+                    Text(
+                        text = "Sign Up",
+                        color = Green,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clickable(enabled = !isLoading) {
+                                context.startActivity(Intent(context, RegistrationActivity::class.java))
+                            }
+                            .padding(3.dp)
+                    )
+                }
             }
 
             item {
@@ -325,6 +344,7 @@ fun LoginBody() {
                             googleSignInLauncher.launch(googleSignInClient.signInIntent)
                         }
                     },
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
