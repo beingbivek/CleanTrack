@@ -35,8 +35,12 @@ class UserViewModel(
     private val _globalAiReview = MutableLiveData<String>("Gathering your history...")
     val globalAiReview: LiveData<String> = _globalAiReview
 
-    fun login(email : String , password : String , callback : (Boolean, String?, String?, String?)-> Unit){
-                repo.login(email, password, callback)
+    fun login(email: String, password: String, callback: (Boolean, String?, String?, String?) -> Unit) {
+        _loading.postValue(true) // Start loading
+        repo.login(email, password) { success, msg, userId, role ->
+            _loading.postValue(false) // Stop loading
+            callback(success, msg, userId, role)
+        }
     }
 
     // In UserViewModel.kt
@@ -46,21 +50,22 @@ class UserViewModel(
         idToken: String,
         context: Context,
         activity: Activity,
-        scheduleViewModel: ScheduleViewModel, // Pass this to trigger schedule caching
+        scheduleViewModel: ScheduleViewModel,
         callback: (Boolean, String?) -> Unit
-    ){
+    ) {
+        _loading.postValue(true) // Start loading
         repo.signInWithGoogle(idToken) { success, errorMessage, userModel, role ->
+            // Note: Don't stop loading yet if we are about to fetch more data
             if (success && userModel != null) {
                 val userId = userModel.userId
 
-                // --- SYNC LOGIC FOR GOOGLE USERS ---
                 syncOfflineUserData(userId, context) { routeId ->
                     scheduleViewModel.cacheSchedulesForOffline(routeId, context)
                 }
-                // ------------------------------------
 
                 if (role != null) {
                     repo.getUserById(userId) { fetchSuccess, _, fetchedUser ->
+                        _loading.postValue(false) // Stop after fetching user data
                         if (fetchSuccess && fetchedUser != null) {
                             checkAndNavigateAfterLogin(fetchedUser.userId, context, activity)
                         } else {
@@ -68,7 +73,7 @@ class UserViewModel(
                         }
                     }
                 } else {
-                    // Handle registration for new Google users...
+                    _loading.postValue(false) // Stop before moving to Registration
                     val intent = Intent(context, RegistrationActivity::class.java).apply {
                         putExtra("Google_UserModel", userModel)
                     }
@@ -76,14 +81,19 @@ class UserViewModel(
                     activity.finish()
                 }
             } else {
+                _loading.postValue(false) // Stop on failure
                 callback(false, errorMessage ?: "Google Sign-In failed.")
             }
         }
     }
 
 
-    fun register (email: String, password: String, callback: (Boolean, String, String) -> Unit){
-                repo.register(email, password, callback)
+    fun register(email: String, password: String, callback: (Boolean, String, String) -> Unit) {
+        _loading.postValue(true)
+        repo.register(email, password) { success, message, userId ->
+            _loading.postValue(false)
+            callback(success, message, userId)
+        }
     }
 
     fun addUserToDatabase(userId : String, model : UserModel, callback: (Boolean, String) -> Unit){
