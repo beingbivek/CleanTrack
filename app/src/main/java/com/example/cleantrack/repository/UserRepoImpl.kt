@@ -411,14 +411,15 @@ class UserRepoImpl : UserRepo{
     }
 
     override fun getUserPoints(userId: String, callback: (Boolean, String, Int) -> Unit) {
-        pointsRef.child(userId).child("totalPoints").get()
-            .addOnSuccessListener { snapshot ->
+        pointsRef.child(userId).child("totalPoints").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
                 val pts = snapshot.getValue(Int::class.java) ?: 0
                 callback(true, "Success", pts)
             }
-            .addOnFailureListener {
-                callback(false, it.message ?: "Error", 0)
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, 0)
             }
+        })
     }
 
     override fun updateSubscription(
