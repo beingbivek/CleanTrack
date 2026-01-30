@@ -29,43 +29,45 @@ class RegistrationInstrumentedTest {
 
     @Test
     fun testRegistrationFlowSuccess() {
-        // 1. Fill Text Fields
-        // Use unique email to avoid "Email already exists" error
-        val testEmail = "testuser${System.currentTimeMillis()}@gmail.com"
+        val testEmail = "test${System.currentTimeMillis()}@gmail.com"
 
-        composeRule.onNodeWithTag("reg_fullname").performTextInput("Test User")
+        // Fill basic info
+        composeRule.onNodeWithTag("reg_fullname").performTextInput("John Doe")
         composeRule.onNodeWithTag("reg_email").performTextInput(testEmail)
-        composeRule.onNodeWithTag("reg_phone").performTextInput("9841234567")
+        composeRule.onNodeWithTag("reg_phone").performTextInput("9800000000")
 
-        // 2. Select Address Dropdowns
-        // Province
+        // --- PROVINCE DROPDOWN ---
         composeRule.onNodeWithTag("province_dropdown").performClick()
-        composeRule.onNodeWithText("Koshi", useUnmergedTree = true).performClick()
+        // Wait for the popup and click the text.
+        // useUnmergedTree = true is MANDATORY for dropdown items
+        composeRule.onNodeWithText("Koshi", useUnmergedTree = true)
+            .performClick()
 
-        // District
+        // --- DISTRICT DROPDOWN ---
         composeRule.onNodeWithTag("district_dropdown").performClick()
-        composeRule.onNodeWithText("Morang", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Morang", useUnmergedTree = true)
+            .performClick()
 
-        // Municipality
+        // --- MUNICIPALITY DROPDOWN ---
         composeRule.onNodeWithTag("municipality_dropdown").performClick()
-        composeRule.onNodeWithText("Biratnagar", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Biratnagar", useUnmergedTree = true)
+            .performClick()
 
-        // Ward
+        // --- WARD DROPDOWN ---
         composeRule.onNodeWithTag("ward_dropdown").performClick()
-        composeRule.onNodeWithText("1", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("1", useUnmergedTree = true)
+            .performClick()
 
-        // 3. Fill Password
-        composeRule.onNodeWithTag("reg_password").performTextInput("Password123")
-        composeRule.onNodeWithTag("reg_confirm_password").performTextInput("Password123")
-
-        // 4. Accept Terms and Register
+        // Password & Terms
+        composeRule.onNodeWithTag("reg_password").performTextInput("Pass123!")
+        composeRule.onNodeWithTag("reg_confirm_password").performTextInput("Pass123!")
         composeRule.onNodeWithTag("terms_checkbox").performClick()
 
-        // Scroll to button to ensure it is clickable
+        // Register
         composeRule.onNodeWithTag("register_button").performScrollTo().performClick()
 
-        // 5. WAIT for Firebase and check Intent (Teacher Style)
-        composeRule.waitUntil(timeoutMillis = 15000) {
+        // Wait for navigation (Teacher Style)
+        composeRule.waitUntil(15000) {
             try {
                 Intents.intended(hasComponent(UserLocationMapActivity::class.java.name))
                 true

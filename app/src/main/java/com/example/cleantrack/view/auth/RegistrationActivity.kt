@@ -536,6 +536,7 @@ fun DropdownField(
             value = label, onValueChange = {}, enabled = false,
             modifier = Modifier.fillMaxWidth()
                 .onGloballyPositioned { fieldSize = it.size.toSize() }
+                .testTag(tag)
                 .clickable { onExpand() },
             placeholder = { Text(text = placeholder, color = Green) },
             textStyle = TextStyle(color = Green),
