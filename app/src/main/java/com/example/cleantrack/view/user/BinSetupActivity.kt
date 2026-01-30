@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -144,7 +145,7 @@ fun BinSetupScreen(binId: String?) {
                             value = label,
                             onValueChange = { label = it },
                             label = { Text("Label (e.g. Kitchen Bin)") },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.testTag("bin_label_field").fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = Green,
@@ -162,7 +163,7 @@ fun BinSetupScreen(binId: String?) {
                                 readOnly = true,
                                 label = { Text("Waste Category") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                modifier = Modifier.fillMaxWidth().menuAnchor().testTag("bin_category_dropdown"),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = Green,
@@ -189,7 +190,7 @@ fun BinSetupScreen(binId: String?) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Button(
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(56.dp).testTag("bin_save_button"),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Green),
                             onClick = {

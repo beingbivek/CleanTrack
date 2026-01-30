@@ -1,63 +1,42 @@
 package com.example.cleantrack
 
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.cleantrack.view.auth.LoginActivity
-import com.example.cleantrack.view.user.UserDashboardActivity
 import com.example.cleantrack.view.auth.RegistrationActivity
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
+import com.example.cleantrack.view.user.UserDashboardActivity
+import org.junit.*
 
-@RunWith(AndroidJUnit4::class)
 class LoginInstrumentedTest {
-
     @get:Rule
     val composeRule = createAndroidComposeRule<LoginActivity>()
 
-    @Before
-    fun setup() {
-        Intents.init()
-    }
-
-    @After
-    fun tearDown() {
-        Intents.release()
-    }
+    @Before fun setup() = Intents.init()
+    @After fun tearDown() = Intents.release()
 
     @Test
-    fun testLoginNavigation_ToUserDashboard() {
-        // Type Email
-        composeRule.onNodeWithTag("email_field")
-            .performTextInput("testuser@example.com")
+    fun testNavigationToRegistration() {
+        // Find the registration link and click
+        composeRule.onNodeWithTag("go_to_registration").performClick()
 
-        // Type Password
-        composeRule.onNodeWithTag("password_field")
-            .performTextInput("password123")
-
-        // Click Login Button
-        composeRule.onNodeWithTag("login_button")
-            .performClick()
-
-        // Verify navigation to User Dashboard
-        // Note: This assumes the repo returns a successful login for these credentials
-        Intents.intended(hasComponent(UserDashboardActivity::class.java.name))
-    }
-
-    @Test
-    fun testClickRegister_NavigatesToRegistration() {
-        // Click the "Register" or "Sign Up" text/button
-        composeRule.onNodeWithTag("go_to_registration")
-            .performClick()
-
-        // Verify navigation
+        // Assert Intent
         Intents.intended(hasComponent(RegistrationActivity::class.java.name))
+    }
+
+    @Test
+    fun testLoginFlowSuccess() {
+        composeRule.onNodeWithTag("email_field").performTextInput("apple1@gmail.com")
+        composeRule.onNodeWithTag("password_field").performTextInput("apple@12")
+        composeRule.onNodeWithTag("login_button").performClick()
+
+        // Wait up to 10s for navigation (Handles slow emulator/network)
+        composeRule.waitUntil(10000) {
+            try {
+                Intents.intended(hasComponent(UserDashboardActivity::class.java.name))
+                true
+            } catch (e: Exception) { false }
+        }
     }
 }
