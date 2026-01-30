@@ -16,24 +16,30 @@ class VehicleSetupInstrumentedTest {
 
     @Test
     fun testAddVehicle_Success() {
-        // 1. Fill Vehicle Number
+        // 1. Fill Vehicle Number and CLOSE keyboard
         composeRule.onNodeWithTag("vehicle_number_field")
             .performTextInput("BA-777-XYZ")
 
-        // 2. Select Type from Dropdown (TRUCK is default, change to VAN)
-        composeRule.onNodeWithTag("type_dropdown").performClick()
-        composeRule.onNodeWithText("VAN").performClick()
+        // Use this to ensure the keyboard doesn't block other elements
+        composeRule.onNodeWithTag("vehicle_number_field").performImeAction()
 
-        // 3. Fill Capacity
+        // 2. Select Type from Dropdown
+        composeRule.onNodeWithTag("type_dropdown").performClick()
+        // Wait for the dropdown item to actually appear before clicking
+        composeRule.onNodeWithText("VAN").assertIsDisplayed().performClick()
+
+        // 3. Fill Capacity and scroll to ensure button is visible
         composeRule.onNodeWithTag("capacity_field")
             .performTextInput("2500")
 
-        // 4. Click Save
-        composeRule.onNodeWithTag("save_vehicle_button").performClick()
+        // 4. Click Save (Add performScrollTo if the screen is small)
+        composeRule.onNodeWithTag("save_vehicle_button")
+            .performScrollTo()
+            .performClick()
 
-        // --- ADD THE FIX HERE ---
-        // Wait until the button disappears (meaning activity.finish() was called)
-        composeRule.waitUntil(timeoutMillis = 5000) {
+        // 5. WAIT with a longer timeout
+        // Some Firebase operations take longer than 5 seconds on emulators
+        composeRule.waitUntil(timeoutMillis = 10000) {
             composeRule
                 .onAllNodesWithTag("save_vehicle_button")
                 .fetchSemanticsNodes()
