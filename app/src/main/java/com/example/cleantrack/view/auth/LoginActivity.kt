@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag // NEW IMPORT
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -152,7 +153,6 @@ fun LoginBody() {
             verticalArrangement = Arrangement.Top
         ) {
             item {
-                // Large top spacer for status bar + visual breathing room
                 Spacer(modifier = Modifier.height(100.dp))
 
                 Text(
@@ -201,7 +201,8 @@ fun LoginBody() {
                     onValueChange = { email = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 15.dp),
+                        .padding(horizontal = 15.dp)
+                        .testTag("email_field"), // ADDED TEST TAG
                     shape = RoundedCornerShape(15.dp),
                     placeholder = { Text("Enter your email") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -220,7 +221,10 @@ fun LoginBody() {
                     value = password,
                     onValueChange = { password = it },
                     trailingIcon = {
-                        IconButton(onClick = { passwordvisibility = !passwordvisibility }) {
+                        IconButton(
+                            onClick = { passwordvisibility = !passwordvisibility },
+                            modifier = Modifier.testTag("password_toggle") // ADDED TEST TAG
+                        ) {
                             Icon(
                                 painter = if (passwordvisibility)
                                     painterResource(R.drawable.baseline_visibility_off_24)
@@ -233,7 +237,8 @@ fun LoginBody() {
                     visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 15.dp),
+                        .padding(horizontal = 15.dp)
+                        .testTag("password_field"), // ADDED TEST TAG
                     shape = RoundedCornerShape(15.dp),
                     placeholder = { Text("Enter your password") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -254,6 +259,7 @@ fun LoginBody() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
+                        .testTag("forgot_password_text") // ADDED TEST TAG
                         .clickable {
                             forgotPasswordEmail = email.trim()
                             showForgotPasswordDialog = true
@@ -267,12 +273,9 @@ fun LoginBody() {
                     onClick = {
                         userViewModel.login(email.trim(), password.trim()) { success, errorMessage, _, userId ->
                             if (success && userId != null) {
-                                // 1. Sync User Pro status
                                 userViewModel.syncOfflineUserData(userId, context) { routeId ->
-                                    // 2. If the callback runs, the user is Pro, so cache their schedules
                                     scheduleViewModel.cacheSchedulesForOffline(routeId, context)
                                 }
-
                                 userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
                             } else {
                                 AppUtil.showToast(context, errorMessage ?: "Login failed.")
@@ -283,6 +286,7 @@ fun LoginBody() {
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
                         .height(60.dp)
+                        .testTag("login_button") // ADDED TEST TAG
                         .background(
                             brush = Brush.horizontalGradient(colors = ButtonColor),
                             shape = RoundedCornerShape(15.dp)
@@ -300,6 +304,7 @@ fun LoginBody() {
                     withStyle(SpanStyle(color = Green)) { append("Sign Up") }
                 }, modifier = Modifier
                     .padding(horizontal = 15.dp, vertical = 15.dp)
+                    .testTag("signup_redirect_text") // ADDED TEST TAG
                     .clickable {
                         context.startActivity(Intent(context, RegistrationActivity::class.java))
                     })
@@ -328,7 +333,8 @@ fun LoginBody() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
-                        .height(60.dp),
+                        .height(60.dp)
+                        .testTag("google_login_button"), // ADDED TEST TAG
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                     shape = RoundedCornerShape(5.dp),
                     border = BorderStroke(0.5.dp, Color.Gray),
@@ -358,7 +364,7 @@ fun LoginBody() {
                         intent.putExtra("IS_LOGGED_IN", false)
                         context.startActivity(intent)
                     },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 30.dp)
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 30.dp).testTag("contact_support_button") // ADDED TEST TAG
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -420,12 +426,13 @@ fun ForgotPasswordDialog(
                     onValueChange = { emailInput = it },
                     label = { Text("Email") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("dialog_email_input") // ADDED TEST TAG
                 )
             }
         },
         confirmButton = {
             Button(
+                modifier = Modifier.testTag("dialog_send_button"), // ADDED TEST TAG
                 onClick = {
                     if (emailInput.isNotBlank()) {
                         onSendReset(emailInput)
@@ -438,7 +445,10 @@ fun ForgotPasswordDialog(
             }
         },
         dismissButton = {
-            Button(onClick = onDimiss) {
+            Button(
+                modifier = Modifier.testTag("dialog_cancel_button"), // ADDED TEST TAG
+                onClick = onDimiss
+            ) {
                 Text("Cancel")
             }
         }

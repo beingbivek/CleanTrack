@@ -116,9 +116,10 @@ class PointsRepoImpl : PointsRepo {
 
     override fun saveTransaction(transaction: PointsTransactionModel, callback: (Boolean) -> Unit) {
         val key = historyRef.push().key ?: ""
-        transaction.transactionId = key
+        // Instead of transaction.transactionId = key, create a copy with the new ID
+        val updatedTransaction = transaction.copy(transactionId = key)
 
-        historyRef.child(key).setValue(transaction)
+        historyRef.child(key).setValue(updatedTransaction)
             .addOnCompleteListener {
                 callback(it.isSuccessful)
             }
@@ -148,14 +149,14 @@ class PointsRepoImpl : PointsRepo {
                 val model = mutableData.getValue(UserPointsModel::class.java)
                 if (model == null || model.totalPoints < amount) return Transaction.abort()
 
-                model.totalPoints -= amount
-                mutableData.value = model
+                // Instead of model.totalPoints -= amount, create a updated copy
+                val updatedModel = model.copy(totalPoints = model.totalPoints - amount)
+                mutableData.value = updatedModel
                 return Transaction.success(mutableData)
             }
 
             override fun onComplete(error: DatabaseError?, committed: Boolean, snapshot: DataSnapshot?) {
                 if (committed) {
-                    // Log the deduction in Points History for transparency
                     val txn = PointsTransactionModel(
                         userId = userId,
                         amount = -amount,

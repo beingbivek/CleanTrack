@@ -4,12 +4,10 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,7 +38,6 @@ import kotlinx.coroutines.launch
 class BinCollectionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
 
         val binId = intent.getStringExtra("BIN_ID") ?: ""
         val tripId = intent.getStringExtra("TRIP_ID") ?: ""
@@ -128,6 +126,8 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                     .fillMaxSize()
                     .padding(pad)
                     .padding(horizontal = 20.dp)
+                    // Added testTag to the scrollable column for robust testing
+                    .testTag("collection_scroll_column")
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -136,7 +136,7 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                 // Header (Bin details Card)
                 binDetails?.let { bin ->
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag("bin_details_card"),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(4.dp)
@@ -164,6 +164,8 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                             Switch(
                                 checked = isSegregated,
                                 onCheckedChange = { isSegregated = it },
+                                // Added testTag for segregation switch
+                                modifier = Modifier.testTag("segregation_switch"),
                                 colors = SwitchDefaults.colors(checkedThumbColor = Green, checkedTrackColor = Green.copy(0.3f))
                             )
                         }
@@ -180,6 +182,8 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                                     tint = if (rating >= starIndex) Color(0xFFFFB300) else Color.Gray,
                                     modifier = Modifier
                                         .size(45.dp)
+                                        // Dynamic testTag for each star rating (star_1, star_2, etc.)
+                                        .testTag("star_$starIndex")
                                         .clickable { rating = starIndex }
                                 )
                             }
@@ -189,7 +193,8 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                             value = weightInput,
                             onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) weightInput = it },
                             label = { Text("Weight (kg)") },
-                            modifier = Modifier.fillMaxWidth(),
+                            // Added testTag for weight input
+                            modifier = Modifier.fillMaxWidth().testTag("weight_input"),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, focusedLabelColor = Green),
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
@@ -201,7 +206,8 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                             value = remarks,
                             onValueChange = { remarks = it },
                             label = { Text("Remarks") },
-                            modifier = Modifier.fillMaxWidth(),
+                            // Added testTag for remarks input
+                            modifier = Modifier.fillMaxWidth().testTag("remarks_input"),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, focusedLabelColor = Green)
                         )
@@ -233,8 +239,6 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                                     isSegregated = isSegregated
                                 ) { success, msg ->
                                     if (success) {
-
-                                        // --- ADDED THIS TOAST ---
                                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                         aiRepo.saveProcessedInsight(
                                             collection = BinCollectionModel(tripId = tripId, rating = rating, weight = weight, segregatedCorrectly = isSegregated),
@@ -261,12 +265,18 @@ fun BinCollectionScreen(binId: String, tripId: String, routeId: String, actualRo
                             Toast.makeText(context, "Please provide a rating", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    // Added testTag for the primary action button
+                    modifier = Modifier.fillMaxWidth().height(56.dp).testTag("save_log_button"),
                     shape = RoundedCornerShape(15.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Green)
                 ) {
                     if (isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
+                        CircularProgressIndicator(
+                            // Added testTag for the saving state indicator
+                            modifier = Modifier.size(24.dp).testTag("save_progress"),
+                            color = Color.White,
+                            strokeWidth = 3.dp
+                        )
                     } else {
                         Text("Save Collection Log", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }

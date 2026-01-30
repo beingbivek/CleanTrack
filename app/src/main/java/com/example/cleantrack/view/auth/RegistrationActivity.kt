@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag // NEW IMPORT
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -211,7 +212,8 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(White),
+                .background(White)
+                .testTag("reg_lazy_column"),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
@@ -252,7 +254,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
             item {
                 OutlinedTextField(
                     value = fullname, onValueChange = { fullname = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp).testTag("reg_name_field"), // TAG ADDED
                     shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your full name") },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
@@ -265,7 +267,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
             item {
                 OutlinedTextField(
                     value = email, onValueChange = { email = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp).testTag("reg_email_field"), // TAG ADDED
                     shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your email") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     enabled = !isGoogleSignInFlow,
@@ -280,7 +282,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
             item {
                 OutlinedTextField(
                     value = number, onValueChange = { number = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp).testTag("reg_phone_field"), // TAG ADDED
                     shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your phone number") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = TextFieldDefaults.colors(
@@ -291,14 +293,13 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                 Spacer(modifier = Modifier.height(14.dp))
             }
 
-            // Dropdown Items
             item {
                 DropdownField(
+                    tag = "dropdown_province", // PASSED TAG
                     label = addressVM.selectedProvinceName, placeholder = "Select Province",
                     expanded = expandedProvince.value, onExpand = { expandedProvince.value = true },
                     onDismiss = { expandedProvince.value = false }, items = provinces.map { it.name },
                     onItemSelectedText = { name ->
-                        // Find the full model object by the name selected in the UI
                         provinces.find { it.name == name }?.let { addressVM.onProvinceSelected(it) }
                         expandedProvince.value = false
                     }
@@ -307,6 +308,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
 
             item {
                 DropdownField(
+                    tag = "dropdown_district", // PASSED TAG
                     label = addressVM.selectedDistrictName, placeholder = "Select District",
                     expanded = expandedDistrict.value, onExpand = { expandedDistrict.value = true },
                     onDismiss = { expandedDistrict.value = false }, items = districts.map { it.name },
@@ -319,6 +321,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
 
             item {
                 DropdownField(
+                    tag = "dropdown_municipality", // PASSED TAG
                     label = addressVM.selectedMunicipalityName, placeholder = "Select Municipality",
                     expanded = expandedMunicipality.value, onExpand = { expandedMunicipality.value = true },
                     onDismiss = { expandedMunicipality.value = false }, items = municipalities.map { it.name },
@@ -331,6 +334,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
 
             item {
                 DropdownField(
+                    tag = "dropdown_ward", // PASSED TAG
                     label = addressVM.selectedWardName, placeholder = "Select Ward",
                     expanded = expandedWard.value, onExpand = { expandedWard.value = true },
                     onDismiss = { expandedWard.value = false }, items = wards,
@@ -352,7 +356,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                             }
                         },
                         visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp).testTag("reg_password_field"), // TAG ADDED
                         shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your password") },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
@@ -371,7 +375,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                             }
                         },
                         visualTransformation = if (confirmpasswordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp).testTag("reg_confirm_password_field"), // TAG ADDED
                         shape = RoundedCornerShape(15.dp), placeholder = { Text("Confirm your password") },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
@@ -392,6 +396,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                         Checkbox(
                             checked = terms,
                             onCheckedChange = { terms = it },
+                            modifier = Modifier.testTag("reg_terms_checkbox"), // TAG ADDED
                             colors = CheckboxDefaults.colors(checkedColor = Green, checkmarkColor = White)
                         )
                     }
@@ -404,7 +409,6 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                         } else {
                             withStyle(SpanStyle(color = Black)) { append("By checking this box, you agree to our") }
 
-                            // Annotated part for Terms
                             pushStringAnnotation(tag = "TERMS", annotation = "terms")
                             withStyle(SpanStyle(color = Blue, fontWeight = FontWeight.Bold)) {
                                 append(" Terms and Condition")
@@ -413,7 +417,6 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
 
                             withStyle(SpanStyle(color = Black)) { append(" and") }
 
-                            // Annotated part for Privacy
                             pushStringAnnotation(tag = "PRIVACY", annotation = "privacy")
                             withStyle(SpanStyle(color = Blue, fontWeight = FontWeight.Bold)) {
                                 append(" Privacy Policy")
@@ -422,19 +425,16 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                         }
                     }
 
-                    // Use ClickableText-like behavior on a normal Text via Modifier
                     androidx.compose.foundation.text.ClickableText(
                         text = annotatedText,
                         style = TextStyle(fontSize = 14.sp),
                         modifier = Modifier.padding(vertical = 10.dp),
                         onClick = { offset ->
-                            // Check if "TERMS" was clicked
                             annotatedText.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
                                 .firstOrNull()?.let {
                                     context.startActivity(Intent(context, TermsAndConditionActivity::class.java))
                                 }
 
-                            // Check if "PRIVACY" was clicked
                             annotatedText.getStringAnnotations(tag = "PRIVACY", start = offset, end = offset)
                                 .firstOrNull()?.let {
                                     context.startActivity(Intent(context, PrivacyPolicyActivity::class.java))
@@ -449,6 +449,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                 Button(
                     onClick = onRegisterOrUpdate,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp).height(60.dp)
+                        .testTag("reg_button") // TAG ADDED
                         .background(brush = Brush.horizontalGradient(colors = ButtonColor), shape = RoundedCornerShape(15.dp)),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 15.dp),
@@ -461,10 +462,12 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                 Text(buildAnnotatedString {
                     withStyle(SpanStyle(color = Blue)) { append("Already have account? ") }
                     withStyle(SpanStyle(color = Green)) { append("Login") }
-                }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 20.dp).clickable {
-                    context.startActivity(Intent(context, LoginActivity::class.java))
-                    activity.finish()
-                })
+                }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 20.dp)
+                    .testTag("login_redirect_text") // TAG ADDED
+                    .clickable {
+                        context.startActivity(Intent(context, LoginActivity::class.java))
+                        activity.finish()
+                    })
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
@@ -473,6 +476,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
 
 @Composable
 fun DropdownField(
+    tag: String, // ADDED PARAMETER
     label: String,
     placeholder: String,
     expanded: Boolean,
@@ -488,7 +492,8 @@ fun DropdownField(
             value = label, onValueChange = {}, enabled = false,
             modifier = Modifier.fillMaxWidth()
                 .onGloballyPositioned { fieldSize = it.size.toSize() }
-                .clickable { onExpand() },
+                .clickable { onExpand() }
+                .testTag(tag), // TAG APPLIED HERE
             placeholder = { Text(text = placeholder, color = Green) },
             textStyle = TextStyle(color = Green),
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Green) },
@@ -503,6 +508,7 @@ fun DropdownField(
         ) {
             items.forEach {
                 DropdownMenuItem(
+                    modifier = Modifier.testTag("dropdown_item_$it"), // TAG FOR INDIVIDUAL ITEMS
                     text = { Text(it, color = Green) },
                     onClick = { onItemSelectedText(it) }
                 )
