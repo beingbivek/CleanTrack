@@ -122,7 +122,8 @@ class DriverScanBinActivity : ComponentActivity() {
             if (success) {
                 pointsRepo.calculatePoints(
                     binType = bin.category,
-                    segregatedCorrectly = segregatedCorrectly
+                    segregatedCorrectly = segregatedCorrectly,
+                    rating
                 ) { calculatedPoints ->
                     pointsRepo.addPointsToUser(
                         userId = bin.ownerUserId,
