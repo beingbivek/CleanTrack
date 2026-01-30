@@ -2,6 +2,7 @@ package com.example.cleantrack.view.driver
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -81,10 +82,13 @@ class DriverScanBinActivity : ComponentActivity() {
         // Now calling the updated ViewModel method with the routeId parameter
         activeTripViewModel.checkAndValidateBin(tripId, routeId, binId) { allowed, message ->
             if (allowed) {
+                val routeName = intent.getStringExtra("ROUTE_NAME") ?: ""
+
                 val intent = Intent(this, BinCollectionActivity::class.java).apply {
                     putExtra("BIN_ID", binId)
                     putExtra("TRIP_ID", tripId)
-                    putExtra("ROUTE_ID", routeId) // Also pass it to the next screen
+                    putExtra("ROUTE_ID", routeId)
+                    putExtra("ROUTE_NAME", routeName) // 🔥 PASS IT
                 }
                 startActivity(intent)
                 finish()
@@ -122,8 +126,10 @@ class DriverScanBinActivity : ComponentActivity() {
                 ) { calculatedPoints ->
                     pointsRepo.addPointsToUser(
                         userId = bin.ownerUserId,
-                        points = calculatedPoints
+                        points = calculatedPoints,
+
                     )
+
                 }
                 Toast.makeText(this, "Bin rated successfully", Toast.LENGTH_SHORT).show()
                 finish()

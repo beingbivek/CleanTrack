@@ -48,6 +48,10 @@ import com.example.cleantrack.viewmodel.NotificationViewModel
 import com.example.cleantrack.viewmodel.AnnouncementViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.example.cleantrack.util.NotificationHelper
+import com.example.cleantrack.view.auth.ResetPasswordActivity
+
+import com.example.cleantrack.view.common.ContactSupportActivity
+import com.example.cleantrack.view.common.EditProfileActivity
 import com.example.cleantrack.view.common.LeaderboardActivity
 
 class UserDashboardActivity : ComponentActivity() {
@@ -101,7 +105,7 @@ fun UserDashboardBody() {
     LaunchedEffect(notifications) {
         val newItems = notifications.filter { it.notificationId !in shownNotificationIds }
         newItems.forEach { item ->
-            NotificationHelper.showSystemNotification(context, item.title, item.message)
+            NotificationHelper.showSystemNotification(context, item.title, item.message, item.notificationId)
         }
         if (newItems.isNotEmpty()) {
             shownNotificationIds = shownNotificationIds + newItems.map { it.notificationId }
@@ -163,7 +167,11 @@ fun UserDashboardBody() {
         ) { innerPadding ->
             when (selectedTab) {
                 // Pass isLoadingUser to HomeSection
-                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview, isLoadingUser) { showPremiumDialog = true }
+                0 -> HomeSection(innerPadding, userViewModel, userProfile, currentPoints, latestCollection, globalAiReview, isLoadingUser,
+                    { showPremiumDialog = true } // This handles the "Locked" icons
+                ) {
+                    selectedTab = 1 // This handles clicking the Map Card
+                }
                 1 -> MapTrackerSection(innerPadding, userProfile)
                 2 -> ProfileSection(innerPadding, userProfile) { showLogoutDialog = true }
             }
@@ -180,7 +188,8 @@ fun HomeSection(
     latestCollection: BinCollectionModel?,
     globalAiReview: String,
     isLoading: Boolean, // Added parameter
-    onShowPremiumGate: () -> Unit
+    onShowPremiumGate: () -> Unit,
+    onNavigateToTracker: () -> Unit
 ) {
     val context = LocalContext.current
     val currentUserId = userViewModel.getCurrentUserId() ?: ""
@@ -211,7 +220,13 @@ fun HomeSection(
         Spacer(modifier = Modifier.height(15.dp))
 
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = CircleShape, color = Color.White.copy(0.4f), modifier = Modifier.size(45.dp), border = BorderStroke(1.dp, Color.White.copy(0.5f))) {
+            Surface(shape = CircleShape, color = Color.White.copy(0.4f), modifier = Modifier.size(45.dp)
+                .clickable {
+                    val intent = Intent(context, EditProfileActivity::class.java).apply {
+                        putExtra("userId", userProfile?.userId)
+                    }
+                    context.startActivity(intent)
+                }, border = BorderStroke(1.dp, Color.White.copy(0.5f))) {
                 AsyncImage(model = if (!userProfile?.profileImageUrl.isNullOrEmpty()) userProfile?.profileImageUrl else R.drawable.user_logo, contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -263,6 +278,14 @@ fun HomeSection(
                         CircularProgressIndicator(color = Green, modifier = Modifier.size(30.dp))
                     } else if (isPremium && !userProfile?.activeRouteId.isNullOrEmpty()) {
                         TruckLiveMapScreen(routeId = userProfile!!.activeRouteId)
+
+                        // TRANSPARENT OVERLAY: This captures the click that the Map usually steals
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Transparent)
+                                .clickable { onNavigateToTracker() }
+                        )
                     } else {
                         // Blurred or placeholder view for non-premium
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -293,12 +316,18 @@ fun HomeSection(
                     }
                 } else {
                     Row(modifier = Modifier.fillMaxWidth(), Arrangement.SpaceAround) {
-                        QuickIcon(Icons.Outlined.PhotoCamera, "Scan", isOutline = true)
+                        LockedQuickIcon(icon = Icons.Default.History, label = "Bin History", isLocked = !isPremium) {
+                            if (isPremium) context.startActivity(Intent(context,
+                                BinHistoryActivity::class.java)) else onShowPremiumGate()
+                        }
                         LockedQuickIcon(icon = Icons.Default.Leaderboard, label = "Leaderboard", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context,
                                 LeaderboardActivity::class.java)) else onShowPremiumGate()
                         }
-                        QuickIcon(Icons.Outlined.Terrain, "Landfill", isOutline = true)
+                        QuickIcon(icon = Icons.Default.AccessTime, "Points History", isOutline = false){
+                            context.startActivity(Intent(context, PointsHistoryActivity::class.java))
+                        }
+
                         LockedQuickIcon(icon = Icons.Default.RestoreFromTrash, label = "Manage Bins", isLocked = !isPremium) {
                             if (isPremium) context.startActivity(Intent(context, UserBinListActivity::class.java)) else onShowPremiumGate()
                         }
@@ -361,12 +390,28 @@ fun LockedQuickIcon(icon: ImageVector, label: String, isLocked: Boolean, onClick
 
 @Composable
 fun MapTrackerSection(padding: PaddingValues, userProfile: UserModel?) {
+    // Column must fill max size to provide constraints to the Map
     Column(modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp)) {
         Text("Vehicle Tracking", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(20.dp))
-        Card(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(28.dp)), elevation = CardDefaults.cardElevation(8.dp), colors = CardDefaults.cardColors(containerColor = White)) {
-            if (!userProfile?.activeRouteId.isNullOrEmpty()) { TruckLiveMapScreen(routeId = userProfile!!.activeRouteId) }
-            else { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Select a route in Home to start tracking", color = Color.Gray) } }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f) // Ensures the card takes up remaining space
+                .clip(RoundedCornerShape(28.dp)),
+            elevation = CardDefaults.cardElevation(8.dp),
+            colors = CardDefaults.cardColors(containerColor = White)
+        ) {
+            // Check if user has a route assigned
+            if (!userProfile?.activeRouteId.isNullOrEmpty()) {
+                // Pass the ID to the reusable MapScreen
+                TruckLiveMapScreen(routeId = userProfile!!.activeRouteId)
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No active route assigned to your profile.", color = Color.Gray)
+                }
+            }
         }
     }
 }
@@ -376,7 +421,13 @@ fun ProfileSection(padding: PaddingValues, userProfile: UserModel?, onLogout: ()
     val context = LocalContext.current
     Column(modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(modifier = Modifier.height(30.dp))
-        Surface(shape = CircleShape, color = White.copy(0.3f), modifier = Modifier.size(110.dp), border = BorderStroke(2.dp, White)) {
+        Surface(shape = CircleShape, color = White.copy(0.3f), modifier = Modifier.size(110.dp)
+            .clickable {
+                val intent = Intent(context, EditProfileActivity::class.java).apply {
+                    putExtra("userId", userProfile?.userId)
+                }
+                context.startActivity(intent)
+            }, border = BorderStroke(2.dp, White)) {
             AsyncImage(model = if (!userProfile?.profileImageUrl.isNullOrEmpty()) userProfile?.profileImageUrl else R.drawable.user_logo, contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
         }
         Spacer(modifier = Modifier.height(15.dp))
@@ -385,7 +436,22 @@ fun ProfileSection(padding: PaddingValues, userProfile: UserModel?, onLogout: ()
         Spacer(modifier = Modifier.height(40.dp))
         Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = White), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(8.dp)) {
+                ProfileMenuItem(Icons.Default.Edit, "Edit Profile") {
+                    val intent = Intent(context, EditProfileActivity::class.java).apply { putExtra("USER_ID", userProfile?.userId) }
+                    context.startActivity(intent)
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
                 ProfileMenuItem(Icons.Default.Policy, "Privacy Policy") { context.startActivity(Intent(context, PrivacyPolicyActivity::class.java)) }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                ProfileMenuItem(Icons.Default.LockReset, "Reset Password") {
+                    val intent = Intent(context, ResetPasswordActivity::class.java).apply { putExtra("USER_ID", userProfile?.userId) }
+                    context.startActivity(intent)
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+                ProfileMenuItem(Icons.Default.ContactSupport, "Contact Support") {
+                    val intent = Intent(context, ContactSupportActivity::class.java).apply { putExtra("USER_ID", userProfile?.userId) }
+                    context.startActivity(intent)
+                }
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
                 ProfileMenuItem(Icons.AutoMirrored.Filled.Logout, "Logout", textColor = Red) { onLogout() }
             }

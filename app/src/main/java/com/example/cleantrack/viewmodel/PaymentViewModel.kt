@@ -5,17 +5,16 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleantrack.model.SubscriptionModel
-import com.example.cleantrack.model.UserModel
 import com.example.cleantrack.repository.PaymentRepo
+import com.example.cleantrack.repository.PointsRepo
 import com.example.cleantrack.repository.UserRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
 
 class PaymentViewModel(
     private val paymentRepo: PaymentRepo,
-    private val userRepo: UserRepo // Need this to get current User ID/Email
+    private val userRepo: UserRepo,
+    private val pointsRepo: PointsRepo
 ) : ViewModel() {
 
     private val _paymentStatus = MutableLiveData<PaymentState>()
@@ -23,6 +22,16 @@ class PaymentViewModel(
 
     private val _currentSubscription = MutableLiveData<SubscriptionModel>()
     val currentSubscription: LiveData<SubscriptionModel> = _currentSubscription
+
+    private val _subscriptionAmount = MutableLiveData<String>()
+    val subscriptionAmount: LiveData<String> = _subscriptionAmount
+
+    fun loadSubscriptionAmount() {
+        viewModelScope.launch {
+            val result = paymentRepo.getSubscriptionAmount()
+            _subscriptionAmount.postValue(result.getOrDefault("500"))
+        }
+    }
 
     fun loadSubscriptionStatus() {
         val userId = userRepo.getCurrentUserId() ?: return
@@ -34,61 +43,73 @@ class PaymentViewModel(
     }
 
     fun processMonthlySubscription(amount: String) {
-        val userId = userRepo.getCurrentUserId()
-        if (userId == null) {
-            _paymentStatus.value = PaymentState.Error("User not logged in")
-            return
-        }
-
-        _paymentStatus.value = PaymentState.Loading
-
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // 1. Fetch user profile using your existing callback-based method
-                val user = suspendCancellableCoroutine<UserModel?> { continuation ->
-                    userRepo.getUserById(userId) { success, message, userModel ->
-                        if (success && userModel != null) {
-                            continuation.resume(userModel)
-                        } else {
-                            continuation.resume(null)
-                        }
-                    }
-                }
+            _paymentStatus.postValue(PaymentState.Loading)
 
-                if (user == null) {
-                    _paymentStatus.postValue(PaymentState.Error("Could not retrieve user profile info"))
-                    return@launch
-                }
+            val user = userRepo.getCurrentUser()
 
-                // 2. Extract real data (assuming UserModel has 'email' and 'phone')
-                // Using elvis operators as fallbacks to prevent API crashes
-                val email = user.email.ifEmpty { "no-email@cleantrack.com" }
-                val phone = user.number.ifEmpty { "0000000000" }
+            if (user == null) {
+                _paymentStatus.postValue(PaymentState.Error("User profile not found. Please log in again."))
+                return@launch
+            }
 
-                // 3. Initiate Payment with REAL user info
-                val payResult = paymentRepo.initiatePayment(amount, email, phone)
+            val initiationResult = paymentRepo.initiatePayment(amount, user.email, user.number)
 
-                if (payResult.isSuccess) {
-                    val txnId = payResult.getOrNull() ?: "UNKNOWN"
-
-                    // 4. Update Database Subscription
-                    val dbResult = paymentRepo.activateSubscription(userId, txnId)
-
-                    if (dbResult.isSuccess) {
-                        _paymentStatus.postValue(PaymentState.Success("Subscription Active!"))
-                        loadSubscriptionStatus()
-                    } else {
-                        _paymentStatus.postValue(PaymentState.Error("Paid successfully, but failed to update status. TXN: $txnId"))
-                    }
-                } else {
-                    val errorMsg = payResult.exceptionOrNull()?.message ?: "Payment Failed"
-                    _paymentStatus.postValue(PaymentState.Error(errorMsg))
-                }
-
-            } catch (e: Exception) {
-                _paymentStatus.postValue(PaymentState.Error("System Error: ${e.localizedMessage}"))
+            if (initiationResult.isSuccess) {
+                val initiation = initiationResult.getOrNull()!!
+                _paymentStatus.postValue(
+                    PaymentState.LaunchStripe(
+                        paymentIntentId = initiation.paymentIntentId,
+                        clientSecret = initiation.clientSecret
+                    )
+                )
+            } else {
+                _paymentStatus.postValue(PaymentState.Error("Failed to initiate: ${initiationResult.exceptionOrNull()?.message}"))
             }
         }
+    }
+
+    fun processPointsPayment(pointsNeeded: Int) {
+        val userId = userRepo.getCurrentUserId() ?: return
+
+        viewModelScope.launch {
+            _paymentStatus.postValue(PaymentState.Loading)
+
+            // 1. Deduct points first
+            pointsRepo.deductPoints(userId, pointsNeeded, "Redeemed for Monthly Fee") { success, message ->
+                if (success) {
+                    // 2. If points deduction works, activate subscription with a special ID
+                    val transactionId = "POINTS_REDEM_${System.currentTimeMillis()}"
+
+                    viewModelScope.launch {
+                        val result = paymentRepo.activateSubscription(userId, transactionId)
+                        if (result.isSuccess) {
+                            _paymentStatus.postValue(PaymentState.Success("Fee paid with points!"))
+                        } else {
+                            _paymentStatus.postValue(PaymentState.Error("Points taken, but activation failed. Contact support."))
+                        }
+                    }
+                } else {
+                    _paymentStatus.postValue(PaymentState.Error(message))
+                }
+            }
+        }
+    }
+
+    fun completePayment(userId: String, transactionId: String) {
+        viewModelScope.launch {
+            _paymentStatus.postValue(PaymentState.Loading)
+            val result = paymentRepo.activateSubscription(userId, transactionId)
+            if (result.isSuccess) {
+                _paymentStatus.postValue(PaymentState.Success("Subscription activated successfully!"))
+            } else {
+                _paymentStatus.postValue(PaymentState.Error("Activation failed: ${result.exceptionOrNull()?.message}"))
+            }
+        }
+    }
+
+    fun resetPaymentStatus() {
+        _paymentStatus.value = PaymentState.Idle
     }
 }
 
@@ -96,6 +117,10 @@ class PaymentViewModel(
 sealed class PaymentState {
     object Idle : PaymentState()
     object Loading : PaymentState()
+    data class LaunchStripe(
+        val paymentIntentId: String,
+        val clientSecret: String
+    ) : PaymentState()
     data class Success(val message: String) : PaymentState()
     data class Error(val message: String) : PaymentState()
 }

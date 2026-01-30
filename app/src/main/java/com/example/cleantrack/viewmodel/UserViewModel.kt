@@ -13,6 +13,7 @@ import com.example.cleantrack.repository.AIRepository
 import com.example.cleantrack.repository.BinCollectionRepo
 import com.example.cleantrack.repository.UserRepo
 import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.util.PreferenceManager
 import com.example.cleantrack.view.admin.AdminDashboardActivity
 import com.example.cleantrack.view.auth.LoginActivity
 import com.example.cleantrack.view.auth.RegistrationActivity
@@ -34,8 +35,12 @@ class UserViewModel(
     private val _globalAiReview = MutableLiveData<String>("Gathering your history...")
     val globalAiReview: LiveData<String> = _globalAiReview
 
-    fun login(email : String , password : String , callback : (Boolean, String?, String?, String?)-> Unit){
-                repo.login(email, password, callback)
+    fun login(email: String, password: String, callback: (Boolean, String?, String?, String?) -> Unit) {
+        _loading.postValue(true) // Start loading
+        repo.login(email, password) { success, msg, userId, role ->
+            _loading.postValue(false) // Stop loading
+            callback(success, msg, userId, role)
+        }
     }
 
     // In UserViewModel.kt
@@ -45,43 +50,50 @@ class UserViewModel(
         idToken: String,
         context: Context,
         activity: Activity,
-        callback: (Boolean, String?) -> Unit // Simplified callback for UI success/failure message
-    ){
+        scheduleViewModel: ScheduleViewModel,
+        callback: (Boolean, String?) -> Unit
+    ) {
+        _loading.postValue(true) // Start loading
         repo.signInWithGoogle(idToken) { success, errorMessage, userModel, role ->
+            // Note: Don't stop loading yet if we are about to fetch more data
             if (success && userModel != null) {
+                val userId = userModel.userId
+
+                syncOfflineUserData(userId, context) { routeId ->
+                    scheduleViewModel.cacheSchedulesForOffline(routeId, context)
+                }
+
                 if (role != null) {
-                    // SCENARIO 1: FULL LOGIN SUCCESS (Existing user with complete profile)
-                    // We use checkAndNavigateAfterLogin which handles the location check
-                    repo.getUserById(userModel!!.userId) { fetchSuccess, _, fetchedUser ->
+                    repo.getUserById(userId) { fetchSuccess, _, fetchedUser ->
+                        _loading.postValue(false) // Stop after fetching user data
                         if (fetchSuccess && fetchedUser != null) {
                             checkAndNavigateAfterLogin(fetchedUser.userId, context, activity)
                         } else {
-                            callback(false, "Login successful but failed to fetch user data for navigation.")
+                            callback(false, "Failed to fetch user data.")
                         }
                     }
-                } else if (userModel != null) {
-                    // SCENARIO 2: REGISTRATION/PROFILE UPDATE NEEDED (New or incomplete user)
-
+                } else {
+                    _loading.postValue(false) // Stop before moving to Registration
                     val intent = Intent(context, RegistrationActivity::class.java).apply {
                         putExtra("Google_UserModel", userModel)
                     }
                     context.startActivity(intent)
                     activity.finish()
-                    callback(true, "Please complete your profile.")
-
-                } else {
-                    callback(false, "Google sign-in succeeded but the next step is unclear.")
                 }
             } else {
-                // SCENARIO 3: SIGN-IN FAILED
+                _loading.postValue(false) // Stop on failure
                 callback(false, errorMessage ?: "Google Sign-In failed.")
             }
         }
     }
 
 
-    fun register (email: String, password: String, callback: (Boolean, String, String) -> Unit){
-                repo.register(email, password, callback)
+    fun register(email: String, password: String, callback: (Boolean, String, String) -> Unit) {
+        _loading.postValue(true)
+        repo.register(email, password) { success, message, userId ->
+            _loading.postValue(false)
+            callback(success, message, userId)
+        }
     }
 
     fun addUserToDatabase(userId : String, model : UserModel, callback: (Boolean, String) -> Unit){
@@ -138,7 +150,7 @@ class UserViewModel(
 
     fun getAllUsers(){
 
-//        _loading.postValue(true)
+        _loading.postValue(true)
 
         repo.getAllUsers{
             success, message, data ->
@@ -403,5 +415,43 @@ class UserViewModel(
         }
     }
 
+
+    fun resetPassword(currentPass: String, newPass: String, confirmPass: String, callback: (Boolean, String) -> Unit) {
+        // Validation logic
+        if (currentPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
+            callback(false, "All fields are required")
+            return
+        }
+        if (newPass.length < 6) {
+            callback(false, "New password must be at least 6 characters")
+            return
+        }
+        if (newPass != confirmPass) {
+            callback(false, "New passwords do not match")
+            return
+        }
+
+        _loading.postValue(true)
+        repo.resetPassword(currentPass, newPass) { success, message ->
+            _loading.postValue(false)
+            callback(success, message)
+        }
+    }
+
+    fun syncOfflineUserData(userId: String, context: Context, onProVerified: (String) -> Unit) {
+        val prefManager = PreferenceManager(context)
+        repo.getUserById(userId) { success, _, userModel ->
+            if (success && userModel != null) {
+                val isPro = isPremiumUser(userModel)
+                prefManager.setProUser(isPro)
+                if (isPro) {
+                    // If Pro, tell the activity to fetch schedules for this route
+                    onProVerified(userModel.activeRouteId ?: "")
+                } else {
+                    prefManager.clearData()
+                }
+            }
+        }
+    }
 
 }

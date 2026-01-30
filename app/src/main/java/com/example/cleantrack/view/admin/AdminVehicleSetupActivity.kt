@@ -6,65 +6,67 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.cleantrack.model.VehicleModel
 import com.example.cleantrack.repository.VehicleRepoImpl
+import com.example.cleantrack.ui.theme.PrimaryGreen
 import com.example.cleantrack.viewmodel.VehicleViewModel
 
 class AdminVehicleSetupActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         val vehicleId = intent.getStringExtra("VEHICLE_ID")
-
         setContent {
             AdminVehicleSetupScreen(vehicleId)
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminVehicleSetupScreen(vehicleId: String?) {
-
     val context = LocalContext.current
     val activity = context as Activity
 
-    val vm = remember {
-        VehicleViewModel(VehicleRepoImpl())
-    }
-
+    val vm = remember { VehicleViewModel(VehicleRepoImpl()) }
     val selectedVehicle by vm.vehicle.observeAsState(null)
     val loading by vm.loading.observeAsState(false)
 
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    // ✅ UI STATE (MATCHES MODEL)
+    // UI STATE
     var vehicleNumber by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("TRUCK") }
     var capacity by remember { mutableStateOf("") }
     var isActive by remember { mutableStateOf(true) }
 
+    // For button loading state
+    var isSaving by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     val vehicleTypes = listOf("TRUCK", "VAN", "BIKE")
 
-    // LOAD FOR EDIT
     LaunchedEffect(vehicleId) {
         vehicleId?.let { vm.getVehicleById(it) }
     }
 
-    // PREFILL
     LaunchedEffect(selectedVehicle) {
         selectedVehicle?.let {
             vehicleNumber = it.vehicleNumber
@@ -74,169 +76,208 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (vehicleId == null) "Add Vehicle" else "Edit Vehicle") },
-                navigationIcon = {
-                    IconButton(onClick = { activity.finish() }) {
-                        Icon(Icons.Default.ArrowBackIosNew, null)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(PrimaryGreen, Color.White),
+                    startY = 0f,
+                    endY = 1000f
+                )
+            )
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            if (vehicleId == null) "Add Vehicle" else "Edit Vehicle",
+                            style = TextStyle(color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { activity.finish() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+                        }
+                    },
+                    actions = {
+                        if (vehicleId != null) {
+                            IconButton(onClick = { showDeleteDialog = true }) {
+                                Icon(Icons.Default.Delete, null, tint = Color.White)
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+                )
+            }
+        ) { padding ->
+            if (loading) {
+                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PrimaryGreen)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(top = 10.dp, bottom = 40.dp)
+                ) {
+                    item {
+                        OutlinedTextField(
+                            value = vehicleNumber,
+                            onValueChange = { vehicleNumber = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Vehicle Number") },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryGreen,
+                                focusedLabelColor = PrimaryGreen
+                            )
+                        )
                     }
-                },
-                actions = {
-                    if (vehicleId != null) {
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, null)
+
+                    item {
+                        var expanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = !expanded }
+                        ) {
+                            OutlinedTextField(
+                                value = type,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Vehicle Type") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = PrimaryGreen,
+                                    focusedLabelColor = PrimaryGreen
+                                )
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                vehicleTypes.forEach {
+                                    DropdownMenuItem(
+                                        text = { Text(it) },
+                                        onClick = {
+                                            type = it
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
-                }
-            )
-        }
-    ) { padding ->
 
-        if (loading) {
-            Box(
-                Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-
-                item {
-                    OutlinedTextField(
-                        value = vehicleNumber,
-                        onValueChange = { vehicleNumber = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Vehicle Number") }
-                    )
-                }
-
-                item {
-                    // TYPE DROPDOWN
-                    var expanded by remember { mutableStateOf(false) }
-
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded }
-                    ) {
+                    item {
                         OutlinedTextField(
-                            value = type,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Vehicle Type") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor()
+                            value = capacity,
+                            onValueChange = { capacity = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Capacity (kg)") },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryGreen,
+                                focusedLabelColor = PrimaryGreen
+                            )
                         )
+                    }
 
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.5f))
                         ) {
-                            vehicleTypes.forEach {
-                                DropdownMenuItem(
-                                    text = { Text(it) },
-                                    onClick = {
-                                        type = it
-                                        expanded = false
-                                    }
+                            Row(
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Vehicle Active Status", fontWeight = FontWeight.Medium)
+                                Switch(
+                                    checked = isActive,
+                                    onCheckedChange = { isActive = it },
+                                    colors = SwitchDefaults.colors(checkedThumbColor = PrimaryGreen)
                                 )
                             }
                         }
                     }
-                }
 
-                item {
-                    OutlinedTextField(
-                        value = capacity,
-                        onValueChange = { capacity = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Capacity") }
-                    )
-                }
+                    item {
+                        Spacer(Modifier.height(10.dp))
+                        Button(
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            enabled = !isSaving,
+                            onClick = {
+                                if (vehicleNumber.isBlank() || capacity.isBlank()) {
+                                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
 
-                item {
-                    // ACTIVE SWITCH
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Vehicle Active")
-                        Switch(
-                            checked = isActive,
-                            onCheckedChange = { isActive = it }
-                        )
-                    }
-                }
+                                isSaving = true
+                                val model = VehicleModel(
+                                    vehicleId = vehicleId ?: "",
+                                    vehicleNumber = vehicleNumber,
+                                    type = type,
+                                    capacity = capacity,
+                                    active = isActive
+                                )
 
-                item {
-                    Button(
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                        onClick = {
-
-                            if (vehicleNumber.isBlank() || capacity.isBlank()) {
-                                Toast.makeText(context, "Fill all fields", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-
-                            val model = VehicleModel(
-                                vehicleId = vehicleId ?: "",
-                                vehicleNumber = vehicleNumber,
-                                type = type,
-                                capacity = capacity,
-                                active = isActive
-                            )
-
-                            if (vehicleId == null) {
-                                vm.addVehicle(model) { success, msg ->
+                                val callback: (Boolean, String) -> Unit = { success, msg ->
+                                    isSaving = false
                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     if (success) activity.finish()
                                 }
+
+                                if (vehicleId == null) vm.addVehicle(model, callback)
+                                else vm.updateVehicle(model, callback)
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                        ) {
+                            if (isSaving) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                             } else {
-                                vm.updateVehicle(model) { success, msg ->
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                    if (success) activity.finish()
-                                }
+                                Text(
+                                    if (vehicleId == null) "Save Vehicle" else "Update Vehicle",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
-                    ) {
-                        Text(if (vehicleId == null) "Save Vehicle" else "Update Vehicle")
                     }
                 }
             }
         }
     }
 
-    // DELETE
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Vehicle") },
-            text = { Text("Are you sure you want to delete this vehicle?") },
+            shape = RoundedCornerShape(20.dp),
+            title = { Text("Delete Vehicle", fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete this vehicle? This action cannot be undone.") },
             confirmButton = {
-                Button(onClick = {
+                TextButton(onClick = {
                     vm.deleteVehicle(vehicleId!!) { success, msg ->
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         if (success) activity.finish()
                     }
-                }) { Text("Delete") }
+                }) {
+                    Text("Delete", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
             },
             dismissButton = {
-                Button(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel", color = Color.Black)
                 }
             }
         )

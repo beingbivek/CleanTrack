@@ -32,6 +32,8 @@ interface UserRepo {
 
     fun getCurrentUserId(): String?
 
+    suspend fun getCurrentUser(): UserModel?
+
     fun updateActiveRoute(userId: String, routeId: String, callback: (Boolean, String) -> Unit)
 
     // Finds all users assigned to a specific route
@@ -45,4 +47,6 @@ interface UserRepo {
         subscription: com.example.cleantrack.model.SubscriptionModel,
         callback: (Boolean, String) -> Unit
     )
+
+    fun resetPassword(currentPassword: String, newPassword: String, callback: (Boolean, String) -> Unit)
 }

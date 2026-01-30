@@ -93,7 +93,7 @@ class DriversTripHistoryActivity : ComponentActivity() {
                         if (isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.align(Alignment.Center),
-                                color = Color.White
+                                color = PrimaryGreen
                             )
                         } else if (historyList.isEmpty()) {
                             Text(

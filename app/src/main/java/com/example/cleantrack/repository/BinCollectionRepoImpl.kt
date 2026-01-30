@@ -101,4 +101,20 @@ class BinCollectionRepoImpl : BinCollectionRepo {
                 }
             })
     }
+
+    override fun getAllCollections(callback: (Boolean, String?, List<BinCollectionModel>?) -> Unit) {
+        ref.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val list = snapshot.children.mapNotNull { it.getValue(BinCollectionModel::class.java) }
+                    callback(true, "Success", list)
+                } else {
+                    callback(false, "No collections found", null)
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
+            }
+        })
+    }
 }

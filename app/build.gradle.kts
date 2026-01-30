@@ -121,12 +121,30 @@ dependencies {
 
     implementation("com.cloudinary:cloudinary-android:2.1.0")
     implementation("com.squareup.picasso:picasso:2.8")
-//Coil instaed of picasso
+    //Coil instaed of picasso
     // Change from 3.3.0 to 3.2.0 or 3.0.0
     // Coil 2.x includes the network engine by default
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
+    implementation ("com.google.code.gson:gson:2.10.1")
+
+    // Stripe
+    implementation("com.stripe:stripe-android:20.50.0")
+
+    //Gson
+    implementation("com.google.code.gson:gson:2.10.1")
+
+//    Mockito for uniT testing
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+
+    //Espresso
+    androidTestImplementation("androidx.test:runner:1.2.0")
+    androidTestImplementation("androidx.test:rules:1.2.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
 
 }

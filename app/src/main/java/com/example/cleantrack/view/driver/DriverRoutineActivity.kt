@@ -1,15 +1,16 @@
-
 package com.example.cleantrack.view.driver
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -26,7 +28,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.cleantrack.model.ScheduleModel
 import com.example.cleantrack.repository.*
+import com.example.cleantrack.ui.theme.BackgroundLightGray
+import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
+import com.example.cleantrack.ui.theme.ButtonColor
 import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.viewmodel.ActiveTripViewModel
 import com.example.cleantrack.viewmodel.ScheduleViewModel
@@ -54,14 +59,23 @@ class DriverRoutineActivity : ComponentActivity() {
     }
 }
 
-/**
- * Helper function to check if a schedule is currently active based on system time
- */
+fun getDayOrder(day: String): Int {
+    return when (day.lowercase()) {
+        "sunday" -> 0
+        "monday" -> 1
+        "tuesday" -> 2
+        "wednesday" -> 3
+        "thursday" -> 4
+        "friday" -> 5
+        "saturday" -> 6
+        else -> 7
+    }
+}
+
 fun isScheduleCurrentlyActive(schedule: ScheduleModel): Boolean {
     return try {
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
-
         val currentTimeStr = sdf.format(Date())
         val currentDay = dayFormat.format(Date())
 
@@ -72,9 +86,7 @@ fun isScheduleCurrentlyActive(schedule: ScheduleModel): Boolean {
         val end = sdf.parse(schedule.endTime)
 
         now != null && start != null && end != null && now.after(start) && now.before(end)
-    } catch (e: Exception) {
-        false
-    }
+    } catch (e: Exception) { false }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,137 +100,101 @@ fun DriverRoutineScreen(
     val schedules by viewModel.schedules.observeAsState(emptyList())
     val isLoading by viewModel.loading.observeAsState(false)
     val activeTrip by tripViewModel.activeTrip.observeAsState()
-
     var selectedSchedule by remember { mutableStateOf<ScheduleModel?>(null) }
 
-    // 1. Initial Load of schedules
     LaunchedEffect(driverId) {
-        if (driverId.isNotEmpty()) {
-            viewModel.loadDriverSchedules(driverId)
-        }
+        if (driverId.isNotEmpty()) viewModel.loadDriverSchedules(driverId)
     }
 
-    // 2. Identify active schedule based on clock
     val currentActiveSchedule = remember(schedules) {
         schedules?.find { isScheduleCurrentlyActive(it) }
     }
 
-    // 3. KEY FIX: Start observing the specific route status once the active shift is identified
     LaunchedEffect(currentActiveSchedule) {
-        currentActiveSchedule?.routeId?.let { routeId ->
-            tripViewModel.observeActiveTripByRoute(routeId)
-        }
+        currentActiveSchedule?.routeId?.let { tripViewModel.observeActiveTripByRoute(it) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Driver Routine", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White, titleContentColor = Blue)
-            )
-        }
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (isLoading == true) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Blue)
-            } else if (schedules.isNullOrEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No routine found.", color = Color.Gray)
-                }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(colors = listOf(Blue, Green, Color.White), startY = 0f, endY = 1800f))
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text("Weekly Routine", fontWeight = FontWeight.ExtraBold, color = Color.White) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+                )
+            }
+        ) { padding ->
+            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                if (isLoading == true) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+                } else if (schedules.isNullOrEmpty()) {
+                    Text("No routine found.", color = Color.White, modifier = Modifier.align(Alignment.Center))
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
 
-                    // --- CURRENT ACTIVE SHIFT SECTION ---
-                    if (currentActiveSchedule != null) {
-                        item {
-                            ActiveSectionHeader("Current Active Shift")
+                        // 1. ACTIVE SHIFT
+                        if (currentActiveSchedule != null) {
+                            item { ActiveSectionHeader("Current Active Shift") }
+                            item {
+                                val isTracking = activeTrip?.status == "ACTIVE" && activeTrip?.routeId == currentActiveSchedule.routeId
+                                ActiveScheduleCard(currentActiveSchedule, isTracking) { selectedSchedule = currentActiveSchedule }
+                            }
                         }
-                        item {
-                            // deriving isTracking directly from the live trip state
-                            val isCurrentlyTracking = activeTrip?.status == "ACTIVE" &&
-                                    activeTrip?.routeId == currentActiveSchedule.routeId
 
-                            ActiveScheduleCard(
-                                schedule = currentActiveSchedule,
-                                isTracking = isCurrentlyTracking,
-                                onClick = { selectedSchedule = currentActiveSchedule }
-                            )
-                        }
-                    }
+                        // 2. SORTED WEEKLY LIST
+                        val sortedGrouped = schedules
+                            ?.filter { it.scheduleId != currentActiveSchedule?.scheduleId }
+                            ?.groupBy { it.dayOfWeek }
+                            ?.toSortedMap(compareBy { getDayOrder(it) })
 
-                    // --- WEEKLY ROUTINE SECTION ---
-                    val grouped = schedules?.filter { it.scheduleId != currentActiveSchedule?.scheduleId }
-                        ?.sortedBy { it.startTime }
-                        ?.groupBy { it.dayOfWeek }
-
-                    grouped?.forEach { entry ->
-                        item {
-                            RoutineDayHeader(entry.key)
-                        }
-                        items(entry.value) { schedule ->
-                            ScheduleCard(
-                                schedule = schedule,
-                                onClick = { selectedSchedule = schedule }
-                            )
+                        sortedGrouped?.forEach { (day, dailySchedules) ->
+                            item { RoutineDayHeader(day) }
+                            items(dailySchedules.sortedBy { it.startTime }) { schedule ->
+                                ScheduleCard(schedule) { selectedSchedule = schedule }
+                            }
                         }
                     }
                 }
             }
-
-            selectedSchedule?.let { schedule ->
-                ScheduleDetailPopup(schedule = schedule, onDismiss = { selectedSchedule = null })
-            }
+            selectedSchedule?.let { ScheduleDetailPopup(it) { selectedSchedule = null } }
         }
     }
 }
 
 @Composable
 fun ActiveSectionHeader(title: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Default.Schedule, contentDescription = null, tint = Green, modifier = Modifier.size(18.dp))
+    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Default.FlashOn, null, tint = Color.White, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Green)
+        Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
     }
 }
 
 @Composable
 fun ActiveScheduleCard(schedule: ScheduleModel, isTracking: Boolean, onClick: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Blue),
-        elevation = CardDefaults.cardElevation(8.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(0.2f)),
+        border = BorderStroke(1.dp, Color.White.copy(0.5f))
     ) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(0.2f), modifier = Modifier.size(50.dp)) {
-                Icon(
-                    imageVector = if (isTracking) Icons.Default.GpsFixed else Icons.Default.PlayCircleOutline,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.padding(12.dp)
-                )
+            Box(modifier = Modifier.size(50.dp).background(if(isTracking) Color.Green else Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(if(isTracking) Icons.Default.GpsFixed else Icons.Default.PlayArrow, null, tint = if(isTracking) Color.White else Green)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(schedule.routeName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-
-                // Status Text: Changes based on live Firebase status
-                Text(
-                    text = if (isTracking) "Live Tracking Active" else "Ready to Start",
-                    fontSize = 13.sp,
-                    fontWeight = if (isTracking) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isTracking) Color.Green else Color.White.copy(0.9f)
-                )
-                Text("${schedule.startTime} - ${schedule.endTime}", fontSize = 13.sp, color = Color.White.copy(0.7f))
+                // Day shown inside Active Card too
+                Text(schedule.dayOfWeek, color = Color.White.copy(0.7f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(if(isTracking) "On Route Now" else "Pending Shift", color = if(isTracking) Color.Green else Color.White.copy(0.8f), fontSize = 14.sp)
             }
             Spacer(modifier = Modifier.weight(1f))
             Icon(Icons.Default.ChevronRight, null, tint = Color.White)
@@ -228,13 +204,14 @@ fun ActiveScheduleCard(schedule: ScheduleModel, isTracking: Boolean, onClick: ()
 
 @Composable
 fun RoutineDayHeader(day: String) {
-    Surface(modifier = Modifier.fillMaxWidth(), color = Color(0xFFF0F4F8)) {
+    // Background changed to a light green tint and text to dark Green for visibility on white background
+    Surface(modifier = Modifier.fillMaxWidth().padding(top = 10.dp), color = Green.withAlpha(0.1f)) {
         Text(
             text = day.uppercase(),
             fontSize = 13.sp,
             fontWeight = FontWeight.Black,
-            color = Blue,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            color = Black, // Changed to Green for visibility
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
         )
     }
 }
@@ -243,17 +220,19 @@ fun RoutineDayHeader(day: String) {
 fun ScheduleCard(schedule: ScheduleModel, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(15.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = RoundedCornerShape(8.dp), color = Blue.copy(0.1f), modifier = Modifier.size(44.dp)) {
-                Icon(Icons.Default.DirectionsBus, null, tint = Blue, modifier = Modifier.padding(10.dp))
+            Box(modifier = Modifier.size(40.dp).background(Green.copy(0.1f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Schedule, null, tint = Green, modifier = Modifier.size(20.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(schedule.routeName, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(schedule.routeName, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
+                // Day added here inside the white card
+                Text(schedule.dayOfWeek, fontSize = 12.sp, color = Green, fontWeight = FontWeight.SemiBold)
                 Text("${schedule.startTime} - ${schedule.endTime}", fontSize = 14.sp, color = Color.Gray)
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -265,25 +244,17 @@ fun ScheduleCard(schedule: ScheduleModel, onClick: () -> Unit) {
 @Composable
 fun ScheduleDetailPopup(schedule: ScheduleModel, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
+        Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Route Details", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Blue)
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null) }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                DetailRow(Icons.Default.Map, "Route Name", schedule.routeName)
-                DetailRow(Icons.Default.Today, "Day", schedule.dayOfWeek)
-                DetailRow(Icons.Default.AccessTime, "Timing", "${schedule.startTime} - ${schedule.endTime}")
-                DetailRow(Icons.Default.LocalShipping, "Vehicle No", schedule.vehicleNumber)
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Blue)) {
-                    Text("Close", fontWeight = FontWeight.Bold)
+                Text("Shift Details", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Green)
+                Spacer(modifier = Modifier.height(20.dp))
+                DetailItem(Icons.Default.Map, "Route", schedule.routeName)
+                DetailItem(Icons.Default.Event, "Day", schedule.dayOfWeek)
+                DetailItem(Icons.Default.AccessTime, "Time", "${schedule.startTime} - ${schedule.endTime}")
+                DetailItem(Icons.Default.LocalShipping, "Truck No", schedule.vehicleNumber)
+                Spacer(modifier = Modifier.height(25.dp))
+                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green), shape = RoundedCornerShape(15.dp)) {
+                    Text("Got it", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -291,13 +262,16 @@ fun ScheduleDetailPopup(schedule: ScheduleModel, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun DetailRow(icon: ImageVector, label: String, value: String) {
-    Row(modifier = Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = Blue, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(12.dp))
+fun DetailItem(icon: ImageVector, label: String, value: String) {
+    Row(modifier = Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = Green, modifier = Modifier.size(22.dp))
+        Spacer(modifier = Modifier.width(15.dp))
         Column {
             Text(label, fontSize = 12.sp, color = Color.Gray)
-            Text(value, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
+
+// Extension to help with alpha in older Compose versions if needed
+fun Color.withAlpha(alpha: Float): Color = this.copy(alpha = alpha)

@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -19,7 +20,34 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CleanTrack"
         tools:replace="android:fullBackupContent">
-         <activity
+        <activity
+            android:name=".view.user.PointsHistoryActivity"
+            android:exported="true"
+            android:label="@string/title_activity_points_history"
+            android:theme="@style/Theme.CleanTrack">
+        </activity>
+        <activity
+            android:name=".view.user.BinHistoryActivity"
+            android:exported="false"
+            android:label="@string/title_activity_bin_history"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.common.NoInternetActivity"
+            android:exported="true"
+            android:label="@string/title_activity_no_internet"
+            android:theme="@style/Theme.CleanTrack"/>
+
+        <activity
+            android:name=".view.admin.ViewUserBinHistoryActivity"
+            android:exported="true"
+            android:label="ViewUserBinHistoryActivity"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
+            android:name=".view.auth.ResetPasswordActivity"
+            android:exported="true"
+            android:label="@string/title_activity_reset_password"
+            android:theme="@style/Theme.CleanTrack" />
+        <activity
             android:name=".view.user.PaymentHistoryActivity"
             android:exported="false"
             android:label="PaymentHistoryActivity"
@@ -53,17 +81,17 @@
             android:name=".view.driver.DriversTripHistoryActivity"
             android:exported="true"
             android:label="@string/title_activity_drivers_trip_history"
-            android:theme="@style/Theme.CleanTrack"></activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.DriverRouteMapActivity"
             android:exported="true"
             android:label="@string/title_activity_driver_route_map"
-            android:theme="@style/Theme.CleanTrack"></activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.driver.BinCollectionActivity"
             android:exported="true"
             android:label="@string/title_activity_bin_collection"
-            android:theme="@style/Theme.CleanTrack"></activity>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.user.UserScheduleListActivity"
             android:exported="true"
@@ -178,7 +206,7 @@
             android:name=".view.common.PrivacyPolicyActivity"
             android:exported="true"
             android:label="PrivacyPolicyActivity"
-            android:theme="@style/Theme.CleanTrack"/>
+            android:theme="@style/Theme.CleanTrack" />
         <activity
             android:name=".view.admin.AdminRouteSetupActivity"
             android:exported="true"

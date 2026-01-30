@@ -12,20 +12,24 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +40,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,6 +64,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleantrack.R
+import com.example.cleantrack.repository.ScheduleRepoImpl
 import com.example.cleantrack.repository.UserRepoImpl
 import com.example.cleantrack.ui.theme.Black
 import com.example.cleantrack.ui.theme.Blue
@@ -69,12 +75,11 @@ import com.example.cleantrack.ui.theme.Red
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
 import com.example.cleantrack.view.common.ContactSupportActivity
-
+import com.example.cleantrack.viewmodel.ScheduleViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,235 +91,195 @@ class LoginActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun LoginBody() {
-
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val isLoading by userViewModel.loading.observeAsState(false)
 
-
+    val scheduleViewModel   = remember { ScheduleViewModel(ScheduleRepoImpl()) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordvisibility by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
-
     val activity = context as Activity
-
-    var showForgotPasswordDialog by remember { mutableStateOf(false ) }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var forgotPasswordEmail by remember { mutableStateOf("") }
-
     val webClientId = stringResource(id = R.string.default_web_client_id)
 
-    // 1. Configure Google Sign-In Options
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-
-        // IMPORTANT: Request the ID token for Firebase authentication i.e. sign with google
             .requestIdToken(webClientId)
             .requestEmail()
             .build()
     }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
 
-    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso ) }
-
-    // 2. Activity Result Launcher for google sign-in intent
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
-    ) {
-        result ->
-        if (result.resultCode == Activity.RESULT_OK){
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
-
                 val account = task.getResult(ApiException::class.java)
                 val idToken = account.idToken
-                if (idToken != null){
-
-                    // --- UPDATED CALL HERE ---
-                    userViewModel.signInWithGoogle(idToken, context, activity) { success, errorMessage ->
+                if (idToken != null) {
+                    userViewModel.signInWithGoogle(idToken, context, activity, scheduleViewModel) { success, errorMessage ->
                         if (success) {
-                            // If successful, the ViewModel handles navigation (either to Dashboard or Registration).
                             if (errorMessage != null && errorMessage != "Login successful!") {
                                 AppUtil.showToast(context, errorMessage)
                             }
                         } else {
-                            // Failure to sign in or failure in repo logic
                             AppUtil.showToast(context, errorMessage ?: "Google Sign-In process failed.")
                         }
                     }
-                    // --- END UPDATED CALL ---
-
-                }else{
-                    AppUtil.showToast(context  ,"Google Sign-In token missing.")
+                } else {
+                    AppUtil.showToast(context, "Google Sign-In token missing.")
                 }
-
-            } catch (e: ApiException){
-                // Handle exceptions (e.g., user cancelled sign-in)
-                AppUtil.showToast(context , "Google Sign-In failed: ${e.statusCode}")
+            } catch (e: ApiException) {
+                AppUtil.showToast(context, "Google Sign-In failed: ${e.statusCode}")
             }
-
-        }else{
-            // Sign-in intent failed/cancelled
+        } else {
             AppUtil.showToast(context, "Google Sign-In cancelled.")
         }
     }
 
-    Scaffold { padding ->
-        Column(
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        containerColor = White
+    ) { padding ->
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .background(White)
+                .background(White),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
-            Spacer(modifier = Modifier.height(80.dp))
+            item {
+                // Large top spacer for status bar + visual breathing room
+                Spacer(modifier = Modifier.height(100.dp))
 
-            Text(
-                "Log Into CleanTrack",
-                style = TextStyle(
-                    textAlign = TextAlign.Center,
-                    color = Black,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 30.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.size(50.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 30.dp, end = 30.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ){
-                Image(
-                    painter = painterResource(R.drawable.user_logo),
-                    contentDescription = null,
-                    modifier = Modifier.size(150.dp)
-                )
-                Spacer(modifier = Modifier.size(15.dp))
                 Text(
-                    text = "Your journey to smarter,\ncooler recycling starts now",
+                    "Log Into CleanTrack",
                     style = TextStyle(
-                        fontSize = 16.sp,
-                        color = Color.DarkGray,
                         textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Normal
-                    )
+                        color = Black,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 30.sp
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.size(40.dp))
             }
 
-            Spacer(modifier = Modifier.size(50.dp))
-
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { data ->
-                    email = data
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Enter your email")
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email
-                ),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = TextBoxColor,
-                    unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                },
-                trailingIcon = {
-                    IconButton(onClick = {
-                        passwordvisibility = !passwordvisibility
-                    }) {
-                        Icon(
-                            painter = if (passwordvisibility)
-                                painterResource(R.drawable.baseline_visibility_off_24)
-                            else
-                                painterResource(R.drawable.baseline_visibility_24),
-                            contentDescription = null
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.user_logo),
+                        contentDescription = null,
+                        modifier = Modifier.size(150.dp)
+                    )
+                    Spacer(modifier = Modifier.size(15.dp))
+                    Text(
+                        text = "Your journey to smarter,\ncooler recycling starts now",
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            color = Color.DarkGray,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Normal
                         )
-                    }
-                },
-                visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Enter your password")
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = TextBoxColor,
-                    unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
-                    unfocusedIndicatorColor = Color.Transparent
+                    )
+                }
+                Spacer(modifier = Modifier.size(40.dp))
+            }
+
+            item {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp),
+                    shape = RoundedCornerShape(15.dp),
+                    placeholder = { Text("Enter your email") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = TextBoxColor,
+                        unfocusedContainerColor = TextBoxColor,
+                        focusedIndicatorColor = Green,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
                 )
+                Spacer(modifier = Modifier.height(20.dp))
+            }
 
-            )
+            item {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordvisibility = !passwordvisibility }) {
+                            Icon(
+                                painter = if (passwordvisibility)
+                                    painterResource(R.drawable.baseline_visibility_off_24)
+                                else
+                                    painterResource(R.drawable.baseline_visibility_24),
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp),
+                    shape = RoundedCornerShape(15.dp),
+                    placeholder = { Text("Enter your password") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = TextBoxColor,
+                        unfocusedContainerColor = TextBoxColor,
+                        focusedIndicatorColor = Green,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            item {
+                Text(
+                    "Forgot Password?",
+                    style = TextStyle(color = Red, textAlign = TextAlign.End),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp)
+                        .clickable {
+                            forgotPasswordEmail = email.trim()
+                            showForgotPasswordDialog = true
+                        }
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
-            Text(
-                "Forgot Password?",
-                style = TextStyle(
-                    color = Red,
-                    textAlign = TextAlign.End
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp)
-                    .clickable{
-
-                        forgotPasswordEmail = email.trim()
-                        showForgotPasswordDialog = true
-                    }
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            item {
                 Button(
                     onClick = {
-                       userViewModel.login(email.trim(), password.trim()){
-                           Success, errorMessage, role, userId->
-                           if (Success){
-
-                               if (userId != null) {
-                                   userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
-                               } else {
-                                   AppUtil.showToast(context, "Login successful, but User ID is missing.")
-                               }
-
-
-
-                           }else    {
-                               AppUtil.showToast(context, errorMessage?:"Login failed. Please check your credentials.")
-                           }
-
-                       }
+                        userViewModel.login(email.trim(), password.trim()) { success, errorMessage, _, userId ->
+                            if (success && userId != null) {
+                                userViewModel.syncOfflineUserData(userId, context) { routeId ->
+                                    scheduleViewModel.cacheSchedulesForOffline(routeId, context)
+                                }
+                                userViewModel.checkAndNavigateAfterLogin(userId, context, activity)
+                            } else {
+                                AppUtil.showToast(context, errorMessage ?: "Login failed.")
+                            }
+                        }
                     },
+                    enabled = !isLoading, // PREVENT CLICKING WHILE LOADING
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
@@ -324,86 +289,77 @@ fun LoginBody() {
                             shape = RoundedCornerShape(15.dp)
                         ),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 15.dp
-                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 15.dp),
                 ) {
-                    Text("Login", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                }
-
-            }
-            Text(buildAnnotatedString {
-
-                withStyle(SpanStyle(color = Blue)
-                ){
-                    append("Haven't made an account yet? ")
-                }
-
-                withStyle(SpanStyle(color = Green)) {
-                    append("Sign Up")
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Login", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    }
                 }
             }
-                , modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp)
-                    .clickable{
-                        val intent = Intent(context, RegistrationActivity::class.java)
 
-                        context.startActivity(intent)
-
-                    })
-
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f)
-                )
-                Text("OR", modifier = Modifier.padding(horizontal = 15.dp))
-
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f)
-                )
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 15.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Haven't made an account yet? ",
+                        color = Blue
+                    )
+                    Text(
+                        text = "Sign Up",
+                        color = Green,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clickable(enabled = !isLoading) {
+                                context.startActivity(Intent(context, RegistrationActivity::class.java))
+                            }
+                            .padding(3.dp)
+                    )
+                }
             }
 
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f))
+                    Text("OR", modifier = Modifier.padding(horizontal = 15.dp))
+                    HorizontalDivider(modifier = Modifier.weight(1f))
+                }
+            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            item {
                 Button(
                     onClick = {
-                        // 1. Sign out of the Google Client first
                         googleSignInClient.signOut().addOnCompleteListener {
-                            // 2. Once the sign-out is complete, get a fresh Intent
-                            val signIntent = googleSignInClient.signInIntent
-                            // 3. Launch the picker
-                            googleSignInLauncher.launch(signIntent)
+                            googleSignInLauncher.launch(googleSignInClient.signInIntent)
                         }
                     },
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
                         .height(60.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                     shape = RoundedCornerShape(5.dp),
                     border = BorderStroke(0.5.dp, Color.Gray),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
                             painter = painterResource(id = R.drawable.google),
                             contentDescription = "Google Logo",
                             modifier = Modifier.size(28.dp)
                         )
-
                         Spacer(modifier = Modifier.width(10.dp))
-
                         Text(
                             "Log in with Google",
                             fontSize = 20.sp,
@@ -412,67 +368,54 @@ fun LoginBody() {
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(10.dp))
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
-
-            // --- NAVIGATION TO CONTACT SUPPORT ---
-            TextButton(
-                onClick = {
-                    val intent = Intent(context, ContactSupportActivity::class.java)
-                    intent.putExtra("IS_LOGGED_IN", false) // Since user is at Login, they aren't logged in
-                    context.startActivity(intent)
-                },
-                modifier = Modifier.padding(bottom = 20.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(R.drawable.baseline_help_24),
-                        contentDescription = null,
-                        tint = Color(0xFF4F96D8),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Need help? Contact Support",
-                        color = Color(0xFF4F96D8),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+            item {
+                TextButton(
+                    onClick = {
+                        val intent = Intent(context, ContactSupportActivity::class.java)
+                        intent.putExtra("IS_LOGGED_IN", false)
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 30.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_help_24),
+                            contentDescription = null,
+                            tint = Color(0xFF4F96D8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Need help? Contact Support",
+                            color = Color(0xFF4F96D8),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
-
-
         }
 
-
-        if (showForgotPasswordDialog){
+        if (showForgotPasswordDialog) {
             ForgotPasswordDialog(
                 initialEmail = forgotPasswordEmail,
-                onDimiss = { showForgotPasswordDialog = false},
+                onDimiss = { showForgotPasswordDialog = false },
                 onSendReset = { enteredEmail ->
                     forgotPasswordEmail = enteredEmail
                     showForgotPasswordDialog = false
-
-                    userViewModel.forgotPassword(enteredEmail){
-                        Success, errorMessage ->
-                        if (Success) {
-                            AppUtil.showToast(
-                                context,
-                                "Password reset email sent to $enteredEmail. Check your inbox"
-                            )
-                        } else  {
-                            AppUtil.showToast(
-                                context,
-                                errorMessage ?: "Failed to send password reset email."
-                            )
+                    userViewModel.forgotPassword(enteredEmail) { success, errorMessage ->
+                        if (success) {
+                            AppUtil.showToast(context, "Password reset email sent to $enteredEmail. Check your inbox")
+                        } else {
+                            AppUtil.showToast(context, errorMessage ?: "Failed to send password reset email.")
                         }
                     }
                 }
             )
-
         }
-
     }
 }
 
@@ -481,21 +424,21 @@ fun ForgotPasswordDialog(
     initialEmail: String,
     onDimiss: () -> Unit,
     onSendReset: (String) -> Unit
-){
+) {
     var emailInput by remember { mutableStateOf(initialEmail) }
     val context = LocalContext.current
 
     AlertDialog(
         onDismissRequest = onDimiss,
-        title = {Text("Reset Password")},
+        title = { Text("Reset Password") },
         text = {
-            Column() {
+            Column {
                 Text("Enter the email address associated with your account to receive a password reset link.")
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = emailInput,
-                    onValueChange = { emailInput = it},
-                    label = { Text("Email")},
+                    onValueChange = { emailInput = it },
+                    label = { Text("Email") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -504,13 +447,13 @@ fun ForgotPasswordDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (emailInput.isNotBlank()){
+                    if (emailInput.isNotBlank()) {
                         onSendReset(emailInput)
-                    }else{
-                        AppUtil.showToast(context , "Email fields cannot be empty.")
+                    } else {
+                        AppUtil.showToast(context, "Email fields cannot be empty.")
                     }
                 }
-            ){
+            ) {
                 Text("Send Reset Link")
             }
         },
@@ -520,11 +463,10 @@ fun ForgotPasswordDialog(
             }
         }
     )
-
 }
 
 @Preview
 @Composable
-fun LoginPreview(){
+fun LoginPreview() {
     LoginBody()
 }

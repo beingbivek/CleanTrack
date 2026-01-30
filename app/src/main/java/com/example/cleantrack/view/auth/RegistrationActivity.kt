@@ -4,8 +4,10 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,16 +16,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
@@ -41,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -76,91 +79,68 @@ import com.example.cleantrack.ui.theme.Green
 import com.example.cleantrack.ui.theme.TextBoxColor
 import com.example.cleantrack.ui.theme.White
 import com.example.cleantrack.util.AppUtil
+import com.example.cleantrack.view.common.PrivacyPolicyActivity
+import com.example.cleantrack.view.common.TermsAndConditionActivity
 import com.example.cleantrack.viewmodel.UserAddressViewModel
 import com.example.cleantrack.viewmodel.UserViewModel
 
-
 class RegistrationActivity : ComponentActivity() {
-
-    // Member variable to hold the model if passed by Google Sign-In
     private var googleUserModel: UserModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        // 1. CHECK INTENT FOR GOOGLE USER MODEL
         @Suppress("DEPRECATION")
         googleUserModel = intent.getParcelableExtra("Google_UserModel")
-
-        // Pass the model to the Composable
         setContent {
             RegisterBody(googleUserModel)
         }
     }
 }
 
-
 @Composable
-// FIX: The Composable function must accept the parameter passed by the Activity
-fun RegisterBody(googleUserModel: UserModel? = null ) {
-
-
+fun RegisterBody(googleUserModel: UserModel? = null) {
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-
+    val isLoading by userViewModel.loading.observeAsState(false)
     val addressVM: UserAddressViewModel = viewModel()
-
     val isGoogleSignInFlow = googleUserModel != null
 
-    var fullname by remember { mutableStateOf(googleUserModel?.fullname?:"") }
-    var number by remember { mutableStateOf(googleUserModel?.number?:"") }
-    var email by remember { mutableStateOf(googleUserModel?.email?:"") }
+    var fullname by remember { mutableStateOf(googleUserModel?.fullname ?: "") }
+    var number by remember { mutableStateOf(googleUserModel?.number ?: "") }
+    var email by remember { mutableStateOf(googleUserModel?.email ?: "") }
     var password by remember { mutableStateOf("") }
     var confirmpassword by remember { mutableStateOf("") }
     var passwordvisibility by remember { mutableStateOf(false) }
     var confirmpasswordvisibility by remember { mutableStateOf(false) }
     var terms by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
+    val activity = context as Activity
 
     val provinces = addressVM.provinces
     val districts = addressVM.districts
     val municipalities = addressVM.municipalities
     val wards = addressVM.wards
 
-    var provinceFieldSize by remember { mutableStateOf(Size.Zero) }
-    var districtFieldSize by remember { mutableStateOf(Size.Zero) }
-    var municipalityFieldSize by remember { mutableStateOf(Size.Zero) }
-    var wardFieldSize by remember { mutableStateOf(Size.Zero) }
-
     val expandedProvince = remember { mutableStateOf(false) }
     val expandedDistrict = remember { mutableStateOf(false) }
     val expandedMunicipality = remember { mutableStateOf(false) }
     val expandedWard = remember { mutableStateOf(false) }
 
-
-    val activity = context as Activity
-
-    // 3. DEFINE CORE REGISTRATION/UPDATE LOGIC
-    val onRegisterOrUpdate: () -> Unit = myValidationCheck@{ // <-- 1. Define the label here
-
-        // Basic Validation
+    val onRegisterOrUpdate: () -> Unit = myValidationCheck@{
         if (fullname.isEmpty() || email.isEmpty() || number.isEmpty()) {
             AppUtil.showToast(context, "Please fill in Name, Email, and Phone Number.")
-            return@myValidationCheck // <-- 2. Use the label to exit the lambda
+            return@myValidationCheck
         }
-
-        // 2. NEW: Address Selection Validation
-        // Ensures the user selected something from the Nepal Location API dropdowns
         if (addressVM.selectedProvinceName.isEmpty() ||
             addressVM.selectedDistrictName.isEmpty() ||
             addressVM.selectedMunicipalityName.isEmpty() ||
             addressVM.selectedWardName.isEmpty()) {
-            AppUtil.showToast(context, "Please select your complete address (Province, District, Municipality, and Ward).")
+            AppUtil.showToast(context, "Please select your complete address.")
             return@myValidationCheck
         }
 
         if (!isGoogleSignInFlow) {
-            // Standard registration requires password validation
             if (password.isEmpty() || confirmpassword.isEmpty()) {
                 AppUtil.showToast(context, "Please enter and confirm your password.")
                 return@myValidationCheck
@@ -176,30 +156,20 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
         }
 
         if (isGoogleSignInFlow) {
-            // --- GOOGLE SIGN-IN FLOW: UPDATE EXISTING AUTH USER'S DB PROFILE (Req 2 & 3) ---
-
-            // This is safe because if isGoogleSignInFlow is true, googleUserModel is not null
             val userId = googleUserModel!!.userId
             val updatedModel = googleUserModel.copy(
                 fullname = fullname,
                 email = email.trim(),
-                number = number ,// This completes the profile required field
-                // Role remains "USER" // PULLING DATA FROM UserAddressViewModel
-
+                number = number,
                 province = addressVM.selectedProvinceName,
                 district = addressVM.selectedDistrictName,
                 municipality = addressVM.selectedMunicipalityName,
                 ward = addressVM.selectedWardName
             )
-
             userViewModel.addUserToDatabase(userId, updatedModel) { success, message ->
                 if (success) {
-                    AppUtil.showToast(context, "Profile Updated. Finding location...")
-
-                    // Navigate to Map Activity
                     val intent = Intent(context, UserLocationMapActivity::class.java).apply {
                         putExtra("userId", userId)
-                        // Treat as continuation of login flow (not a brand new registration)
                         putExtra("IS_NEW_REGISTRATION", false)
                     }
                     context.startActivity(intent)
@@ -208,35 +178,21 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
                     AppUtil.showToast(context, "Profile update failed: $message")
                 }
             }
-
         } else {
-            // --- STANDARD EMAIL/PASSWORD REGISTRATION FLOW ---
             userViewModel.register(email.trim(), password.trim()) { success, message, userId ->
                 if (success) {
                     val model = UserModel(
-                        userId = userId,
-                        email = email.trim(),
-                        fullname = fullname,
-                        number = number,
-                        role = "USER",
-                        // PULLING DATA FROM UserAddressViewModel
-                        province = addressVM.selectedProvinceName,
-                        district = addressVM.selectedDistrictName,
-                        municipality = addressVM.selectedMunicipalityName,
+                        userId = userId, email = email.trim(), fullname = fullname, number = number,
+                        role = "USER", province = addressVM.selectedProvinceName,
+                        district = addressVM.selectedDistrictName, municipality = addressVM.selectedMunicipalityName,
                         ward = addressVM.selectedWardName
                     )
-
                     userViewModel.addUserToDatabase(userId, model) { addSuccess, addMessage ->
                         if (addSuccess) {
-                            AppUtil.showToast(context , addMessage )
-
-                            // Navigate to Map Activity
-                            val intent = Intent(context, UserLocationMapActivity::class.java)
-                                .apply {
-                                    putExtra("userId", userId)
-                                    putExtra("IS_NEW_REGISTRATION", true) // New registration
-                                }
-
+                            val intent = Intent(context, UserLocationMapActivity::class.java).apply {
+                                putExtra("userId", userId)
+                                putExtra("IS_NEW_REGISTRATION", true)
+                            }
                             context.startActivity(intent)
                             activity.finish()
                         } else {
@@ -250,326 +206,251 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
         }
     }
 
-
-    val scrollState = rememberScrollState()
-
-
-
-
-
-
-    Scaffold { padding ->
-        Column(
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        containerColor = White
+    ) { padding ->
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(scrollState)
                 .background(White),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            Spacer(modifier = Modifier.height(50.dp))
-
-            Text(
-                // Update title based on flow
-                if (isGoogleSignInFlow) "Complete Your Profile" else "Create A New Account",
-                style = TextStyle(
-                    textAlign = TextAlign.Center,
-                    color = Black,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 30.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.size(15.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 30.dp, end = 30.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ){
-                Image(
-                    painter = painterResource(R.drawable.user_logo),
-                    contentDescription = null,
-                    modifier = Modifier.size(150.dp)
+            item {
+                Spacer(modifier = Modifier.height(80.dp))
+                Text(
+                    text = if (isGoogleSignInFlow) "Complete Your Profile" else "Create A New Account",
+                    style = TextStyle(
+                        textAlign = TextAlign.Center, color = Black,
+                        fontWeight = FontWeight.ExtraBold, fontSize = 30.sp
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.size(15.dp))
-                Text(
-                    text = "Your journey to smarter,\ncooler recycling starts now",
-                    style = TextStyle(
-                        fontSize = 16.sp,
-                        color = Color.DarkGray,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Normal
-                    )
-                )
             }
 
-            Spacer(modifier = Modifier.size(24.dp))
-
-
-            OutlinedTextField(
-                value = fullname,
-                onValueChange = { data ->
-                    fullname = data
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Enter your full name")
-                },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = TextBoxColor,
-                    unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-            OutlinedTextField(
-                value = email,
-                onValueChange = { data ->
-                    email = data
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Enter your email")
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email
-                ),
-                enabled = !isGoogleSignInFlow, // Disable editing for Google users
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = TextBoxColor,
-                    unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            OutlinedTextField(
-                value = number,
-                onValueChange = { data ->
-                    number = data
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Enter your phone number")
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                ),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = TextBoxColor,
-                    unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            DropdownField(
-                label = addressVM.selectedProvinceName,
-                placeholder = "Select Province",
-                expanded = expandedProvince.value,
-                onExpand = { expandedProvince.value = true },
-                onDismiss = { expandedProvince.value = false },
-                items = provinces.map { it.name },
-                onItemSelectedText = {
-                    provinces.firstOrNull { p -> p.name == it }?.let(addressVM::onProvinceSelected)
-                    expandedProvince.value = false
-                },
-                fieldSize = provinceFieldSize,
-                onSizeChange = { provinceFieldSize = it }
-            )
-
-            DropdownField(
-                label = addressVM.selectedDistrictName,
-                placeholder = "Select District",
-                expanded = expandedDistrict.value,
-                onExpand = { expandedDistrict.value = true },
-                onDismiss = { expandedDistrict.value = false },
-                items = districts.map { it.name },
-                onItemSelectedText = {
-                    districts.firstOrNull { d -> d.name == it }?.let(addressVM::onDistrictSelected)
-                    expandedDistrict.value = false
-                },
-                fieldSize = districtFieldSize,
-                onSizeChange = { districtFieldSize = it }
-            )
-
-            DropdownField(
-                label = addressVM.selectedMunicipalityName,
-                placeholder = "Select Municipality",
-                expanded = expandedMunicipality.value,
-                onExpand = { expandedMunicipality.value = true },
-                onDismiss = { expandedMunicipality.value = false },
-                items = municipalities.map { it.name },
-                onItemSelectedText = {
-                    municipalities.firstOrNull { m -> m.name == it }?.let(addressVM::onMunicipalitySelected)
-                    expandedMunicipality.value = false
-                },
-                fieldSize = municipalityFieldSize,
-                onSizeChange = { municipalityFieldSize = it }
-            )
-
-            DropdownField(
-                label = addressVM.selectedWardName,
-                placeholder = "Select Ward",
-                expanded = expandedWard.value,
-                onExpand = { expandedWard.value = true },
-                onDismiss = { expandedWard.value = false },
-                items = wards,
-                onItemSelectedText = {
-                    addressVM.onWardSelected(it)
-                    expandedWard.value = false
-                },
-                fieldSize = wardFieldSize,
-                onSizeChange = { wardFieldSize = it }
-            )
-
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                },
-                trailingIcon = {
-                    IconButton(onClick = {
-                        passwordvisibility = !passwordvisibility
-                    }) {
-                        Icon(
-                            painter = if (passwordvisibility)
-                                painterResource(R.drawable.baseline_visibility_24)
-                            else
-                                painterResource(R.drawable.baseline_visibility_24),
-                            contentDescription = null
-                        )
-                    }
-                },
-                visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Enter your password")
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = TextBoxColor,
-                    unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            OutlinedTextField(
-                value = confirmpassword,
-                onValueChange = {
-                    confirmpassword = it
-                },
-                trailingIcon = {
-                    IconButton(onClick = {
-                        confirmpasswordvisibility = !confirmpasswordvisibility
-                    }) {
-                        Icon(
-                            painter = if (confirmpasswordvisibility)
-                                painterResource(R.drawable.baseline_visibility_off_24)
-                            else
-                                painterResource(R.drawable.baseline_visibility_24),
-                            contentDescription = null
-                        )
-                    }
-                },
-                visualTransformation = if (confirmpasswordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                placeholder = {
-                    Text("Confirm your password")
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = TextBoxColor,
-                    unfocusedContainerColor = TextBoxColor,
-                    focusedIndicatorColor = Green,
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-
-            )
-
-
-
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Conditional Checkbox (only for standard registration)
-                if (!isGoogleSignInFlow) {
-                    Checkbox(
-                        checked = terms,
-                        onCheckedChange = {
-                            terms = it
-                        },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = Green,
-                            checkmarkColor = White
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.user_logo),
+                        contentDescription = null, modifier = Modifier.size(150.dp)
+                    )
+                    Spacer(modifier = Modifier.size(15.dp))
+                    Text(
+                        text = "Your journey to smarter,\ncooler recycling starts now",
+                        style = TextStyle(
+                            fontSize = 16.sp, color = Color.DarkGray,
+                            textAlign = TextAlign.Center, fontWeight = FontWeight.Normal
                         )
                     )
                 }
-                Text(buildAnnotatedString {
-
-                    if (isGoogleSignInFlow) {
-                        withStyle(SpanStyle(color = Black)) {
-                            append("Please fill the phone number to complete your profile.")
-                        }
-                    } else {
-                        // Existing text for standard registration
-                        withStyle(SpanStyle(color = Black)){ append("By checking this box, you agree to our") }
-                        withStyle(SpanStyle(color = Blue)) { append(" Terms and Condition") }
-                        withStyle(SpanStyle(color = Black)) { append(" and") }
-                        withStyle(SpanStyle(color = Blue)) { append(" Privacy Policy") }
-                    }
-
-                }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp).clickable {
-                    // Allow navigation to Login only if not in the middle of Google flow completion
-                    if (!isGoogleSignInFlow) {
-                        context.startActivity(Intent(context, LoginActivity::class.java))
-                        activity.finish()
-                    }
-                })
+                Spacer(modifier = Modifier.size(24.dp))
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            item {
+                OutlinedTextField(
+                    value = fullname, onValueChange = { fullname = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your full name") },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
+                        focusedIndicatorColor = Green, unfocusedIndicatorColor = Color.Transparent
+                    )
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+
+            item {
+                OutlinedTextField(
+                    value = email, onValueChange = { email = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your email") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    enabled = !isGoogleSignInFlow,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
+                        focusedIndicatorColor = Green, unfocusedIndicatorColor = Color.Transparent
+                    )
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+
+            item {
+                OutlinedTextField(
+                    value = number, onValueChange = { number = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your phone number") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
+                        focusedIndicatorColor = Green, unfocusedIndicatorColor = Color.Transparent
+                    )
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            // Dropdown Items
+            item {
+                DropdownField(
+                    label = addressVM.selectedProvinceName, placeholder = "Select Province",
+                    expanded = expandedProvince.value, onExpand = { expandedProvince.value = true },
+                    onDismiss = { expandedProvince.value = false }, items = provinces.map { it.name },
+                    onItemSelectedText = { name ->
+                        // Find the full model object by the name selected in the UI
+                        provinces.find { it.name == name }?.let { addressVM.onProvinceSelected(it) }
+                        expandedProvince.value = false
+                    }
+                )
+            }
+
+            item {
+                DropdownField(
+                    label = addressVM.selectedDistrictName, placeholder = "Select District",
+                    expanded = expandedDistrict.value, onExpand = { expandedDistrict.value = true },
+                    onDismiss = { expandedDistrict.value = false }, items = districts.map { it.name },
+                    onItemSelectedText = { name ->
+                        districts.find { it.name == name }?.let { addressVM.onDistrictSelected(it) }
+                        expandedDistrict.value = false
+                    }
+                )
+            }
+
+            item {
+                DropdownField(
+                    label = addressVM.selectedMunicipalityName, placeholder = "Select Municipality",
+                    expanded = expandedMunicipality.value, onExpand = { expandedMunicipality.value = true },
+                    onDismiss = { expandedMunicipality.value = false }, items = municipalities.map { it.name },
+                    onItemSelectedText = { name ->
+                        municipalities.find { it.name == name }?.let { addressVM.onMunicipalitySelected(it) }
+                        expandedMunicipality.value = false
+                    }
+                )
+            }
+
+            item {
+                DropdownField(
+                    label = addressVM.selectedWardName, placeholder = "Select Ward",
+                    expanded = expandedWard.value, onExpand = { expandedWard.value = true },
+                    onDismiss = { expandedWard.value = false }, items = wards,
+                    onItemSelectedText = {
+                        addressVM.onWardSelected(it)
+                        expandedWard.value = false
+                    }
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            if (!isGoogleSignInFlow) {
+                item {
+                    OutlinedTextField(
+                        value = password, onValueChange = { password = it },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordvisibility = !passwordvisibility }) {
+                                Icon(painterResource(if (passwordvisibility) R.drawable.baseline_visibility_24 else R.drawable.baseline_visibility_24), null)
+                            }
+                        },
+                        visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                        shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your password") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
+                            focusedIndicatorColor = Green, unfocusedIndicatorColor = Color.Transparent
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = confirmpassword, onValueChange = { confirmpassword = it },
+                        trailingIcon = {
+                            IconButton(onClick = { confirmpasswordvisibility = !confirmpasswordvisibility }) {
+                                Icon(painterResource(if (confirmpasswordvisibility) R.drawable.baseline_visibility_off_24 else R.drawable.baseline_visibility_24), null)
+                            }
+                        },
+                        visualTransformation = if (confirmpasswordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                        shape = RoundedCornerShape(15.dp), placeholder = { Text("Confirm your password") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
+                            focusedIndicatorColor = Green, unfocusedIndicatorColor = Color.Transparent
+                        )
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (!isGoogleSignInFlow) {
+                        Checkbox(
+                            checked = terms,
+                            onCheckedChange = { terms = it },
+                            colors = CheckboxDefaults.colors(checkedColor = Green, checkmarkColor = White)
+                        )
+                    }
+
+                    val annotatedText = buildAnnotatedString {
+                        if (isGoogleSignInFlow) {
+                            withStyle(SpanStyle(color = Black)) {
+                                append("Please fill the phone number and address to complete your profile.")
+                            }
+                        } else {
+                            withStyle(SpanStyle(color = Black)) { append("By checking this box, you agree to our") }
+
+                            // Annotated part for Terms
+                            pushStringAnnotation(tag = "TERMS", annotation = "terms")
+                            withStyle(SpanStyle(color = Blue, fontWeight = FontWeight.Bold)) {
+                                append(" Terms and Condition")
+                            }
+                            pop()
+
+                            withStyle(SpanStyle(color = Black)) { append(" and") }
+
+                            // Annotated part for Privacy
+                            pushStringAnnotation(tag = "PRIVACY", annotation = "privacy")
+                            withStyle(SpanStyle(color = Blue, fontWeight = FontWeight.Bold)) {
+                                append(" Privacy Policy")
+                            }
+                            pop()
+                        }
+                    }
+
+                    // Use ClickableText-like behavior on a normal Text via Modifier
+                    androidx.compose.foundation.text.ClickableText(
+                        text = annotatedText,
+                        style = TextStyle(fontSize = 14.sp),
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        onClick = { offset ->
+                            // Check if "TERMS" was clicked
+                            annotatedText.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
+                                .firstOrNull()?.let {
+                                    context.startActivity(Intent(context, TermsAndConditionActivity::class.java))
+                                }
+
+                            // Check if "PRIVACY" was clicked
+                            annotatedText.getStringAnnotations(tag = "PRIVACY", start = offset, end = offset)
+                                .firstOrNull()?.let {
+                                    context.startActivity(Intent(context, PrivacyPolicyActivity::class.java))
+                                }
+                        }
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            item {
                 Button(
-                    onClick =  onRegisterOrUpdate, // Use the unified function,
+                    onClick = onRegisterOrUpdate,
+                    enabled = !isLoading, // Disable when loading
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
@@ -579,30 +460,55 @@ fun RegisterBody(googleUserModel: UserModel? = null ) {
                             shape = RoundedCornerShape(15.dp)
                         ),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 15.dp
-                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 15.dp),
                 ) {
-                    Text(// Update button text based on flow
-                        if (isGoogleSignInFlow) "Save & Continue" else "Register"
-                        , fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White)
+                    if (isLoading) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (isGoogleSignInFlow) "Save & Continue" else "Register",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
                 }
-
             }
-            Text(buildAnnotatedString {
 
-                withStyle(SpanStyle(color = Blue)){
-                    append("Already have account? ")
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Already have account? ",
+                        style = TextStyle(color = Blue, fontSize = 16.sp)
+                    )
+                    Text(
+                        text = "Login",
+                        style = TextStyle(
+                            color = Green,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier
+                            .clickable(enabled = !isLoading) { // Disable navigation if currently loading
+                                context.startActivity(Intent(context, LoginActivity::class.java))
+                                activity.finish()
+                            }
+                            .padding(3.dp)
+                    )
                 }
-
-                withStyle(SpanStyle(color = Green)) {
-                    append("Login")
-                }
-            }, modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+                Spacer(modifier = Modifier.height(40.dp))
+            }
         }
-
     }
 }
 
@@ -614,51 +520,27 @@ fun DropdownField(
     onExpand: () -> Unit,
     onDismiss: () -> Unit,
     items: List<String>,
-    onItemSelectedText: (String) -> Unit,
-    fieldSize: Size,
-    onSizeChange: (Size) -> Unit
+    onItemSelectedText: (String) -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-    ) {
+    var fieldSize by remember { mutableStateOf(Size.Zero) }
+
+    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 6.dp)) {
         OutlinedTextField(
-            value = label,
-            onValueChange = {},
-            enabled = false,
-            modifier = Modifier
-                .fillMaxWidth()
-                .onGloballyPositioned { onSizeChange(it.size.toSize()) }
+            value = label, onValueChange = {}, enabled = false,
+            modifier = Modifier.fillMaxWidth()
+                .onGloballyPositioned { fieldSize = it.size.toSize() }
                 .clickable { onExpand() },
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    color = Green
-                )
-            },
+            placeholder = { Text(text = placeholder, color = Green) },
             textStyle = TextStyle(color = Green),
-            trailingIcon = {
-                Icon(
-                    Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = Green
-                )
-            },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Green) },
             colors = OutlinedTextFieldDefaults.colors(
-                disabledBorderColor = Green,
-                disabledTextColor = Green,
-                disabledPlaceholderColor = Green,
-                disabledTrailingIconColor = Green
+                disabledBorderColor = Green, disabledTextColor = Green,
+                disabledPlaceholderColor = Green, disabledTrailingIconColor = Green
             )
         )
-
         DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = onDismiss,
-            modifier = Modifier.width(
-                with(LocalDensity.current) { fieldSize.width.toDp() }
-            )
+            expanded = expanded, onDismissRequest = onDismiss,
+            modifier = Modifier.width(with(LocalDensity.current) { fieldSize.width.toDp() })
         ) {
             items.forEach {
                 DropdownMenuItem(
