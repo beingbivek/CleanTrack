@@ -136,4 +136,9 @@ dependencies {
     //Gson
     implementation("com.google.code.gson:gson:2.10.1")
 
+//    Mockito for uniT testing
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+
 }
