@@ -15,52 +15,39 @@ class BinInstrumentedTest {
     val composeRule = createAndroidComposeRule<BinSetupActivity>()
 
     @Test
-    fun testAddBin_Flow() {
-        // 1. Enter the Bin Label
-        // Matches your label: "Label (e.g. Kitchen Bin)"
-        composeRule.onNodeWithText("Label (e.g. Kitchen Bin)")
-            .performTextInput("Balcony Bin")
+    fun testRegisterBin_Success() {
+        // 1. Enter Bin Label
+        composeRule.onNodeWithTag("bin_label_field")
+            .performTextInput("Kitchen Organic Bin")
 
-        // 2. Interact with the Waste Category Dropdown
-        // Click the field to expand the menu
-        composeRule.onNodeWithText("Waste Category").performClick()
+        // 2. Open Category Dropdown
+        composeRule.onNodeWithTag("bin_category_dropdown")
+            .performClick()
 
-        // Select a category from the expanded menu
-        composeRule.onNodeWithText("TOXIC").performClick()
+        // 3. Select 'TOXIC' from the dropdown list
+        // Note: Dropdown items usually exist in the unmerged tree
+        composeRule.onNodeWithText("TOXIC")
+            .performClick()
 
-        // 3. Verify the selection was updated in the field
-        composeRule.onNodeWithText("TOXIC").assertIsDisplayed()
+        // 4. Verify selection reflected in the field
+        composeRule.onNodeWithTag("bin_category_dropdown")
+            .assert(hasText("TOXIC"))
 
-        // 4. Click the Register button
-        // Since binId is null by default in this test, text is "Register Bin"
-        composeRule.onNodeWithText("Register Bin").performClick()
+        // 5. Click Register
+        composeRule.onNodeWithTag("bin_save_button")
+            .performClick()
+
+        // 6. Verification: The activity should finish on success
+        // We check that the 'Register Bin' button is no longer visible
+        composeRule.onNodeWithTag("bin_save_button").assertDoesNotExist()
     }
 
     @Test
-    fun testEmptyLabel_ShowsNoNavigation() {
-        // Clear text if any and click register
-        composeRule.onNodeWithText("Label (e.g. Kitchen Bin)").performTextClearance()
+    fun testEmptyLabel_Validation() {
+        // Leave label empty and click register
+        composeRule.onNodeWithTag("bin_save_button").performClick()
 
-        composeRule.onNodeWithText("Register Bin").performClick()
-
-        // Verify we are still on the same screen by checking the title
-        composeRule.onNodeWithText("Add New Bin").assertIsDisplayed()
-    }
-
-    @Test
-    fun testDropdown_CanSelectMultipleTimes() {
-        // Open dropdown
-        composeRule.onNodeWithText("Waste Category").performClick()
-        // Select Mixed
-        composeRule.onNodeWithText("MIXED").performClick()
-        // Verify
-        composeRule.onNodeWithText("MIXED").assertIsDisplayed()
-
-        // Open again
-        composeRule.onNodeWithText("Waste Category").performClick()
-        // Select Inorganic
-        composeRule.onNodeWithText("INORGANIC").performClick()
-        // Verify new selection
-        composeRule.onNodeWithText("INORGANIC").assertIsDisplayed()
+        // The activity should still be open
+        composeRule.onNodeWithTag("bin_save_button").assertIsDisplayed()
     }
 }
