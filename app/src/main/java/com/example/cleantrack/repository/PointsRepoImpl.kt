@@ -22,6 +22,7 @@ class PointsRepoImpl : PointsRepo {
     override fun calculatePoints(
         binType: String,
         segregatedCorrectly: Boolean,
+        ratingForBin: Int,
         callback: (Int) -> Unit
     ) {
         rulesRef
@@ -40,7 +41,7 @@ class PointsRepoImpl : PointsRepo {
                         rule.isActive &&
                         rule.segregatedCorrectly == segregatedCorrectly
                     ) {
-                        callback(rule.points)
+                        callback(rule.points * ratingForBin)
                         return@addOnSuccessListener
                     }
                 }
