@@ -307,10 +307,10 @@ class ActiveTripViewModel(
             }
 
             // 2. Get route ID (matching your UserModel field name)
-            val userRouteId = user.activeRouteId ?: ""
+            val userRouteId = user.activeRouteId
 
             // 3. Get the point value from the rules engine
-            pointsRepo.calculatePoints(bin.category, isSegregated) { calculatedPoints ->
+            pointsRepo.calculatePoints(bin.category, isSegregated, rating) { calculatedPoints ->
 
                 // 4. Create the collection record
                 val collection = BinCollectionModel(
@@ -417,10 +417,10 @@ class ActiveTripViewModel(
                 return@getUserById
             }
 
-            val userRouteId = user.activeRouteId ?: ""
+            val userRouteId = user.activeRouteId
 
             // 2. Calculate points using the Points Repository rules
-            pointsRepo.calculatePoints(bin.category, isSegregated) { calculatedPoints ->
+            pointsRepo.calculatePoints(bin.category, isSegregated, rating) { calculatedPoints ->
 
                 // 3. Construct the record with the AI feedback tip
                 val collection = BinCollectionModel(
