@@ -7,7 +7,6 @@ import androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.cleantrack.view.auth.RegistrationActivity
 import com.example.cleantrack.view.auth.UserLocationMapActivity
-
 import org.junit.*
 import org.junit.runner.RunWith
 
@@ -29,45 +28,51 @@ class RegistrationInstrumentedTest {
 
     @Test
     fun testRegistrationFlowSuccess() {
+        // Generate unique email to prevent "Email already in use" failure
         val testEmail = "test${System.currentTimeMillis()}@gmail.com"
 
-        // Fill basic info
+        // 1. Fill basic info
         composeRule.onNodeWithTag("reg_fullname").performTextInput("John Doe")
         composeRule.onNodeWithTag("reg_email").performTextInput(testEmail)
         composeRule.onNodeWithTag("reg_phone").performTextInput("9800000000")
 
-        // --- PROVINCE DROPDOWN ---
-        composeRule.onNodeWithTag("province_dropdown").performClick()
-        // Wait for the popup and click the text.
-        // useUnmergedTree = true is MANDATORY for dropdown items
-        composeRule.onNodeWithText("Koshi", useUnmergedTree = true)
+        // 2. Dropdowns - Using filterToOne(hasClickAction()) to handle duplicate tags
+
+        // --- PROVINCE ---
+        composeRule.onAllNodesWithTag("province_dropdown")
+            .filterToOne(hasClickAction())
             .performClick()
+        composeRule.onNodeWithText("Koshi", useUnmergedTree = true).performClick()
 
-        // --- DISTRICT DROPDOWN ---
-        composeRule.onNodeWithTag("district_dropdown").performClick()
-        composeRule.onNodeWithText("Morang", useUnmergedTree = true)
+        // --- DISTRICT ---
+        composeRule.onAllNodesWithTag("district_dropdown")
+            .filterToOne(hasClickAction())
             .performClick()
+        composeRule.onNodeWithText("Morang", useUnmergedTree = true).performClick()
 
-        // --- MUNICIPALITY DROPDOWN ---
-        composeRule.onNodeWithTag("municipality_dropdown").performClick()
-        composeRule.onNodeWithText("Biratnagar", useUnmergedTree = true)
+        // --- MUNICIPALITY ---
+        composeRule.onAllNodesWithTag("municipality_dropdown")
+            .filterToOne(hasClickAction())
             .performClick()
+        composeRule.onNodeWithText("Biratnagar", useUnmergedTree = true).performClick()
 
-        // --- WARD DROPDOWN ---
-        composeRule.onNodeWithTag("ward_dropdown").performClick()
-        composeRule.onNodeWithText("1", useUnmergedTree = true)
+        // --- WARD ---
+        composeRule.onAllNodesWithTag("ward_dropdown")
+            .filterToOne(hasClickAction())
             .performClick()
+        composeRule.onNodeWithText("1", useUnmergedTree = true).performClick()
 
-        // Password & Terms
-        composeRule.onNodeWithTag("reg_password").performTextInput("Pass123!")
-        composeRule.onNodeWithTag("reg_confirm_password").performTextInput("Pass123!")
-        composeRule.onNodeWithTag("terms_checkbox").performClick()
+        // 3. Password & Terms
+        // Note: performScrollTo() is used because these items are at the bottom of a LazyColumn
+        composeRule.onNodeWithTag("reg_password").performScrollTo().performTextInput("Pass123!")
+        composeRule.onNodeWithTag("reg_confirm_password").performScrollTo().performTextInput("Pass123!")
+        composeRule.onNodeWithTag("terms_checkbox").performScrollTo().performClick()
 
-        // Register
+        // 4. Register Action
         composeRule.onNodeWithTag("register_button").performScrollTo().performClick()
 
-        // Wait for navigation (Teacher Style)
-        composeRule.waitUntil(15000) {
+        // 5. Wait for Firebase transition (Teacher Style)
+        composeRule.waitUntil(timeoutMillis = 15000) {
             try {
                 Intents.intended(hasComponent(UserLocationMapActivity::class.java.name))
                 true
