@@ -25,8 +25,11 @@ class VehicleSetupInstrumentedTest {
 
         // 2. Select Type from Dropdown
         composeRule.onNodeWithTag("type_dropdown").performClick()
-        // Wait for the dropdown item to actually appear before clicking
-        composeRule.onNodeWithText("VAN").assertIsDisplayed().performClick()
+
+// ADD useUnmergedTree = true here
+        composeRule.onNodeWithText("VAN", useUnmergedTree = true)
+            .assertIsDisplayed()
+            .performClick()
 
         // 3. Fill Capacity and scroll to ensure button is visible
         composeRule.onNodeWithTag("capacity_field")
@@ -47,12 +50,14 @@ class VehicleSetupInstrumentedTest {
         }
     }
 
-        @Test
-        fun testEmptyFields_ShowsToast() {
-            // Leave fields blank and try to save
-            composeRule.onNodeWithTag("save_vehicle_button").performClick()
+    @Test
+    fun testEmptyFields_ShowsToast() {
+        // Scroll to the button first, then click
+        composeRule.onNodeWithTag("save_vehicle_button")
+            .performScrollTo()
+            .performClick()
 
-            // The Activity should still be open (Save button still exists)
-            composeRule.onNodeWithTag("save_vehicle_button").assertIsDisplayed()
-        }
+        // The Activity should still be open
+        composeRule.onNodeWithTag("save_vehicle_button").assertIsDisplayed()
+    }
     }

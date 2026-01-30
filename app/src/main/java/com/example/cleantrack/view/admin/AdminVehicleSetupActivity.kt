@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -30,6 +31,8 @@ import com.example.cleantrack.model.VehicleModel
 import com.example.cleantrack.repository.VehicleRepoImpl
 import com.example.cleantrack.ui.theme.PrimaryGreen
 import com.example.cleantrack.viewmodel.VehicleViewModel
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 
 class AdminVehicleSetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -133,6 +136,8 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                             onValueChange = { vehicleNumber = it },
                             modifier = Modifier.testTag("vehicle_number_field").fillMaxWidth(),
                             label = { Text("Vehicle Number") },
+                            // Use Next to move to the next field
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PrimaryGreen,
@@ -183,6 +188,11 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                             onValueChange = { capacity = it },
                             modifier = Modifier.testTag("capacity_field").fillMaxWidth(),
                             label = { Text("Capacity (kg)") },
+                            // Use Done for the final text field
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PrimaryGreen,
