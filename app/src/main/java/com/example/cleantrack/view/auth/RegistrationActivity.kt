@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -254,7 +255,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
             item {
                 OutlinedTextField(
                     value = fullname, onValueChange = { fullname = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    modifier = Modifier.testTag("reg_fullname").fillMaxWidth().padding(horizontal = 15.dp),
                     shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your full name") },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
@@ -267,7 +268,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
             item {
                 OutlinedTextField(
                     value = email, onValueChange = { email = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    modifier = Modifier.testTag("reg_email").fillMaxWidth().padding(horizontal = 15.dp),
                     shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your email") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     enabled = !isGoogleSignInFlow,
@@ -282,7 +283,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
             item {
                 OutlinedTextField(
                     value = number, onValueChange = { number = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                    modifier = Modifier.testTag("reg_phone").fillMaxWidth().padding(horizontal = 15.dp),
                     shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your phone number") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = TextFieldDefaults.colors(
@@ -299,6 +300,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                     label = addressVM.selectedProvinceName, placeholder = "Select Province",
                     expanded = expandedProvince.value, onExpand = { expandedProvince.value = true },
                     onDismiss = { expandedProvince.value = false }, items = provinces.map { it.name },
+                    tag = "province_dropdown",
                     onItemSelectedText = { name ->
                         // Find the full model object by the name selected in the UI
                         provinces.find { it.name == name }?.let { addressVM.onProvinceSelected(it) }
@@ -312,6 +314,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                     label = addressVM.selectedDistrictName, placeholder = "Select District",
                     expanded = expandedDistrict.value, onExpand = { expandedDistrict.value = true },
                     onDismiss = { expandedDistrict.value = false }, items = districts.map { it.name },
+                    tag = "district_dropdown",
                     onItemSelectedText = { name ->
                         districts.find { it.name == name }?.let { addressVM.onDistrictSelected(it) }
                         expandedDistrict.value = false
@@ -324,6 +327,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                     label = addressVM.selectedMunicipalityName, placeholder = "Select Municipality",
                     expanded = expandedMunicipality.value, onExpand = { expandedMunicipality.value = true },
                     onDismiss = { expandedMunicipality.value = false }, items = municipalities.map { it.name },
+                    tag = "municipality_dropdown",
                     onItemSelectedText = { name ->
                         municipalities.find { it.name == name }?.let { addressVM.onMunicipalitySelected(it) }
                         expandedMunicipality.value = false
@@ -336,6 +340,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                     label = addressVM.selectedWardName, placeholder = "Select Ward",
                     expanded = expandedWard.value, onExpand = { expandedWard.value = true },
                     onDismiss = { expandedWard.value = false }, items = wards,
+                    tag = "ward_dropdown",
                     onItemSelectedText = {
                         addressVM.onWardSelected(it)
                         expandedWard.value = false
@@ -354,7 +359,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                             }
                         },
                         visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                        modifier = Modifier.testTag("reg_password").fillMaxWidth().padding(horizontal = 15.dp),
                         shape = RoundedCornerShape(15.dp), placeholder = { Text("Enter your password") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
@@ -373,7 +378,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                             }
                         },
                         visualTransformation = if (confirmpasswordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+                        modifier = Modifier.testTag("reg_confirm_password").fillMaxWidth().padding(horizontal = 15.dp),
                         shape = RoundedCornerShape(15.dp), placeholder = { Text("Confirm your password") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = TextBoxColor, unfocusedContainerColor = TextBoxColor,
@@ -393,6 +398,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                     if (!isGoogleSignInFlow) {
                         Checkbox(
                             checked = terms,
+                            modifier = Modifier.testTag("terms_checkbox"),
                             onCheckedChange = { terms = it },
                             colors = CheckboxDefaults.colors(checkedColor = Green, checkmarkColor = White)
                         )
@@ -451,7 +457,7 @@ fun RegisterBody(googleUserModel: UserModel? = null) {
                 Button(
                     onClick = onRegisterOrUpdate,
                     enabled = !isLoading, // Disable when loading
-                    modifier = Modifier
+                    modifier = Modifier.testTag("register_button")
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
                         .height(60.dp)
@@ -519,16 +525,18 @@ fun DropdownField(
     expanded: Boolean,
     onExpand: () -> Unit,
     onDismiss: () -> Unit,
+    tag: String,
     items: List<String>,
     onItemSelectedText: (String) -> Unit
 ) {
     var fieldSize by remember { mutableStateOf(Size.Zero) }
 
-    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 6.dp)) {
+    Box(modifier = Modifier.fillMaxWidth().testTag(tag).padding(horizontal = 15.dp, vertical = 6.dp)) {
         OutlinedTextField(
             value = label, onValueChange = {}, enabled = false,
             modifier = Modifier.fillMaxWidth()
                 .onGloballyPositioned { fieldSize = it.size.toSize() }
+                .testTag(tag)
                 .clickable { onExpand() },
             placeholder = { Text(text = placeholder, color = Green) },
             textStyle = TextStyle(color = Green),

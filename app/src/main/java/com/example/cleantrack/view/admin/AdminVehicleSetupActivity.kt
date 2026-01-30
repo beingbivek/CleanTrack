@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,6 +31,8 @@ import com.example.cleantrack.model.VehicleModel
 import com.example.cleantrack.repository.VehicleRepoImpl
 import com.example.cleantrack.ui.theme.PrimaryGreen
 import com.example.cleantrack.viewmodel.VehicleViewModel
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 
 class AdminVehicleSetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,8 +134,10 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                         OutlinedTextField(
                             value = vehicleNumber,
                             onValueChange = { vehicleNumber = it },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.testTag("vehicle_number_field").fillMaxWidth(),
                             label = { Text("Vehicle Number") },
+                            // Use Next to move to the next field
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PrimaryGreen,
@@ -152,7 +158,7 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                                 readOnly = true,
                                 label = { Text("Vehicle Type") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                modifier = Modifier.fillMaxWidth().menuAnchor().testTag("type_dropdown"),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = PrimaryGreen,
@@ -180,8 +186,13 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                         OutlinedTextField(
                             value = capacity,
                             onValueChange = { capacity = it },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.testTag("capacity_field").fillMaxWidth(),
                             label = { Text("Capacity (kg)") },
+                            // Use Done for the final text field
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PrimaryGreen,
@@ -204,6 +215,7 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                                 Text("Vehicle Active Status", fontWeight = FontWeight.Medium)
                                 Switch(
                                     checked = isActive,
+                                    modifier = Modifier.testTag("status_switch"),
                                     onCheckedChange = { isActive = it },
                                     colors = SwitchDefaults.colors(checkedThumbColor = PrimaryGreen)
                                 )
@@ -214,7 +226,7 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                     item {
                         Spacer(Modifier.height(10.dp))
                         Button(
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(56.dp).testTag("save_vehicle_button"),
                             enabled = !isSaving,
                             onClick = {
                                 if (vehicleNumber.isBlank() || capacity.isBlank()) {
@@ -271,7 +283,7 @@ fun AdminVehicleSetupScreen(vehicleId: String?) {
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         if (success) activity.finish()
                     }
-                }) {
+                },modifier = Modifier.testTag("delete_vehicle_icon")) {
                     Text("Delete", color = Color.Red, fontWeight = FontWeight.Bold)
                 }
             },

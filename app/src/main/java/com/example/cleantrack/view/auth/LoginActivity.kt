@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -202,7 +203,7 @@ fun LoginBody() {
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    modifier = Modifier
+                    modifier = Modifier.testTag("email_field")
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp),
                     shape = RoundedCornerShape(15.dp),
@@ -234,7 +235,7 @@ fun LoginBody() {
                         }
                     },
                     visualTransformation = if (passwordvisibility) VisualTransformation.None else PasswordVisualTransformation(),
-                    modifier = Modifier
+                    modifier = Modifier.testTag("password_field")
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp),
                     shape = RoundedCornerShape(15.dp),
@@ -280,7 +281,7 @@ fun LoginBody() {
                         }
                     },
                     enabled = !isLoading, // PREVENT CLICKING WHILE LOADING
-                    modifier = Modifier
+                    modifier = Modifier.testTag("login_button")
                         .fillMaxWidth()
                         .padding(horizontal = 15.dp)
                         .height(60.dp)
@@ -315,7 +316,7 @@ fun LoginBody() {
                         text = "Sign Up",
                         color = Green,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier
+                        modifier = Modifier.testTag("go_to_registration")
                             .clickable(enabled = !isLoading) {
                                 context.startActivity(Intent(context, RegistrationActivity::class.java))
                             }

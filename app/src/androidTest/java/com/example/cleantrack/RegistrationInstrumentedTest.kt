@@ -1,19 +1,13 @@
 package com.example.cleantrack
 
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.cleantrack.view.auth.RegistrationActivity
-import com.example.cleantrack.view.auth.LoginActivity
 import com.example.cleantrack.view.auth.UserLocationMapActivity
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import org.junit.*
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
@@ -33,17 +27,58 @@ class RegistrationInstrumentedTest {
     }
 
     @Test
-    fun testSuccessfulRegistration_NavigatesToMap() {
-        // Fill in registration details
-        composeRule.onNodeWithTag("reg_email").performTextInput("newuser@gmail.com")
-        composeRule.onNodeWithTag("reg_password").performTextInput("password123")
+    fun testRegistrationFlowSuccess() {
+        // Generate unique email to prevent "Email already in use" failure
+        val testEmail = "test${System.currentTimeMillis()}@gmail.com"
+
+        // 1. Fill basic info
         composeRule.onNodeWithTag("reg_fullname").performTextInput("John Doe")
+        composeRule.onNodeWithTag("reg_email").performTextInput(testEmail)
+        composeRule.onNodeWithTag("reg_phone").performTextInput("9800000000")
 
-        // Click Register
-        composeRule.onNodeWithTag("register_button").performClick()
+        // 2. Dropdowns - Using filterToOne(hasClickAction()) to handle duplicate tags
 
-        // Based on common Clean Architecture flows, registration often leads
-        // to a Map activity to set the home address
-        Intents.intended(hasComponent(UserLocationMapActivity::class.java.name))
+        // --- PROVINCE ---
+        composeRule.onAllNodesWithTag("province_dropdown")
+            .filterToOne(hasClickAction())
+            .performClick()
+        composeRule.onNodeWithText("Koshi", useUnmergedTree = true).performClick()
+
+        // --- DISTRICT ---
+        composeRule.onAllNodesWithTag("district_dropdown")
+            .filterToOne(hasClickAction())
+            .performClick()
+        composeRule.onNodeWithText("Morang", useUnmergedTree = true).performClick()
+
+        // --- MUNICIPALITY ---
+        composeRule.onAllNodesWithTag("municipality_dropdown")
+            .filterToOne(hasClickAction())
+            .performClick()
+        composeRule.onNodeWithText("Biratnagar", useUnmergedTree = true).performClick()
+
+        // --- WARD ---
+        composeRule.onAllNodesWithTag("ward_dropdown")
+            .filterToOne(hasClickAction())
+            .performClick()
+        composeRule.onNodeWithText("1", useUnmergedTree = true).performClick()
+
+        // 3. Password & Terms
+        // Note: performScrollTo() is used because these items are at the bottom of a LazyColumn
+        composeRule.onNodeWithTag("reg_password").performScrollTo().performTextInput("Pass123!")
+        composeRule.onNodeWithTag("reg_confirm_password").performScrollTo().performTextInput("Pass123!")
+        composeRule.onNodeWithTag("terms_checkbox").performScrollTo().performClick()
+
+        // 4. Register Action
+        composeRule.onNodeWithTag("register_button").performScrollTo().performClick()
+
+        // 5. Wait for Firebase transition (Teacher Style)
+        composeRule.waitUntil(timeoutMillis = 15000) {
+            try {
+                Intents.intended(hasComponent(UserLocationMapActivity::class.java.name))
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
     }
 }
