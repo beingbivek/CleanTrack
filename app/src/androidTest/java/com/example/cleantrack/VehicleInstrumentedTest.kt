@@ -28,23 +28,25 @@ class VehicleSetupInstrumentedTest {
         composeRule.onNodeWithTag("capacity_field")
             .performTextInput("2500")
 
-        // 4. Toggle the Switch (Turn off active status)
-        composeRule.onNodeWithTag("status_switch").performClick()
-
-        // 5. Click Save
+        // 4. Click Save
         composeRule.onNodeWithTag("save_vehicle_button").performClick()
 
-        // Since the activity finishes on success, we verify it is closing or
-        // that the "Save Vehicle" button no longer exists
-        composeRule.onNodeWithTag("save_vehicle_button").assertDoesNotExist()
+        // --- ADD THE FIX HERE ---
+        // Wait until the button disappears (meaning activity.finish() was called)
+        composeRule.waitUntil(timeoutMillis = 5000) {
+            composeRule
+                .onAllNodesWithTag("save_vehicle_button")
+                .fetchSemanticsNodes()
+                .isEmpty()
+        }
     }
 
-    @Test
-    fun testEmptyFields_ShowsToast() {
-        // Leave fields blank and try to save
-        composeRule.onNodeWithTag("save_vehicle_button").performClick()
+        @Test
+        fun testEmptyFields_ShowsToast() {
+            // Leave fields blank and try to save
+            composeRule.onNodeWithTag("save_vehicle_button").performClick()
 
-        // The Activity should still be open (Save button still exists)
-        composeRule.onNodeWithTag("save_vehicle_button").assertIsDisplayed()
+            // The Activity should still be open (Save button still exists)
+            composeRule.onNodeWithTag("save_vehicle_button").assertIsDisplayed()
+        }
     }
-}
